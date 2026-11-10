@@ -43,32 +43,63 @@ function PhotoPicker(max, label) {
   return { el: h('div', { class: 'field' }, h('span', { class: 'field-label' }, label + ' (최대 ' + max + '장)'), row, input), files };
 }
 
-/* 사진을 1장씩 순서대로 올린다. 실패한 사진은 failed에 남겨 다시 시도할 수 있게 한다. */
-async function uploadPhotos(jobs, onProgress) {
+/* 사진을 최대 3장씩 동시에 올린다. job: { file, kind, seq } */
+async function uploadPhotos(jobs, ticket, onProgress) {
+  let next = 0;
+  let finished = 0;
+  const done = [];
   const failed = [];
-  for (let i = 0; i < jobs.length; i++) {
-    onProgress(i + 1, jobs.length);
-    try {
-      const data = await ImageTool.compress(jobs[i].file);
-      await Api.call('photoUpload', Object.assign({}, jobs[i].meta, { data }));
-    } catch (e) {
-      failed.push(jobs[i]);
+  const worker = async () => {
+    while (next < jobs.length) {
+      const job = jobs[next++];
+      try {
+        const data = await ImageTool.compress(job.file);
+        const res = await Api.call('photoUpload', { ticket, seq: job.seq, data });
+        done.push({ fileId: res.fileId, kind: job.kind || '' });
+      } catch (e) {
+        failed.push(job);
+      }
+      onProgress(++finished, jobs.length);
     }
-  }
-  return failed;
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  return { done, failed };
+}
+
+/* 올린 사진을 글에 붙이고, 실패한 사진만 다시 올릴 수 있게 한다. */
+function sendPhotos(jobs, ticket, box, finish) {
+  jobs.forEach((job, i) => { job.seq = i + 1; });
+  const go = async (list) => {
+    box.show(0, list.length);
+    const { done, failed } = await uploadPhotos(list, ticket, (i, n) => box.show(i, n));
+    if (done.length) {
+      try {
+        await Api.call('photoAttach', { ticket, files: done });
+      } catch (e) {
+        UI.toast(e.message, true);
+        box.failed(list.length, () => go(list));
+        return;
+      }
+    }
+    if (failed.length) box.failed(failed.length, () => go(failed));
+    else finish();
+  };
+  return go(jobs);
 }
 
 function ProgressBox(container) {
   const text = h('p', { class: 'sub' });
-  const box = h('div', { class: 'progress', hidden: true }, text);
+  const retry = h('button', { class: 'btn', type: 'button', hidden: true }, '실패한 사진 다시 올리기');
+  const box = h('div', { class: 'progress', hidden: true }, text, retry);
   container.append(box);
   return {
     box,
-    show(i, n) { box.hidden = false; text.textContent = '사진 올리는 중 ' + i + ' / ' + n; },
-    failed(n, retry) {
+    show(i, n) { box.hidden = false; retry.hidden = true; text.textContent = '사진 올리는 중 ' + i + ' / ' + n; },
+    failed(n, fn) {
       box.hidden = false;
       text.textContent = '사진 ' + n + '장을 올리지 못했습니다.';
-      box.append(h('button', { class: 'btn', type: 'button', onclick: retry }, '실패한 사진 다시 올리기'));
+      retry.onclick = fn;
+      retry.hidden = false;
     }
   };
 }

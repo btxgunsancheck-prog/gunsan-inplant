@@ -97,18 +97,15 @@
       e.preventDefault();
       btn.disabled = true;
       let postId = id;
+      let ticket = '';
       try {
         const res = await Api.call('boardSave', { id: id || null, board, title: title.value, body: body.value, pinned: pinned.checked, removePhotos: removed });
         postId = res.id;
+        ticket = res.ticket;
       } catch (err) { UI.toast(err.message, true); btn.disabled = false; return; }
       const finish = () => { UI.toast('저장했습니다.'); App.refreshInit(); Router.go('/board/' + board + '/' + postId); };
-      const send = async (jobs) => {
-        const failed = await uploadPhotos(jobs, (i, n) => progress.show(i, n));
-        if (failed.length) progress.failed(failed.length, () => send(failed));
-        else finish();
-      };
-      const jobs = picker.files.map((file) => ({ file, meta: { target: 'post', id: postId } }));
-      if (jobs.length) send(jobs); else finish();
+      const jobs = picker.files.map((file) => ({ file }));
+      if (jobs.length) sendPhotos(jobs, ticket, progress, finish); else finish();
     } },
       UI.field('제목', title), UI.field('내용', body),
       board === 'notice' && UI.has('NOTICE_WRITE') && h('label', { class: 'check' }, pinned, h('span', null, '상단 고정')),

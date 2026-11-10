@@ -74,21 +74,16 @@
       form.onsubmit = async (e) => {
         e.preventDefault();
         submit.disabled = true;
-        let id;
+        let ticket;
         try {
-          id = (await Api.call('kpiSave', Object.assign(collect(), { code }))).id;
+          ticket = (await Api.call('kpiSave', Object.assign(collect(), { code }))).ticket;
         } catch (err) { UI.toast(err.message, true); submit.disabled = false; return; }
         Store.draftClear('kpi');
         const box = ProgressBox(progress);
         const finish = () => { UI.toast('저장했습니다.'); values = {}; App.refreshInit(); draw(); };
-        const send = async (jobs) => {
-          const failed = await uploadPhotos(jobs, (i, n) => box.show(i, n));
-          if (failed.length) box.failed(failed.length, () => send(failed));
-          else finish();
-        };
-        const jobs = issuePicker.files.map((file) => ({ file, meta: { target: 'kpi', id, kind: 'issue' } }))
-          .concat(counterPicker.files.map((file) => ({ file, meta: { target: 'kpi', id, kind: 'counter' } })));
-        if (jobs.length) send(jobs); else finish();
+        const jobs = issuePicker.files.map((file) => ({ file, kind: 'issue' }))
+          .concat(counterPicker.files.map((file) => ({ file, kind: 'counter' })));
+        if (jobs.length) sendPhotos(jobs, ticket, box, finish); else finish();
       };
     }
     form.addEventListener('input', save);
@@ -159,9 +154,17 @@
       const reason = h('input', { placeholder: '집계 제외 사유(필수)', 'aria-label': '집계 제외 사유' });
       const confirmOne = async () => {
         if (counter.files.length) {
-          const jobs = counter.files.map((file) => ({ file, meta: { target: 'kpi', id: item.id, kind: 'counter' } }));
-          const failed = await uploadPhotos(jobs, () => {});
-          if (failed.length) { UI.toast('사진 ' + failed.length + '장을 올리지 못했습니다. 다시 시도해 주세요.', true); return; }
+          const jobs = counter.files.map((file, i) => ({ file, kind: 'counter', seq: i + 1 }));
+          try {
+            const { ticket } = await Api.call('photoTicket', { id: item.id });
+            const { done, failed } = await uploadPhotos(jobs, ticket, () => {});
+            if (done.length) await Api.call('photoAttach', { ticket, files: done });
+            if (failed.length) {
+              counter.files.splice(0, counter.files.length, ...failed.map((j) => j.file));
+              UI.toast('사진 ' + failed.length + '장을 올리지 못했습니다. 다시 시도해 주세요.', true);
+              return;
+            }
+          } catch (e) { UI.toast(e.message, true); return; }
         }
         confirmItems([item.id]);
       };
