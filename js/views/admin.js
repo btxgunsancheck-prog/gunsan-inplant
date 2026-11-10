@@ -48,5 +48,65 @@
       h('section', { class: 'section' }, h('div', { class: 'narrow' }, UI.field('CSV 파일', input), info, btn)));
   });
 
-  ['license', 'targets', 'data'].forEach((p) => Router.add('/admin/' + p, (params, app) => app.replaceChildren(UI.placeholder('관리자 메뉴'))));
+  Router.add('/admin/license', (params, app, alive) => {
+    if (!UI.hasAny(['KPI_MANAGER', 'VIEW_EXEC'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
+    const body = h('div', { class: 'wrap' }, UI.skeleton(6));
+    const depts = ['물류1직', '물류2직', '물류3직', '물류4직', '팀'];
+    const load = () => Api.call('licenseList').then((d) => {
+      if (!alive()) return;
+      const f = { name: h('input', { placeholder: '성명', 'aria-label': '성명' }), dept: UI.select('dept', depts, depts[0]), kind: UI.select('kind', ['지게차', '건설기계'], '지게차'), expires: h('input', { type: 'date', 'aria-label': '유효기간' }), note: h('input', { placeholder: '비고', 'aria-label': '비고' }) };
+      const add = async () => {
+        try { await Api.call('licenseSave', { name: f.name.value, dept: f.dept.value, kind: f.kind.value, expires: f.expires.value, note: f.note.value }); UI.toast('저장했습니다.'); load(); }
+        catch (e) { UI.toast(e.message, true); }
+      };
+      fill(body,
+        d.canEdit && h('div', { class: 'toolbar wrap-row' }, f.name, f.dept, f.kind, f.expires, f.note, h('button', { class: 'btn', type: 'button', onclick: add }, '추가')),
+        h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
+          h('thead', null, h('tr', null, ['성명', '소속', '면허종류', '유효기간', '비고', ''].map((x) => h('th', null, x)))),
+          h('tbody', null, d.rows.map((r) => h('tr', null, [0, 1, 2, 3, 4].map((i) => h('td', null, r.v[i])),
+            h('td', null, d.canEdit && h('button', { class: 'link', type: 'button', onclick: async () => {
+              try { await Api.call('licenseDelete', { rowNo: r.rowNo }); load(); } catch (e) { UI.toast(e.message, true); }
+            } }, '삭제'))))))));
+    }, (e) => { if (alive()) body.replaceChildren(UI.error(e.message, load)); });
+    app.replaceChildren(UI.hero('장비면허 명부'), h('section', { class: 'section' }, body));
+    load();
+  });
+
+  Router.add('/admin/targets', (params, app, alive) => {
+    if (!UI.hasAny(['ADMIN', 'KPI_TEAM', 'VIEW_EXEC'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
+    const body = h('div', { class: 'wrap wide' }, UI.skeleton(8));
+    const load = () => Api.call('targetsGet', {}).then((d) => {
+      if (!alive()) return;
+      const inputs = [];
+      const cell = (rowIdx, field, value) => {
+        if (!d.canEdit) return h('td', null, value);
+        const el = h('input', { value, 'aria-label': field, class: 'cell' });
+        inputs.push({ rowIdx, field, el });
+        return h('td', null, el);
+      };
+      const save = async () => {
+        const map = {};
+        inputs.forEach(({ rowIdx, field, el }) => { (map[rowIdx] = map[rowIdx] || { code: d.rows[rowIdx][0], dept: d.rows[rowIdx][1] })[field] = el.value; });
+        try { await Api.call('targetSave', { rows: Object.values(map) }); UI.toast('저장했습니다.'); load(); } catch (e) { UI.toast(e.message, true); }
+      };
+      fill(body,
+        d.canEdit && h('div', { class: 'row-btns' }, h('button', { class: 'btn', type: 'button', onclick: save }, '목표 저장'),
+          h('span', { class: 'sub' }, 'GREEN 기준: 달성률(1 = 100%), ZERO = 0건, LE = 목표 이하. 비우면 판정하지 않습니다.')),
+        h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
+          h('thead', null, h('tr', null, ['지표', '직', '단위', '방향', '전년실적', '월목표', 'GREEN', 'YELLOW', '설명'].map((x) => h('th', null, x)))),
+          h('tbody', null, d.rows.map((r, i) => h('tr', null, h('td', null, r[0]), h('td', null, r[1]), h('td', null, r[2]), h('td', null, r[3]),
+            cell(i, 'prior', r[4]), cell(i, 'target', r[5]), cell(i, 'green', r[6]), cell(i, 'yellow', r[7]), cell(i, 'desc', r[8])))))),
+        h('h2', { class: 'block-h' }, '선택지'),
+        d.options.map((o) => {
+          const input = h('input', { value: o[2], disabled: !d.canEdit, 'aria-label': o[1] });
+          return UI.field(o[0] + ' ' + o[1], h('div', { class: 'toolbar' }, input, d.canEdit && h('button', { class: 'btn ghost', type: 'button', onclick: async () => {
+            try { await Api.call('optionSave', { code: o[0], name: o[1], values: input.value }); UI.toast('저장했습니다.'); App.refreshInit(); } catch (e) { UI.toast(e.message, true); }
+          } }, '저장')));
+        }));
+    }, (e) => { if (alive()) body.replaceChildren(UI.error(e.message, load)); });
+    app.replaceChildren(UI.hero('목표·평가기준'), h('section', { class: 'section' }, body));
+    load();
+  });
+
+  Router.add('/admin/data', (params, app) => app.replaceChildren(UI.placeholder('데이터 관리')));
 })();

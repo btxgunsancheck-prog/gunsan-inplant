@@ -21,6 +21,8 @@ const Nav = (() => {
     const quick = [];
     if (!UI.has('VIEW_EXEC')) quick.push(link('실적 작성', '#/kpi/write'));
     if (u.perms.some((p) => p.startsWith('KPI_CHECK:'))) quick.push(link('확인 대기', '#/kpi/pending'));
+    if (!UI.has('VIEW_EXEC') && UI.has('KPI_MANAGER') || u.perms.some((p) => p.startsWith('KPI_CHECK:'))) quick.push(link('월 입력', '#/kpi/monthly'));
+    if (viewAll) quick.push(link('미팅용 보기', '#/kpi/meeting'));
     if (UI.hasAny(['UPLOAD_ABNORMAL', 'UPLOAD_INVENTORY', 'ADMIN'])) quick.push(link('실적 업로드', '#/kpi/upload'));
     if (UI.hasAny(['UPLOAD_ABNORMAL', 'UPLOAD_INVENTORY', 'ADMIN', 'VIEW_EXEC'])) quick.push(link('업로드 이력', '#/kpi/upload'));
     const suggest = [link('건의하기', '#/suggest'), link('내 건의', '#/suggest/mine')];
@@ -33,18 +35,24 @@ const Nav = (() => {
     const list = [
       { key: 'board', label: '게시판', first: [link('공지사항', '#/board/notice'), link('업무 게시판', '#/board/work')],
         groups: [{ title: '바로가기', links: UI.has('VIEW_EXEC') ? [] : [link('글쓰기', '#/board/work/new')] }, { title: '최신 공지', links: notices }] },
-      { key: 'kpi', label: 'KPI', first: kpiFirst, groups: [{ title: '바로가기', links: quick }] },
+      { key: 'kpi', label: 'KPI', first: kpiFirst, groups: [{ title: '바로가기', links: quick }, { title: '이번 달 내 직', links: myKpi() }] },
       { key: 'suggest', label: '건의사항', first: suggest, groups: [] }
     ];
     if (admin.length) list.push({ key: 'admin', label: '관리자', first: admin, groups: [] });
     return list;
   }
 
+  function myKpi() {
+    const d = (App.home.kpiHome || {})[App.user.dept];
+    if (!d) return [];
+    return [link('달성 ' + d.G + ' · 주의 ' + d.Y + ' · 미달 ' + d.R, '#/kpi/' + App.user.dept.charAt(2))];
+  }
+
   const panel = () => document.getElementById('nav-panel');
   const inner = () => document.getElementById('nav-panel-inner');
   const scrim = () => document.getElementById('nav-scrim');
 
-  function fill(item) {
+  function fillPanel(item) {
     fill(inner(),
       h('div', { class: 'panel-col' }, item.first.map((l) => h('a', { class: 'panel-big', href: l.href }, l.label))),
       item.groups.filter((g) => g.links.length).map((g) => h('div', { class: 'panel-col' },
@@ -58,7 +66,7 @@ const Nav = (() => {
     const item = items.find((m) => m.key === key);
     if (!item) return;
     current = key;
-    fill(item);
+    fillPanel(item);
     panel().style.height = inner().offsetHeight + 'px';
     panel().classList.add('open');
     scrim().classList.add('open');

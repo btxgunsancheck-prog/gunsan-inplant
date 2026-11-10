@@ -200,10 +200,6 @@
   });
 
   const later = (title) => (params, app) => app.replaceChildren(UI.placeholder(title));
-  Router.add('/kpi/team', later('팀 전체 현황'));
-  Router.add('/kpi/upload', later('실적 업로드'));
-  Router.add('/kpi/:team', later('직별 KPI'));
-  Router.add('/kpi/:team/:code', later('지표 상세'));
   Router.add('/suggest', later('건의하기'));
   Router.add('/suggest/mine', later('내 건의'));
   Router.add('/suggest/all', later('전체 건의'));

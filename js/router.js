@@ -4,7 +4,8 @@ const Router = {
   add(pattern, view) {
     const keys = [];
     const re = new RegExp('^' + pattern.replace(/:[a-z]+/gi, (m) => { keys.push(m.slice(1)); return '([^/]+)'; }) + '$');
-    Router.routes.push({ re, keys, view });
+    if (keys.length) Router.routes.push({ re, keys, view });
+    else Router.routes.unshift({ re, keys, view });
   },
   path() { return (location.hash || '#/').slice(1) || '/'; },
   go(path) {
