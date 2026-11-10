@@ -17,8 +17,8 @@ window.Warehouse3D = (() => {
     const FRAME_MS = low ? 33 : 0;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: !low, alpha: true, powerPreference: low ? 'low-power' : 'high-performance', preserveDrawingBuffer: !!(opts && opts.keepFrame) });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, low ? 1 : 1.5));
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: low ? 'low-power' : 'high-performance', preserveDrawingBuffer: !!(opts && opts.keepFrame) });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, low ? 2 : 1.5));
     host.append(renderer.domElement);
     renderer.domElement.style.cssText = 'display:block;width:100%;height:100%';
 
@@ -52,6 +52,7 @@ window.Warehouse3D = (() => {
     const upCount = rowsZ.length * (bays + 1) * 2;
     const beamCount = rowsZ.length * bays * levels * 2;
     const slots = rowsZ.length * bays * levels * deep * 2;
+    const postW = low ? 0.2 : 0.12, beamH = low ? 0.18 : 0.12;
     const uprights = new THREE.InstancedMesh(box, flat(NAVY), upCount);
     const beams = new THREE.InstancedMesh(box, flat(ORANGE), beamCount);
     const pallets = new THREE.InstancedMesh(box, flat(WOOD), slots);
@@ -64,13 +65,13 @@ window.Warehouse3D = (() => {
     const color = new THREE.Color();
     rowsZ.forEach((z) => {
       for (let i = 0; i <= bays; i++) {
-        [-depth / 2, depth / 2].forEach((dz) => put(uprights, u++, startX + i * bayW, levelH * levels / 2, z + dz, 0.12, levelH * levels, 0.12));
+        [-depth / 2, depth / 2].forEach((dz) => put(uprights, u++, startX + i * bayW, levelH * levels / 2, z + dz, postW, levelH * levels, postW));
       }
       for (let i = 0; i < bays; i++) {
         const cx = startX + (i + 0.5) * bayW;
         for (let l = 0; l < levels; l++) {
           const y = l * levelH + 0.12;
-          [-depth / 2, depth / 2].forEach((dz) => put(beams, b++, cx, y, z + dz, bayW - 0.1, 0.12, 0.08));
+          [-depth / 2, depth / 2].forEach((dz) => put(beams, b++, cx, y, z + dz, bayW - 0.1, beamH, 0.1));
           for (let a = -1; a <= 1; a += 2) {
             for (let d = 0; d < deep; d++) {
               if (rnd() < 0.24) continue;
@@ -180,11 +181,13 @@ window.Warehouse3D = (() => {
         r.mesh.userData.lift.position.y = 0.32 + 0.22 * (1 + Math.sin(sec * 0.8 + r.at * 6)) / 2;
       });
       truckAt(sec);
-      const fit = Math.max(1, 2.1 / camera.aspect);
+      const fit = Math.max(1, 1.55 / camera.aspect);
       const a = 0.72 + Math.sin(sec * 0.08) * 0.14;
       const dist = 74 * fit;
       camera.position.set(Math.sin(a) * dist, 26 * fit, Math.cos(a) * dist);
-      camera.lookAt(0, 1.5, 2);
+      camera.lookAt(0, 1.5, 0);
+      scene.fog.near = dist + 25;
+      scene.fog.far = dist + 90;
     }
 
     let running = true, visible = true, raf = 0, last = 0, sec = 0, frames = 0, tick = performance.now(), fps = 0;
