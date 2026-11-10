@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>3D 창고 시험</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="css/style.css?v=4">
+<style>
+.scene3d { position: relative; height: 460px; background: #f5f5f7; overflow: hidden; }
+.bar3d { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; padding: 14px 16px; }
+@media (max-width: 833px) { .scene3d { height: 260px; } }
+</style>
+</head>
+<body>
+<header class="nav" style="position:static"><div class="nav-inner"><img src="assets/logo.png" alt="BTRIPLE" width="86" height="16"><span class="sub">3D 창고 시험 화면</span></div></header>
+<div id="scene" class="scene3d"></div>
+<div class="bar3d">
+  <button id="toggle" class="btn ghost" type="button">정지</button>
+  <button id="q" class="btn ghost" type="button">품질 전환</button>
+  <span id="info" class="sub">불러오는 중</span>
+</div>
+<section class="hero"><h1>군산 사내물류팀</h1><p>오늘의 현장을 함께 기록합니다.</p></section>
+<script src="js/lib/warehouse3d.js?v=1"></script>
+<script>
+(async () => {
+  const host = document.getElementById('scene');
+  const info = document.getElementById('info');
+  if (!Warehouse3D.supported()) { info.textContent = '이 기기는 3D 화면을 지원하지 않습니다.'; return; }
+  const keepFrame = location.search.includes('keep');
+  let w = await Warehouse3D.mount(host, { keepFrame });
+  window.scene3d = () => w;
+  document.getElementById('toggle').onclick = (e) => { e.target.textContent = w.toggle() ? '정지' : '재생'; };
+  document.getElementById('q').onclick = async () => {
+    const next = w.quality === 'low' ? 'high' : 'low';
+    w.destroy();
+    w = await Warehouse3D.mount(host, { quality: next, keepFrame });
+  };
+  setInterval(() => {
+    const s = w.stats();
+    info.textContent = '품질 ' + w.quality + ' · 로딩 ' + w.loadMs + 'ms · ' + s.fps + 'fps · 그리기 ' + s.calls + '회 · 삼각형 ' + s.triangles + ' · 상자 ' + s.cartons;
+  }, 1000);
+})().catch(() => { document.getElementById('info').textContent = '3D 화면을 불러오지 못했습니다.'; });
+</script>
+</body>
+</html>
