@@ -1,4 +1,4 @@
-/* 관리자 메뉴. 1단계에서는 사용자 일괄 등록만 제공한다. */
+/* 관리자 메뉴: 사용자 관리, 장비면허 명부, 목표·평가기준, 데이터 관리(작업기록 포함). */
 (() => {
   function parseCsv(text) {
     const rows = [];
@@ -18,8 +18,16 @@
     return rows;
   }
 
-  Router.add('/admin/users', (params, app) => {
-    if (!UI.has('ADMIN')) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
+  const PERM_NAME = {
+    USER: '기본(로그인, 게시판, 건의, 소속 직 KPI)', KPI_VIEW_ALL: 'KPI 전체 열람', VIEW_EXEC: '열람 전용(사업부장)', NOTICE_WRITE: '공지 작성',
+    'KPI_CHECK:물류1직': '물류1직 확인(직장)', 'KPI_CHECK:물류2직': '물류2직 확인(직장)', 'KPI_CHECK:물류3직': '물류3직 확인(직장)', 'KPI_CHECK:물류4직': '물류4직 확인(직장)',
+    KPI_TEAM: '팀 KPI 관리, 월 마감', KPI_MANAGER: '관리자 입력(장비면허)', UPLOAD_ABNORMAL: '이상발생 업로드', UPLOAD_INVENTORY: '순환재고 업로드',
+    SUGGEST_VIEW: '건의 전체 열람·답변', SUGGEST_READ: '건의 전체 열람(관제)', ADMIN: '관리자 메뉴 전체'
+  };
+  const stateOf = (u) => (!u.site ? '미등록' : !u.active ? '사용 중지' : u.locked ? '잠김' : u.mustChange ? '첫 로그인 전' : '사용');
+  const stateClass = { 사용: 'good', '사용 중지': 'bad', 잠김: 'bad', '첫 로그인 전': 'warn', 미등록: '' };
+
+  function importBox() {
     let rows = [];
     const info = h('p', { class: 'sub' });
     const btn = h('button', { class: 'btn', type: 'button', disabled: true, onclick: async () => {
@@ -30,7 +38,7 @@
         info.textContent = '완료: 기존 사용자 ' + r.updated + '명 수정, 새 사용자 ' + r.added + '명 추가, 사진 ' + r.photos + '장 등록';
         App.refreshInit();
       } catch (e) { info.textContent = e.message; btn.disabled = false; }
-    } }, '등록');
+    } }, '일괄 등록');
     const input = h('input', { type: 'file', accept: '.csv,text/csv', onchange: async () => {
       const file = input.files[0];
       if (!file) return;
@@ -41,11 +49,82 @@
       rows = grid.slice(1).filter((r) => r[at('사번')]).map((r) => ({
         empNo: r[at('사번')], name: r[at('성명')], rank: r[at('직급')], dept: r[at('소속')], perms: r[at('권한')], photo: r[at('사진Base64')]
       }));
-      info.textContent = rows.length + '명, 사진 ' + rows.filter((r) => r.photo).length + '장을 읽었습니다. 등록을 눌러 주세요.';
+      info.textContent = rows.length + '명, 사진 ' + rows.filter((r) => r.photo).length + '장을 읽었습니다. 일괄 등록을 눌러 주세요.';
       btn.disabled = false;
     } });
-    app.replaceChildren(UI.hero('사용자 관리', 'users_import.csv 파일로 일괄 등록합니다.'),
-      h('section', { class: 'section' }, h('div', { class: 'narrow' }, UI.field('CSV 파일', input), info, btn)));
+    return h('details', { class: 'config' }, h('summary', null, 'CSV 파일로 일괄 등록 (users_import.csv)'),
+      h('div', { class: 'narrow' }, UI.field('CSV 파일', input), info, btn));
+  }
+
+  function editor(u, d, done) {
+    const isNew = !u;
+    const x = u || { empNo: '', name: '', rank: '사원', dept: '물류1직', perms: ['USER'], site: false };
+    const register = isNew || !x.site;
+    const f = {
+      empNo: h('input', { value: x.empNo, disabled: !isNew, autocapitalize: 'characters', 'aria-label': '사번' }),
+      name: h('input', { value: x.name, 'aria-label': '성명' }),
+      rank: h('input', { value: x.rank, 'aria-label': '직급' }),
+      dept: UI.select('dept', d.depts, x.dept)
+    };
+    const boxes = d.perms.map((p) => ({ p, el: h('input', { type: 'checkbox', checked: x.perms.includes(p) || p === 'USER', disabled: p === 'USER' }) }));
+    const act = (action, msg, extra) => async () => {
+      if (msg && !confirm(msg)) return;
+      try { await Api.call(action, Object.assign({ empNo: x.empNo }, extra || {})); UI.toast('처리했습니다.'); done(); } catch (e) { UI.toast(e.message, true); }
+    };
+    const save = async () => {
+      try {
+        await Api.call('userSave', { isNew: register, empNo: f.empNo.value, name: f.name.value, rank: f.rank.value, dept: f.dept.value, perms: boxes.filter((b) => b.el.checked).map((b) => b.p) });
+        UI.toast(register ? '등록했습니다. 첫 비밀번호는 사번입니다.' : '저장했습니다.');
+        done();
+      } catch (e) { UI.toast(e.message, true); }
+    };
+    const stopMsg = x.name + '님의 사이트 사용을 중지할까요? QR장비점검 사용은 그대로입니다.';
+    return h('div', { class: 'tile user-edit' },
+      h('h2', { class: 'block-h' }, isNew ? '새 사용자 등록' : x.name + ' (' + x.empNo + ')' + (x.site ? '' : ' 사이트 등록')),
+      h('div', { class: 'toolbar wrap-row' }, UI.field('사번', f.empNo), UI.field('성명', f.name), UI.field('직급', f.rank), UI.field('소속', f.dept)),
+      h('p', { class: 'field-label' }, '권한'),
+      h('div', { class: 'perm-grid' }, boxes.map((b) => h('label', { class: 'check' }, b.el, h('span', null, PERM_NAME[b.p] || b.p)))),
+      h('p', { class: 'sub' }, '성명, 직급, 소속은 QR장비점검과 함께 쓰는 정보라 바꾸면 QR장비점검에도 반영됩니다.'),
+      h('div', { class: 'row-btns' },
+        h('button', { class: 'btn', type: 'button', onclick: save }, register ? '등록' : '저장'),
+        !register && h('button', { class: 'btn ghost', type: 'button', onclick: act('userReset', x.name + '님의 비밀번호를 사번으로 초기화할까요?') }, '비밀번호 초기화'),
+        !register && x.locked && h('button', { class: 'btn ghost', type: 'button', onclick: act('userUnlock') }, '잠금 해제'),
+        !register && x.empNo !== d.me && h('button', { class: 'btn ghost', type: 'button', onclick: act('userActive', x.active ? stopMsg : '', { active: !x.active }) }, x.active ? '사용 중지' : '사용 재개'),
+        h('button', { class: 'link', type: 'button', onclick: () => done(true) }, '닫기')));
+  }
+
+  Router.add('/admin/users', (params, app, alive) => {
+    if (!UI.has('ADMIN')) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
+    const body = h('div', null, UI.skeleton(8));
+    const edit = h('div');
+    const search = h('input', { type: 'search', placeholder: '사번, 성명, 소속 검색', 'aria-label': '검색' });
+    const showAll = h('input', { type: 'checkbox' });
+    let data = null;
+    const draw = () => {
+      const q = search.value.trim().toLowerCase();
+      const rows = data.rows.filter((u) => (showAll.checked || u.site) && (!q || [u.empNo, u.name, u.dept, u.rank].join(' ').toLowerCase().includes(q)));
+      fill(body, h('p', { class: 'sub' }, rows.length + '명'),
+        h('div', { class: 'table-wrap' }, h('table', { class: 'data click' },
+          h('thead', null, h('tr', null, ['사번', '성명', '직급', '소속', '상태', '권한', '최종 로그인'].map((t) => h('th', null, t)))),
+          h('tbody', null, rows.map((u) => h('tr', { onclick: () => open(u) },
+            h('td', null, u.empNo), h('td', null, u.name), h('td', null, u.rank), h('td', null, u.dept),
+            h('td', { class: stateClass[stateOf(u)] }, stateOf(u)),
+            h('td', { class: 'pre' }, u.perms.filter((p) => p !== 'USER').map((p) => PERM_NAME[p] || p).join(', ') || '기본'),
+            h('td', null, u.lastLogin || '-')))))));
+    };
+    const open = (u) => {
+      fill(edit, editor(u, data, (close) => { edit.replaceChildren(); if (!close) load(); }));
+      edit.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    const load = () => Api.call('userAdminList').then((d) => { if (!alive()) return; data = d; draw(); }, (e) => { if (alive()) body.replaceChildren(UI.error(e.message, load)); });
+    search.oninput = () => data && draw();
+    showAll.onchange = () => data && draw();
+    app.replaceChildren(UI.hero('사용자 관리', '줄을 누르면 수정, 비밀번호 초기화, 잠금 해제, 사용 중지를 할 수 있습니다.'),
+      h('section', { class: 'section' }, h('div', { class: 'wrap wide' },
+        h('div', { class: 'toolbar wrap-row' }, search, h('label', { class: 'check' }, showAll, h('span', null, 'QR장비점검에만 있는 사람도 보기')),
+          h('button', { class: 'btn', type: 'button', onclick: () => open(null) }, '새 사용자 등록')),
+        edit, body, importBox())));
+    load();
   });
 
   Router.add('/admin/license', (params, app, alive) => {
@@ -108,5 +187,69 @@
     load();
   });
 
-  Router.add('/admin/data', (params, app) => app.replaceChildren(UI.placeholder('데이터 관리')));
+  function logs() {
+    const pad = (n) => String(n).padStart(2, '0');
+    const d = new Date();
+    const ymd = (x) => x.getFullYear() + '-' + pad(x.getMonth() + 1) + '-' + pad(x.getDate());
+    const from = h('input', { type: 'date', value: ymd(new Date(d.getTime() - 29 * 86400000)), 'aria-label': '시작일' });
+    const to = h('input', { type: 'date', value: ymd(d), 'aria-label': '종료일' });
+    const q = h('input', { type: 'search', placeholder: '성명, 동작, 내용 검색', 'aria-label': '검색' });
+    const body = h('div', null, UI.skeleton(5));
+    let page = 1;
+    const load = () => Api.call('logList', { from: from.value, to: to.value, q: q.value, page }).then((r) => {
+      fill(body, h('p', { class: 'sub' }, r.from + ' ~ ' + r.to + ', ' + r.total + '건'),
+        r.items.length ? h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
+          h('thead', null, h('tr', null, ['일시', '성명', '동작', '대상', '내용'].map((t) => h('th', null, t)))),
+          h('tbody', null, r.items.map((x) => h('tr', null, h('td', null, x.at), h('td', null, x.name ? x.name + ' (' + x.empNo + ')' : x.empNo),
+            h('td', null, x.action), h('td', null, x.target), h('td', { class: 'pre' }, x.content)))))) : h('p', { class: 'sub' }, '기록이 없습니다.'),
+        UI.pager(r.page, r.size, r.total, (n) => { page = n; load(); }) || '');
+    }, (e) => body.replaceChildren(UI.error(e.message, load)));
+    const form = h('form', { class: 'toolbar wrap-row', onsubmit: (e) => { e.preventDefault(); page = 1; load(); } }, from, to, q, h('button', { class: 'btn ghost', type: 'submit' }, '조회'));
+    load();
+    return h('div', null, h('h2', { class: 'block-h' }, '작업 기록'), form, body);
+  }
+
+  function dataAdmin(box) {
+    let year = '';
+    const load = () => Api.call('dataInfo', { year }).then((d) => {
+      year = d.year;
+      const ysel = UI.select('year', d.years, d.year);
+      ysel.onchange = () => { year = ysel.value; load(); };
+      const months = Array.from({ length: 12 }, (_, i) => d.year + '-' + String(i + 1).padStart(2, '0'));
+      const reopen = (ym) => async () => {
+        if (!confirm(ym + ' 월 마감을 해제할까요? 해제하면 다시 수정할 수 있고 실적이 다시 계산됩니다.')) return;
+        try { await Api.call('kpiReopen', { ym }); UI.toast('마감을 해제했습니다.'); load(); } catch (e) { UI.toast(e.message, true); }
+      };
+      const newYear = async () => {
+        if (!confirm(d.nextYear + '년 KPI 파일을 만들까요? 올해 목표·판정 기준, 선택지, 업로드 열 위치, 장비면허 명부를 옮기고 올해 실적은 전년실적으로 기록합니다.')) return;
+        try { const r = await Api.call('kpiNewYear', { year: d.nextYear }); UI.toast('만들었습니다. 목표 ' + r.targets + '행, 선택지 ' + r.options + '행, 면허명부 ' + r.license + '행'); load(); }
+        catch (e) { UI.toast(e.message, true); }
+      };
+      const b = d.backup;
+      fill(box,
+        h('h2', { class: 'block-h' }, '월 마감 해제'),
+        h('div', { class: 'toolbar' }, ysel),
+        h('div', { class: 'month-grid' }, months.map((ym) => {
+          const closed = d.closed.includes(ym);
+          return h('div', { class: 'month-cell' + (closed ? ' closed' : '') }, h('strong', null, Number(ym.slice(5)) + '월'),
+            h('span', { class: 'sub' }, closed ? '마감' : '열림'), closed && h('button', { class: 'link', type: 'button', onclick: reopen(ym) }, '마감 해제'));
+        })),
+        h('h2', { class: 'block-h' }, '신년도 KPI 파일'),
+        d.nextExists ? h('p', { class: 'sub' }, d.nextYear + '년 파일이 준비되어 있습니다. 1월 1일부터 자동으로 새 파일을 씁니다.')
+          : h('div', { class: 'row-btns' }, h('button', { class: 'btn', type: 'button', onclick: newYear }, d.nextYear + '년 KPI 파일 만들기'),
+            h('span', { class: 'sub' }, '12월 중에 한 번 눌러 주세요. 실적은 비어 있는 상태로 시작합니다.')),
+        h('h2', { class: 'block-h' }, '자동 백업'),
+        h('p', null, d.backupTrigger ? '매주 일요일 새벽 3시에 자동 백업합니다(파일마다 최근 8개 보관).' : '자동 백업이 아직 예약되지 않았습니다.'),
+        h('p', { class: 'sub' }, b ? '마지막 백업: ' + b.at + ' / ' + (b.ok ? '정상' : '실패') + ' / ' + b.message : '아직 백업한 기록이 없습니다.'));
+    }, (e) => box.replaceChildren(UI.error(e.message, load)));
+    load();
+  }
+
+  Router.add('/admin/data', (params, app) => {
+    if (!UI.hasAny(['ADMIN', 'VIEW_EXEC'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
+    const top = h('div');
+    if (UI.has('ADMIN')) { top.append(UI.skeleton(4)); dataAdmin(top); }
+    app.replaceChildren(UI.hero('데이터 관리', UI.has('ADMIN') ? '월 마감 해제, 신년도 파일, 백업 상태, 작업 기록' : '작업 기록 열람'),
+      h('section', { class: 'section' }, h('div', { class: 'wrap wide' }, top, logs())));
+  });
 })();

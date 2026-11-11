@@ -25,8 +25,9 @@ const Nav = (() => {
     if (viewAll) quick.push(link('미팅용 보기', '#/kpi/meeting'));
     if (UI.hasAny(['UPLOAD_ABNORMAL', 'UPLOAD_INVENTORY', 'ADMIN'])) quick.push(link('실적 업로드', '#/kpi/upload'));
     if (UI.hasAny(['UPLOAD_ABNORMAL', 'UPLOAD_INVENTORY', 'ADMIN', 'VIEW_EXEC'])) quick.push(link('업로드 이력', '#/kpi/upload'));
-    const suggest = [link('건의하기', '#/suggest'), link('내 건의', '#/suggest/mine')];
-    if (UI.has('SUGGEST_VIEW')) suggest.push(link('전체 건의', '#/suggest/all'));
+    const suggest = [link('건의하기', '#/suggest')];
+    if (!UI.has('VIEW_EXEC')) suggest.push(link('내 건의', '#/suggest/mine'));
+    if (!UI.has('VIEW_EXEC') && (UI.hasAny(['SUGGEST_VIEW', 'SUGGEST_READ']) || u.perms.some((p) => p.startsWith('KPI_CHECK:')))) suggest.push(link('전체 건의', '#/suggest/all'));
     const admin = [];
     if (UI.has('ADMIN')) admin.push(link('사용자 관리', '#/admin/users'));
     if (UI.hasAny(['KPI_MANAGER', 'VIEW_EXEC'])) admin.push(link('장비면허 명부', '#/admin/license'));
