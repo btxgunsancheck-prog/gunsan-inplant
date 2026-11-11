@@ -18,6 +18,7 @@ window.Warehouse3D = (() => {
     const low = quality === 'low';
     const FRAME_MS = low ? 33 : 0;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const LOOK_Z = opts && opts.lookZ !== undefined ? opts.lookZ : 3; /* 값이 작을수록 장면이 화면 아래로 내려간다 */
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: low ? 'low-power' : 'high-performance', preserveDrawingBuffer: !!(opts && opts.keepFrame) });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, low ? 2 : 1.5));
@@ -318,7 +319,7 @@ window.Warehouse3D = (() => {
       const a = 0.16 + Math.sin(sec * 0.06) * 0.12;
       const dist = 108 * fit;
       camera.position.set(Math.sin(a) * dist, 44 * fit, Math.cos(a) * dist);
-      camera.lookAt(0, 0, 3);
+      camera.lookAt(0, 0, LOOK_Z);
       scene.fog.near = dist + 40;
       scene.fog.far = dist + 140;
     }
