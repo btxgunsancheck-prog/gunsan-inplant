@@ -257,10 +257,10 @@ window.Warehouse3D = (() => {
       { mesh: makeTruck(), z: 38.3, rot: 0, inside: 12, far: -40, cycle: 30, offset: 0 },
       { mesh: makeTruck(), pass: true }
     ];
-    /* 북쪽 셔틀: 북쪽 바깥을 서쪽으로 지나 서쪽 바깥으로 돌아 내려오다 3초 멈춘 뒤 남쪽으로 사라진다.
+    /* 북쪽 셔틀: 북쪽 바깥을 서쪽으로 지나 서쪽 바깥으로 돌아 내려오다 8초(N4 셔틀과 같은 시간) 멈춘 뒤 남쪽으로 사라진다.
        N4 셔틀이 안에 서 있는 동안 N4 앞을 지나가도록 같은 30초 주기에서 시간을 맞췄다. */
     const passPath = track([[74, -9], [30, -9], [-1, -9], [-7.5, -6], [-9.5, 0], [-9.5, 20], [-9.5, 45], [-9.5, 80]]);
-    const PASS = { len: passPath.getLength(), speed: 8, stopAt: 0, pause: 3, start: 21, cycle: 30 };
+    const PASS = { len: passPath.getLength(), speed: 9, stopAt: 0, pause: 8, start: 16, cycle: 30 };
     { const pt = new THREE.Vector3(); for (let k = 0; k <= 400; k++) { passPath.getPointAt(k / 400, pt); if (pt.z >= 18) { PASS.stopAt = k / 400 * PASS.len; break; } } }
     trucks.forEach((t) => { if (!t.pass) { t.mesh.rotation.y = t.rot; t.mesh.position.z = t.z; } });
     const ease = (t) => t * t * (3 - 2 * t);
