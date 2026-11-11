@@ -202,8 +202,4 @@
     load();
   });
 
-  const later = (title) => (params, app) => app.replaceChildren(UI.placeholder(title));
-  Router.add('/suggest', later('건의하기'));
-  Router.add('/suggest/mine', later('내 건의'));
-  Router.add('/suggest/all', later('전체 건의'));
 })();
