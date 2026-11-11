@@ -56,13 +56,14 @@ window.Warehouse3D = (() => {
     const skip = () => low && rnd() < 0.45;
 
     /* 바닥, 구역 색, 벽 */
-    addBox(world, 0xdfe2e8, W + 30, 0.2, D + 14, W / 2 - 15, -0.12, D / 2);
+    addBox(world, 0xdfe2e8, W + 30, 0.2, D + 30, W / 2 - 15, -0.12, D / 2 - 8);
     addBox(world, FLOOR, W, 0.2, D, W / 2, -0.1, D / 2);
     const zone = (x, z, w, d, color) => addBox(world, color, w, 0.02, d, x + w / 2, 0.01, z + d / 2);
     zone(0.3, 0.3, 26.7, 13.9, 0xf3ead9);
     zone(27.6, 0.3, 22.4, 13.9, 0xf8efd2);
     zone(50.5, 0.3, 37.2, 13.9, 0xefe6e2);
-    zone(2.6, 18.2, 12.4, 18.8, 0xe4e6eb); /* 하역장: 부품을 두지 않는다 */
+    zone(2.6, 18.2, 12.4, 9.4, 0xe5ede0); /* 위쪽 절반: 대물보관 */
+    zone(2.6, 27.6, 12.4, 9.4, 0xe4e6eb); /* 아래쪽 절반: 하역장(부품 없음) */
     zone(18.7, 18.7, 36.3, 14.3, 0xe5ede0);
     zone(59.7, 14.6, 18.6, 39, 0xe2e7f2);
     zone(78.6, 14.6, 9.2, 39, 0xf3e5da);
@@ -71,7 +72,7 @@ window.Warehouse3D = (() => {
     [[0, 16.2, W, 0.08], [0, 37.2, 59, 0.08]].forEach((l) => addBox(world, 0xf2c94c, l[2], 0.03, l[3], l[0] + l[2] / 2, 0.03, l[1]));
     addBox(world, 0xdfe2e8, W, 4, 0.3, W / 2, 2, -0.15);
     addBox(world, 0xdfe2e8, 0.3, 4, D, W + 0.15, 2, D / 2);
-    [[0, 3.6], [9.4, 14.4], [18.4, 35.6], [40.6, 54]].forEach((s) => addBox(world, 0xdfe2e8, 0.3, 4, s[1] - s[0], -0.15, 2, (s[0] + s[1]) / 2));
+    [[0, 14.4], [18.4, 35.6], [40.6, 54]].forEach((s) => addBox(world, 0xdfe2e8, 0.3, 4, s[1] - s[0], -0.15, 2, (s[0] + s[1]) / 2));
     /* 사무실 */
     addBox(world, 0xf3d4d4, 14, 3, 6.5, 41, 1.5, 42.5);
     [35.6, 39.2, 42.8, 46.4].forEach((x) => [45.78, 39.22].forEach((z) => {
@@ -81,8 +82,9 @@ window.Warehouse3D = (() => {
       addBox(world, DARK, 1.3, 0.06, 0.1, x, 1.7, z);
     }));
     /* 회사 로고(투명 배경 그림) */
-    const logoTex = new THREE.TextureLoader().load(new URL('assets/logo.png', location.href).href);
+    const logoTex = new THREE.TextureLoader().load(new URL('assets/logo-3d.png', location.href).href);
     logoTex.colorSpace = THREE.SRGBColorSpace;
+    logoTex.anisotropy = renderer.capabilities.getMaxAnisotropy();
     const logoMat = new THREE.MeshBasicMaterial({ map: logoTex, transparent: true, depthWrite: false });
     const logoGeo = new THREE.PlaneGeometry(1, 90 / 483);
     const logo = (parent, w, x, y, z, rx, ry) => {
@@ -92,7 +94,7 @@ window.Warehouse3D = (() => {
       return m;
     };
     logo(world, 10, 41, 3.03, 42.5, -Math.PI / 2, 0);
-    addBox(world, 0xd8dbe3, 4, 2.4, 3, 57.4, 1.2, 44);
+    addBox(world, 0xd8dbe3, 4, 2.4, 3, 50.3, 1.2, 44);
 
     /* 1단 선반: 호스·소물·벌크 작업장 */
     function shelf(x, z, len, dep, alongX) {
@@ -136,7 +138,6 @@ window.Warehouse3D = (() => {
       for (let x = x0 + step / 2; x < x0 + w; x += step) {
         for (let z = z0 + step / 2; z < z0 + d; z += step) {
           if (rnd() < 0.18 || skip()) continue;
-          if (x < 16 && z > 3.8 && z < 9.2) continue;
           const kind = rnd();
           const jx = x + (rnd() - 0.5) * 0.6, jz = z + (rnd() - 0.5) * 0.6;
           if (kind < 0.18) {
@@ -153,6 +154,7 @@ window.Warehouse3D = (() => {
     }
     bulky(1, 1.5, 22, 11.5, 3.2);
     bulky(19.2, 19.2, 35.4, 13.4, 3);
+    bulky(3, 18.8, 11.6, 8.2, 3);
     bulky(20.5, 39.5, 13, 6, 3);
     bulky(3, 41.6, 10.6, 6, 3);
     LAY.wagons.forEach((c) => wireCart(c[0], c[1], c[2], c[3]));
@@ -219,7 +221,7 @@ window.Warehouse3D = (() => {
     const track = (pts, closed) => new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(p[0], 0, p[1])), !!closed, 'centripetal');
     const FL = 0xf2c230;
     const routes = [
-      { path: track([[4.5, 33], [4.5, 22.5], [6.5, 20.5], [12.5, 20.5], [14.6, 23], [16.8, 27]]), speed: 0.05, at: 0, mesh: forklift(FL) },
+      { path: track([[4, 32.3], [10, 32.3], [16.6, 32.3]]), speed: 0.06, at: 0, mesh: forklift(FL) },
       { path: track([[3.5, 14.9], [28, 14.9], [52, 14.9]]), speed: 0.022, at: 0.3, mesh: forklift(FL) },
       { path: track([[56, 34.4], [36, 34.4], [17, 34.4]]), speed: 0.026, at: 0.7, mesh: forklift(FL) }
     ];
@@ -235,7 +237,8 @@ window.Warehouse3D = (() => {
     const inside = (m) => m.position.z < 54.3 && m.position.x > -0.4;
 
     /* 셔틀 트럭 2대(N5는 차량 진입 불가)
-       N4: 후진으로 공장 안까지 들어왔다가 앞으로 나간다. 북쪽 입고 도크: 앞으로 들어왔다가 후진으로 나간다. */
+       N4: 후진으로 공장 안까지 들어왔다가 앞으로 나간다.
+       북쪽: 공장 밖을 동쪽에서 서쪽으로 지나가다 잠시 멈춘 뒤 다시 서쪽으로 가며 사라진다. */
     function makeTruck() {
       const truck = new THREE.Group();
       addBox(truck, 0xffffff, 9, 3.2, 3, -4.5, 2.2, 0);
@@ -249,13 +252,19 @@ window.Warehouse3D = (() => {
     }
     const trucks = [
       { mesh: makeTruck(), z: 38.3, rot: 0, inside: 12, far: -40, cycle: 30, offset: 0 },
-      { mesh: makeTruck(), z: 6.5, rot: Math.PI, inside: 1, far: -52, cycle: 30, offset: 14 }
+      { mesh: makeTruck(), z: -9, rot: 0, pass: true, cycle: 34, offset: 6 }
     ];
     trucks.forEach((t) => { t.mesh.rotation.y = t.rot; t.mesh.position.z = t.z; });
     const ease = (t) => t * t * (3 - 2 * t);
     function truckAt(sec) {
       trucks.forEach((tr) => {
         const t = (sec + tr.offset) % tr.cycle;
+        if (tr.pass) {
+          const x = t < 9 ? 70 + (8 - 70) * ease(t / 9) : t < 15 ? 8 : t < 24 ? 8 + (-32 - 8) * ease((t - 15) / 9) : -32;
+          tr.mesh.position.x = x;
+          tr.mesh.visible = x < 66 && x > -22;
+          return;
+        }
         tr.mesh.position.x = t < 7 ? tr.far + (tr.inside - tr.far) * ease(t / 7) : t < 15 ? tr.inside : t < 22 ? tr.inside + (tr.far - tr.inside) * ease((t - 15) / 7) : tr.far;
       });
     }
