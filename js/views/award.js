@@ -1,9 +1,10 @@
 /* 우수사원: 분기 평가(KPI 자동 점수 + 다면평가), 반기 수상 결과. */
 (() => {
   const ITEMS = [
-    ['k1', '업무지식', '납입이상 적출'], ['k2', '수행능력', '이상발생/비가동'], ['k3', '협조능력', '개선 제안'],
-    ['m1', '조직기여도', '다면평가'], ['m2', '성실성', '다면평가'], ['m3', '책임감', '다면평가'], ['k4', '적극성', '위험요소 적출, 개선 제안']
+    ['k1', '업무지식', '납입이상 적출'], ['k2', '수행능력', '이상발생·비가동'], ['k3', '협조능력', '개선 제안'],
+    ['m1', '조직기여도', '동료 협조·도움'], ['m2', '성실성', '지각·조퇴·결근 없음'], ['m3', '책임감', '맡은 일 끝까지 수행'], ['k4', '적극성', '위험요소·개선 제안']
   ];
+  const label = (key) => { const it = ITEMS.find((x) => x[0] === key); return h('span', { class: 'th2' }, it[1], h('small', null, '(' + it[2] + ')')); };
   const ROLE_NAME = { self: '본인', chief: '직장', plant: '공장', lead: '팀장' };
   const pad = (n) => String(n).padStart(2, '0');
   const now = new Date();
@@ -33,11 +34,11 @@
     };
     return h('div', null, h('h2', { class: 'block-h' }, '내 평가 결과'),
       h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
-        h('thead', null, h('tr', null, ITEMS.map((it) => h('th', { class: 'num' }, it[1])), h('th', { class: 'num' }, '가산점'), h('th', { class: 'num' }, '합계'))),
+        h('thead', null, h('tr', null, ITEMS.map((it) => h('th', { class: 'num' }, label(it[0]))), h('th', { class: 'num' }, '가산점'), h('th', { class: 'num' }, '합계'))),
         h('tbody', null, h('tr', null, ITEMS.map((it) => h('td', { class: 'num' }, fmt(me[it[0]]))), h('td', { class: 'num' }, fmt(me.bonus)), h('td', { class: 'num' }, h('strong', null, fmt(me.total))))))),
       h('p', { class: 'sub' }, '이번 분기 실적: 납입이상 ' + me.counts.q2 + '건, 위험요소 ' + me.counts.s2 + '건, 개선 제안 ' + me.counts.cp + '건, 이상발생 ' + me.counts.abnormal + '건'),
       h('h2', { class: 'block-h' }, '자기평가 (본인 10%)'),
-      h('div', { class: 'toolbar wrap-row' }, UI.field('조직기여도', sel.m1), UI.field('성실성', sel.m2), UI.field('책임감', sel.m3), h('button', { class: 'btn', type: 'button', onclick: save }, '저장')));
+      h('div', { class: 'toolbar wrap-row' }, UI.field(label('m1'), sel.m1), UI.field(label('m2'), sel.m2), UI.field(label('m3'), sel.m3), h('button', { class: 'btn', type: 'button', onclick: save }, '저장')));
   }
 
   function rateTable(data, reload) {
@@ -60,7 +61,7 @@
     return h('div', null, h('h2', { class: 'block-h' }, ROLE_NAME[data.rateAs] + ' 평가 입력 (' + { chief: '40%', plant: '30%', lead: '20%' }[data.rateAs] + ')'),
       h('p', { class: 'sub' }, '업무지식, 수행능력, 협조능력, 적극성은 실적으로 자동 계산된 점수입니다.'),
       h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
-        h('thead', null, h('tr', null, ['직', '성명'].map((x) => h('th', null, x)), ['업무지식', '수행능력', '협조능력', '적극성'].map((x) => h('th', { class: 'num' }, x)), ['조직기여도', '성실성', '책임감'].map((x) => h('th', null, x)), isChief ? h('th', null, '수행능력 조정') : null, h('th', null, ''))),
+        h('thead', null, h('tr', null, ['직', '성명'].map((x) => h('th', null, x)), ['k1', 'k2', 'k3', 'k4'].map((k) => h('th', { class: 'num' }, label(k))), ['m1', 'm2', 'm3'].map((k) => h('th', null, label(k))), isChief ? h('th', null, '수행능력 조정') : null, h('th', null, ''))),
         h('tbody', null, rows))));
   }
 

@@ -62,7 +62,7 @@ window.Warehouse3D = (() => {
     zone(0.3, 0.3, 26.7, 13.9, 0xf3ead9);
     zone(27.6, 0.3, 22.4, 13.9, 0xf8efd2);
     zone(50.5, 0.3, 37.2, 13.9, 0xefe6e2);
-    zone(2.6, 18.2, 12.4, 18.8, 0xe5ede0);
+    zone(2.6, 18.2, 12.4, 18.8, 0xe4e6eb); /* 하역장: 부품을 두지 않는다 */
     zone(18.7, 18.7, 36.3, 14.3, 0xe5ede0);
     zone(59.7, 14.6, 18.6, 39, 0xe2e7f2);
     zone(78.6, 14.6, 9.2, 39, 0xf3e5da);
@@ -135,7 +135,6 @@ window.Warehouse3D = (() => {
     }
     bulky(1, 1.5, 22, 11.5, 3.2);
     bulky(19.2, 19.2, 35.4, 13.4, 3);
-    bulky(3, 19, 11.6, 17.4, 3);
     bulky(20.5, 39.5, 13, 6, 3);
     bulky(3, 41.6, 10.6, 6, 3);
     LAY.wagons.forEach((c) => wireCart(c[0], c[1], c[2], c[3]));
@@ -198,18 +197,15 @@ window.Warehouse3D = (() => {
       world.add(g);
       return g;
     }
-    const loop = (x1, x2, z1, z2) => {
-      const r = 1.8;
-      const pts = [[x1 + r, z1], [x2 - r, z1], [x2, z1 + r], [x2, z2 - r], [x2 - r, z2], [x1 + r, z2], [x1, z2 - r], [x1, z1 + r]];
-      return new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(p[0], 0, p[1])), true, 'catmullrom', 0.15);
-    };
+    /* 동선(2026-11 지정): 서쪽 벽 통로, 중물·벌크 사이 통로, 남쪽 끝 통로에는 차량이 다니지 않는다 */
+    const track = (pts, closed) => new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(p[0], 0, p[1])), !!closed, 'centripetal');
     const routes = [
-      { path: loop(16.4, 56, 15.6, 35.6), speed: 0.012, at: 0, mesh: forklift(ORANGE) },
-      { path: loop(1.2, 16.4, 15.6, 39.4), speed: 0.02, at: 0.5, mesh: forklift(0xf2b134) },
-      { path: loop(57.6, 78.2, 14.8, 53.4), speed: 0.011, at: 0.3, mesh: forklift(ORANGE) }
+      { path: track([[4.5, 21], [12.5, 24], [5.5, 28.5], [12.5, 32.5], [6, 35.5]]), speed: 0.05, at: 0, mesh: forklift(0xf2b134) },
+      { path: track([[3.5, 14.9], [28, 14.9], [52, 14.9]]), speed: 0.022, at: 0.3, mesh: forklift(ORANGE) },
+      { path: track([[56, 36.2], [36, 36.2], [17, 36.2]]), speed: 0.026, at: 0.7, mesh: forklift(ORANGE) }
     ];
-    if (!low) routes.push({ path: loop(16.4, 56, 15.6, 35.6), speed: 0.012, at: 0.55, mesh: forklift(NAVY) });
-    const towPath = loop(3, 57.7, 17.2, 37.8);
+    /* 견인차: 중물작업장 남서쪽에서 출발해 세로 통로와 위쪽 통로로 대물 입고장 앞까지 갔다가 다른 차선으로 돌아온다 */
+    const towPath = track([[56.8, 51.6], [56.8, 20], [54.8, 17.8], [36, 17.8], [18.5, 17.8], [17, 17.1], [18.5, 16.4], [36, 16.4], [56, 16.4], [58.2, 18.4], [58.2, 51.6], [57.5, 52.6]], true);
     const towLen = towPath.getLength();
     const tow = { mesh: tractor(), carts: [0, 1, 2, 3].slice(0, low ? 3 : 4).map(cart), speed: 2.2, gap: 2.8 };
 
@@ -220,12 +216,14 @@ window.Warehouse3D = (() => {
     addBox(truck, ORANGE, 2.4, 2.5, 2.9, -10.6, 1.75, 0);
     [[-1.5, -1.45], [-1.5, 1.45], [-7, -1.45], [-7, 1.45], [-10.6, -1.45], [-10.6, 1.45]].forEach((p) => wheel(truck, p[0], p[1], 0.55));
     world.add(truck);
-    const DOCKS = [38.2], NEAR = -0.6, FAR = -46;
+    /* 셔틀 트럭: N4로 공장 안까지 앞으로 들어왔다가 후진으로 나간다(N5는 차량 진입 불가) */
+    truck.rotation.y = Math.PI;
+    truck.position.z = 38.3;
+    const INSIDE = 0.5, FAR = -52;
     const ease = (t) => t * t * (3 - 2 * t);
     function truckAt(sec) {
-      const t = sec % 24;
-      truck.position.z = DOCKS[Math.floor(sec / 24) % DOCKS.length];
-      truck.position.x = t < 6 ? FAR + (NEAR - FAR) * ease(t / 6) : t < 14 ? NEAR : t < 20 ? NEAR + (FAR - NEAR) * ease((t - 14) / 6) : FAR;
+      const t = sec % 28;
+      truck.position.x = t < 7 ? FAR + (INSIDE - FAR) * ease(t / 7) : t < 15 ? INSIDE : t < 22 ? INSIDE + (FAR - INSIDE) * ease((t - 15) / 7) : FAR;
     }
 
     function resize() {
@@ -243,7 +241,9 @@ window.Warehouse3D = (() => {
     };
     function place(sec) {
       routes.forEach((r) => {
-        setOn(r.mesh, r.path, (r.at + sec * r.speed) % 1);
+        const k = (r.at * 2 + sec * r.speed) % 2;
+        setOn(r.mesh, r.path, k < 1 ? k : 2 - k);
+        if (k >= 1) r.mesh.rotation.y += Math.PI;
         r.mesh.userData.lift.position.y = 0.32 + 0.22 * (1 + Math.sin(sec * 0.8 + r.at * 6)) / 2;
       });
       const head = (sec * tow.speed / towLen) % 1;
