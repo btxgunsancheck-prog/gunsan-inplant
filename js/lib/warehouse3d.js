@@ -71,10 +71,27 @@ window.Warehouse3D = (() => {
     [[0, 16.2, W, 0.08], [0, 37.2, 59, 0.08]].forEach((l) => addBox(world, 0xf2c94c, l[2], 0.03, l[3], l[0] + l[2] / 2, 0.03, l[1]));
     addBox(world, 0xdfe2e8, W, 4, 0.3, W / 2, 2, -0.15);
     addBox(world, 0xdfe2e8, 0.3, 4, D, W + 0.15, 2, D / 2);
-    [[0, 14.4], [18.4, 35.6], [40.6, 54]].forEach((s) => addBox(world, 0xdfe2e8, 0.3, 4, s[1] - s[0], -0.15, 2, (s[0] + s[1]) / 2));
+    [[0, 3.6], [9.4, 14.4], [18.4, 35.6], [40.6, 54]].forEach((s) => addBox(world, 0xdfe2e8, 0.3, 4, s[1] - s[0], -0.15, 2, (s[0] + s[1]) / 2));
     /* 사무실 */
     addBox(world, 0xf3d4d4, 14, 3, 6.5, 41, 1.5, 42.5);
-    addBox(world, 0x9fb7d9, 13.8, 0.8, 0.05, 41, 2, 39.24);
+    [35.6, 39.2, 42.8, 46.4].forEach((x) => [45.78, 39.22].forEach((z) => {
+      addBox(world, DARK, 1.5, 1.1, 0.06, x, 1.7, z);
+      addBox(world, 0xcfe0f3, 1.3, 0.9, 0.08, x, 1.7, z);
+      addBox(world, DARK, 0.06, 0.9, 0.1, x, 1.7, z);
+      addBox(world, DARK, 1.3, 0.06, 0.1, x, 1.7, z);
+    }));
+    /* 회사 로고(투명 배경 그림) */
+    const logoTex = new THREE.TextureLoader().load(new URL('assets/logo.png', location.href).href);
+    logoTex.colorSpace = THREE.SRGBColorSpace;
+    const logoMat = new THREE.MeshBasicMaterial({ map: logoTex, transparent: true, depthWrite: false });
+    const logoGeo = new THREE.PlaneGeometry(1, 90 / 483);
+    const logo = (parent, w, x, y, z, rx, ry) => {
+      const m = new THREE.Mesh(logoGeo, logoMat);
+      m.scale.set(w, w, 1); m.position.set(x, y, z); m.rotation.set(rx || 0, ry || 0, 0);
+      parent.add(m);
+      return m;
+    };
+    logo(world, 10, 41, 3.03, 42.5, -Math.PI / 2, 0);
     addBox(world, 0xd8dbe3, 4, 2.4, 3, 57.4, 1.2, 44);
 
     /* 1단 선반: 호스·소물·벌크 작업장 */
@@ -119,6 +136,7 @@ window.Warehouse3D = (() => {
       for (let x = x0 + step / 2; x < x0 + w; x += step) {
         for (let z = z0 + step / 2; z < z0 + d; z += step) {
           if (rnd() < 0.18 || skip()) continue;
+          if (x < 16 && z > 3.8 && z < 9.2) continue;
           const kind = rnd();
           const jx = x + (rnd() - 0.5) * 0.6, jz = z + (rnd() - 0.5) * 0.6;
           if (kind < 0.18) {
@@ -199,31 +217,47 @@ window.Warehouse3D = (() => {
     }
     /* 동선(2026-11 지정): 서쪽 벽 통로, 중물·벌크 사이 통로, 남쪽 끝 통로에는 차량이 다니지 않는다 */
     const track = (pts, closed) => new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(p[0], 0, p[1])), !!closed, 'centripetal');
+    const FL = 0xf2c230;
     const routes = [
-      { path: track([[4.5, 21], [12.5, 24], [5.5, 28.5], [12.5, 32.5], [6, 35.5]]), speed: 0.05, at: 0, mesh: forklift(0xf2b134) },
-      { path: track([[3.5, 14.9], [28, 14.9], [52, 14.9]]), speed: 0.022, at: 0.3, mesh: forklift(ORANGE) },
-      { path: track([[56, 36.2], [36, 36.2], [17, 36.2]]), speed: 0.026, at: 0.7, mesh: forklift(ORANGE) }
+      { path: track([[4.5, 33], [4.5, 22.5], [6.5, 20.5], [12.5, 20.5], [14.6, 23], [16.8, 27]]), speed: 0.05, at: 0, mesh: forklift(FL) },
+      { path: track([[3.5, 14.9], [28, 14.9], [52, 14.9]]), speed: 0.022, at: 0.3, mesh: forklift(FL) },
+      { path: track([[56, 34.4], [36, 34.4], [17, 34.4]]), speed: 0.026, at: 0.7, mesh: forklift(FL) }
     ];
-    /* 견인차: 중물작업장 남서쪽에서 출발해 세로 통로와 위쪽 통로로 대물 입고장 앞까지 갔다가 다른 차선으로 돌아온다 */
-    const towPath = track([[56.8, 51.6], [56.8, 20], [54.8, 17.8], [36, 17.8], [18.5, 17.8], [17, 17.1], [18.5, 16.4], [36, 16.4], [56, 16.4], [58.2, 18.4], [58.2, 51.6], [57.5, 52.6]], true);
-    const towLen = towPath.getLength();
-    const tow = { mesh: tractor(), carts: [0, 1, 2, 3].slice(0, low ? 3 : 4).map(cart), speed: 2.2, gap: 2.8 };
+    /* 견인차 2대: 남쪽 문으로 들어와 나타난다.
+       1) 세로 통로로 올라와 가운데 통로 서쪽 끝에서 돌아 다시 남쪽으로 나간다.
+       2) 세로 통로로 올라와 위쪽 통로를 지나 N5 문으로 나간다. */
+    const towRoutes = [
+      { path: track([[56.8, 60], [56.8, 38.2], [55, 36.3], [20, 36.3], [18.5, 36.95], [20, 37.6], [56.2, 37.6], [58.2, 39.4], [58.2, 60]]), offset: 0 },
+      { path: track([[57.5, 60], [57.5, 18.6], [55.6, 16.6], [30, 16.6], [3, 16.6], [-14, 16.6]]), offset: 30 }
+    ];
+    const TOW_SPEED = 2.4, TOW_GAP = 2.8, TOW_PAUSE = 12;
+    towRoutes.forEach((r) => { r.len = r.path.getLength(); r.mesh = tractor(); r.carts = [0, 1, 2, 3].slice(0, low ? 3 : 4).map(cart); });
+    const inside = (m) => m.position.z < 54.3 && m.position.x > -0.4;
 
-    /* 트럭: 서쪽 N4 도크로만 후진한다(N5는 차량 진입 불가) */
-    const truck = new THREE.Group();
-    addBox(truck, 0xffffff, 9, 3.2, 3, -4.5, 2.2, 0);
-    addBox(truck, NAVY, 9.02, 0.5, 3.02, -4.5, 1.3, 0);
-    addBox(truck, ORANGE, 2.4, 2.5, 2.9, -10.6, 1.75, 0);
-    [[-1.5, -1.45], [-1.5, 1.45], [-7, -1.45], [-7, 1.45], [-10.6, -1.45], [-10.6, 1.45]].forEach((p) => wheel(truck, p[0], p[1], 0.55));
-    world.add(truck);
-    /* 셔틀 트럭: N4로 공장 안까지 앞으로 들어왔다가 후진으로 나간다(N5는 차량 진입 불가) */
-    truck.rotation.y = Math.PI;
-    truck.position.z = 38.3;
-    const INSIDE = 0.5, FAR = -52;
+    /* 셔틀 트럭 2대(N5는 차량 진입 불가)
+       N4: 후진으로 공장 안까지 들어왔다가 앞으로 나간다. 북쪽 입고 도크: 앞으로 들어왔다가 후진으로 나간다. */
+    function makeTruck() {
+      const truck = new THREE.Group();
+      addBox(truck, 0xffffff, 9, 3.2, 3, -4.5, 2.2, 0);
+      addBox(truck, NAVY, 9.02, 0.5, 3.02, -4.5, 1.3, 0);
+      addBox(truck, ORANGE, 2.4, 2.5, 2.9, -10.6, 1.75, 0);
+      [[-1.5, -1.45], [-1.5, 1.45], [-7, -1.45], [-7, 1.45], [-10.6, -1.45], [-10.6, 1.45]].forEach((p) => wheel(truck, p[0], p[1], 0.55));
+      logo(truck, 6, -4.5, 2.55, 1.52, 0, 0);
+      logo(truck, 6, -4.5, 2.55, -1.52, 0, Math.PI);
+      world.add(truck);
+      return truck;
+    }
+    const trucks = [
+      { mesh: makeTruck(), z: 38.3, rot: 0, inside: 12, far: -40, cycle: 30, offset: 0 },
+      { mesh: makeTruck(), z: 6.5, rot: Math.PI, inside: 1, far: -52, cycle: 30, offset: 14 }
+    ];
+    trucks.forEach((t) => { t.mesh.rotation.y = t.rot; t.mesh.position.z = t.z; });
     const ease = (t) => t * t * (3 - 2 * t);
     function truckAt(sec) {
-      const t = sec % 28;
-      truck.position.x = t < 7 ? FAR + (INSIDE - FAR) * ease(t / 7) : t < 15 ? INSIDE : t < 22 ? INSIDE + (FAR - INSIDE) * ease((t - 15) / 7) : FAR;
+      trucks.forEach((tr) => {
+        const t = (sec + tr.offset) % tr.cycle;
+        tr.mesh.position.x = t < 7 ? tr.far + (tr.inside - tr.far) * ease(t / 7) : t < 15 ? tr.inside : t < 22 ? tr.inside + (tr.far - tr.inside) * ease((t - 15) / 7) : tr.far;
+      });
     }
 
     function resize() {
@@ -246,9 +280,15 @@ window.Warehouse3D = (() => {
         if (k >= 1) r.mesh.rotation.y += Math.PI;
         r.mesh.userData.lift.position.y = 0.32 + 0.22 * (1 + Math.sin(sec * 0.8 + r.at * 6)) / 2;
       });
-      const head = (sec * tow.speed / towLen) % 1;
-      setOn(tow.mesh, towPath, head);
-      tow.carts.forEach((c, i) => setOn(c, towPath, (head - (i + 1) * tow.gap / towLen + 2) % 1));
+      towRoutes.forEach((r) => {
+        const d = (sec * TOW_SPEED + r.offset * TOW_SPEED) % (r.len + TOW_PAUSE * TOW_SPEED);
+        [r.mesh].concat(r.carts).forEach((m, i) => {
+          const at = d - i * TOW_GAP;
+          if (at < 0 || at > r.len) { m.visible = false; return; }
+          setOn(m, r.path, at / r.len);
+          m.visible = inside(m);
+        });
+      });
       truckAt(sec);
       const fit = Math.max(0.82, 1.5 / camera.aspect);
       const a = 0.16 + Math.sin(sec * 0.06) * 0.12;
@@ -290,7 +330,7 @@ window.Warehouse3D = (() => {
       destroy() {
         cancelAnimationFrame(raf); ro.disconnect(); io.disconnect();
         scene.traverse((o) => { if (o.material) o.material.dispose(); });
-        box.dispose(); cyl.dispose(); wheelGeo.dispose(); renderer.dispose(); renderer.domElement.remove();
+        box.dispose(); cyl.dispose(); logoGeo.dispose(); logoTex.dispose(); wheelGeo.dispose(); renderer.dispose(); renderer.domElement.remove();
       }
     };
   }
