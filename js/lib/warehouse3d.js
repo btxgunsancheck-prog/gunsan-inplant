@@ -229,10 +229,13 @@ window.Warehouse3D = (() => {
        1) 세로 통로로 올라와 가운데 통로 서쪽 끝에서 돌아 다시 남쪽으로 나간다.
        2) 세로 통로로 올라와 위쪽 통로를 지나 N5 문으로 나간다. */
     const towRoutes = [
-      { path: track([[56.8, 60], [56.8, 38.2], [55, 36.3], [20, 36.3], [18.5, 36.95], [20, 37.6], [56.2, 37.6], [58.2, 39.4], [58.2, 60]]), offset: 0 },
-      { path: track([[57.5, 60], [57.5, 18.6], [55.6, 16.6], [30, 16.6], [3, 16.6], [-14, 16.6]]), offset: 30 }
+      { path: track([[56.8, 60], [56.8, 38.2], [55, 36.3], [20, 36.3], [18.5, 36.95], [20, 37.6], [56.2, 37.6], [58.2, 39.4], [58.2, 60]]) },
+      { path: track([[57.5, 60], [57.5, 18.6], [55.6, 16.6], [30, 16.6], [3, 16.6], [-14, 16.6]]) }
     ];
-    const TOW_SPEED = 2.4, TOW_GAP = 2.8, TOW_PAUSE = 12;
+    /* 두 견인차가 같은 세로 통로를 동시에 쓰지 않도록 70초 주기 안에서 출발 시간을 나눈다 */
+    const TOW_SPEED = 2.4, TOW_GAP = 2.8, TOW_CYCLE = 70;
+    towRoutes[0].start = 0;
+    towRoutes[1].start = 13;
     towRoutes.forEach((r) => { r.len = r.path.getLength(); r.mesh = tractor(); r.carts = [0, 1, 2, 3].slice(0, low ? 3 : 4).map(cart); });
     const inside = (m) => m.position.z < 54.3 && m.position.x > -0.4;
 
@@ -252,17 +255,29 @@ window.Warehouse3D = (() => {
     }
     const trucks = [
       { mesh: makeTruck(), z: 38.3, rot: 0, inside: 12, far: -40, cycle: 30, offset: 0 },
-      { mesh: makeTruck(), z: -9, rot: 0, pass: true, cycle: 34, offset: 6 }
+      { mesh: makeTruck(), pass: true }
     ];
-    trucks.forEach((t) => { t.mesh.rotation.y = t.rot; t.mesh.position.z = t.z; });
+    /* 북쪽 셔틀: 북쪽 바깥을 서쪽으로 지나 서쪽 바깥으로 돌아 내려오다 3초 멈춘 뒤 남쪽으로 사라진다.
+       N4 셔틀이 안에 서 있는 동안 N4 앞을 지나가도록 같은 30초 주기에서 시간을 맞췄다. */
+    const passPath = track([[74, -9], [30, -9], [-1, -9], [-7.5, -6], [-9.5, 0], [-9.5, 20], [-9.5, 45], [-9.5, 80]]);
+    const PASS = { len: passPath.getLength(), speed: 8, stopAt: 0, pause: 3, start: 21, cycle: 30 };
+    { const pt = new THREE.Vector3(); for (let k = 0; k <= 400; k++) { passPath.getPointAt(k / 400, pt); if (pt.z >= 18) { PASS.stopAt = k / 400 * PASS.len; break; } } }
+    trucks.forEach((t) => { if (!t.pass) { t.mesh.rotation.y = t.rot; t.mesh.position.z = t.z; } });
     const ease = (t) => t * t * (3 - 2 * t);
     function truckAt(sec) {
       trucks.forEach((tr) => {
         const t = (sec + tr.offset) % tr.cycle;
         if (tr.pass) {
-          const x = t < 9 ? 70 + (8 - 70) * ease(t / 9) : t < 15 ? 8 : t < 24 ? 8 + (-32 - 8) * ease((t - 15) / 9) : -32;
-          tr.mesh.position.x = x;
-          tr.mesh.visible = x < 66 && x > -22;
+          const tp = (((sec - PASS.start) % PASS.cycle) + PASS.cycle) % PASS.cycle;
+          const stopT = PASS.stopAt / PASS.speed;
+          const d = tp < stopT ? tp * PASS.speed : tp < stopT + PASS.pause ? PASS.stopAt : (tp - PASS.pause) * PASS.speed;
+          if (d > PASS.len) { tr.mesh.visible = false; return; }
+          const u = d / PASS.len;
+          passPath.getPointAt(u, vec);
+          passPath.getTangentAt(u, tan);
+          tr.mesh.position.copy(vec);
+          tr.mesh.rotation.y = Math.atan2(tan.x, tan.z) + Math.PI / 2;
+          tr.mesh.visible = vec.x < 66 && vec.z < 58;
           return;
         }
         tr.mesh.position.x = t < 7 ? tr.far + (tr.inside - tr.far) * ease(t / 7) : t < 15 ? tr.inside : t < 22 ? tr.inside + (tr.far - tr.inside) * ease((t - 15) / 7) : tr.far;
@@ -290,7 +305,7 @@ window.Warehouse3D = (() => {
         r.mesh.userData.lift.position.y = 0.32 + 0.22 * (1 + Math.sin(sec * 0.8 + r.at * 6)) / 2;
       });
       towRoutes.forEach((r) => {
-        const d = (sec * TOW_SPEED + r.offset * TOW_SPEED) % (r.len + TOW_PAUSE * TOW_SPEED);
+        const d = ((((sec - r.start) % TOW_CYCLE) + TOW_CYCLE) % TOW_CYCLE) * TOW_SPEED;
         [r.mesh].concat(r.carts).forEach((m, i) => {
           const at = d - i * TOW_GAP;
           if (at < 0 || at > r.len) { m.visible = false; return; }
@@ -336,6 +351,7 @@ window.Warehouse3D = (() => {
       stats: () => ({ fps, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, cartons: count }),
       toggle() { running = !running; return running; },
       renderAt(s) { sec = s; draw(); },
+      vehicles: () => ({ tows: towRoutes.map((r) => [r.mesh].concat(r.carts).map((m) => m.visible ? [m.position.x, m.position.z] : null)), trucks: trucks.map((t) => t.mesh.visible ? [t.mesh.position.x, t.mesh.position.z] : null) }),
       destroy() {
         cancelAnimationFrame(raf); ro.disconnect(); io.disconnect();
         scene.traverse((o) => { if (o.material) o.material.dispose(); });
