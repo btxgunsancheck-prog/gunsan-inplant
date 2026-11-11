@@ -55,13 +55,13 @@
         } catch (e) { UI.toast(e.message, true); }
       };
       return h('tr', null, h('td', null, t.dept), h('td', null, t.name), h('td', { class: 'num' }, t.k1), h('td', { class: 'num' }, fmt(t.k2)), h('td', { class: 'num' }, t.k3), h('td', { class: 'num' }, t.k4),
-        h('td', null, s.m1), h('td', null, s.m2), h('td', null, s.m3), isChief ? h('td', null, adj) : null,
+        h('td', { class: 'num' }, s.m1), h('td', { class: 'num' }, s.m2), h('td', { class: 'num' }, s.m3), isChief ? h('td', { class: 'num' }, adj) : null,
         h('td', null, h('button', { class: 'btn ghost', type: 'button', onclick: save }, m.m1 ? '수정' : '저장')));
     });
     return h('div', null, h('h2', { class: 'block-h' }, ROLE_NAME[data.rateAs] + ' 평가 입력 (' + { chief: '40%', plant: '30%', lead: '20%' }[data.rateAs] + ')'),
       h('p', { class: 'sub' }, '업무지식, 수행능력, 협조능력, 적극성은 실적으로 자동 계산된 점수입니다.'),
       h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
-        h('thead', null, h('tr', null, ['직', '성명'].map((x) => h('th', null, x)), ['k1', 'k2', 'k3', 'k4'].map((k) => h('th', { class: 'num' }, label(k))), ['m1', 'm2', 'm3'].map((k) => h('th', null, label(k))), isChief ? h('th', null, '수행능력 조정') : null, h('th', null, ''))),
+        h('thead', null, h('tr', null, ['직', '성명'].map((x) => h('th', null, x)), ['k1', 'k2', 'k3', 'k4'].map((k) => h('th', { class: 'num' }, label(k))), ['m1', 'm2', 'm3'].map((k) => h('th', { class: 'num' }, label(k))), isChief ? h('th', { class: 'num' }, '수행능력 조정') : null, h('th', null, ''))),
         h('tbody', null, rows))));
   }
 
