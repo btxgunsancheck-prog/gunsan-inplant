@@ -1,14 +1,14 @@
 /* KPI 건별 작성과 직장 일일 확인. 나머지 KPI 화면은 2단계에서 만든다. */
 (() => {
   const CODES = [
-    ['S1', '사고발생'], ['S2', '위험요소 적출'], ['Q2', '납입이상 적출'], ['Q3', '팔레트 개선/보수'], ['C1', '개선사항']
+    ['S1', '사고발생'], ['S2', '위험요소 적출'], ['Q2', '납입이상 적출'], ['Q3', '팔레트 개선/보수'], ['C1', '개선사항'], ['CP', '개선 제안']
   ];
   const nameOf = (code) => CODES.find((c) => c[0] === code)[1];
   const DEPTS = ['물류1직', '물류2직', '물류3직', '물류4직'];
   const opt = (code, key) => ((App.home.options || {})[code] || {})[key] || [];
   const LABELS = {
     process: '공정', counter: '대책', owner: '담당자', targetDate: '개선목표일', doneDate: '완료일', progress: '현황', note: '비고',
-    kind: '구분', finder: '발굴자', item: '항목', category: '구분', partNo: '품번', product: '품목', proposer: '제안자', period: '활동기간', amount: '효과금액(백만원)'
+    kind: '구분', finder: '발굴자', effect: '기대효과', judge: '직장 판정', item: '항목', category: '구분', partNo: '품번', product: '품목', proposer: '제안자', period: '활동기간', amount: '효과금액(백만원)'
   };
 
   function extras(code, v) {
@@ -19,6 +19,7 @@
       case 'S2': return [text('finder', '발굴자', App.user.name)];
       case 'Q2': return [sel('item', '항목', opt('Q2', '항목')), sel('category', '구분', opt('Q2', '구분')), text('partNo', '품번')];
       case 'Q3': return [sel('kind', '개선/보수', opt('Q3', '구분')), text('product', '품목'), sel('category', '분류', opt('Q3', '분류')), text('proposer', '제안자')];
+      case 'CP': return [];
       default: return [sel('category', '분류', opt('C1', '분류')), text('period', '활동기간'),
         UI.field('효과금액(백만원)', h('input', { name: 'amount', inputmode: 'decimal', value: v.amount || '' }))];
     }
@@ -60,7 +61,8 @@
         UI.field('작성자', h('input', { value: App.user.name, disabled: true })),
         extras(code, values),
         UI.field('공정', h('input', { name: 'process', value: val('process') })),
-        UI.field('문제(ISSUE)', h('textarea', { name: 'issue', rows: 4, required: true, value: val('issue') })),
+        UI.field(code === 'CP' ? '제안 내용(낭비 제거, 업무 효율)' : '문제(ISSUE)', h('textarea', { name: 'issue', rows: 4, required: true, value: val('issue') })),
+        code === 'CP' && UI.field('기대효과', h('input', { name: 'effect', value: val('effect') })),
         code === 'S1' && h('p', { class: 'hint' }, '사고발생 사진은 비공개로 저장됩니다.'),
         issuePicker.el,
         UI.field('대책(COUNTERMEASURE)', h('textarea', { name: 'counter', rows: 3, value: val('counter') })),
@@ -148,6 +150,7 @@
         UI.field('개선목표일', h('input', { name: 'targetDate', type: 'date', value: d.targetDate || '' })),
         UI.field('완료일', h('input', { name: 'doneDate', type: 'date', value: d.doneDate || '' })),
         UI.field('현황', UI.select('progress', ['진행중', '완료'], d.progress, '선택')),
+        item.code === 'CP' && UI.field('직장 판정', UI.select('judge', ['합리적', '불합리적'], d.judge, '선택')),
         UI.field('코멘트', h('input', { name: 'comment' })));
       forms[item.id] = form;
       const counter = PhotoPicker(Math.max(0, 3 - item.counterCount), '대책 사진 추가');
