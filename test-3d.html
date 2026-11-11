@@ -22,7 +22,8 @@
   <span id="info" class="sub">불러오는 중</span>
 </div>
 <section class="hero"><h1>군산 사내물류팀</h1><p>오늘의 현장을 함께 기록합니다.</p></section>
-<script src="js/lib/warehouse3d.js?v=2"></script>
+<script src="js/lib/warehouse-layout.js?v=1"></script>
+<script src="js/lib/warehouse3d.js?v=4"></script>
 <script>
 (async () => {
   const host = document.getElementById('scene');
@@ -39,7 +40,7 @@
   };
   setInterval(() => {
     const s = w.stats();
-    info.textContent = '품질 ' + w.quality + ' · 로딩 ' + w.loadMs + 'ms · ' + s.fps + 'fps · 그리기 ' + s.calls + '회 · 삼각형 ' + s.triangles + ' · 상자 ' + s.cartons;
+    info.textContent = '품질 ' + w.quality + ' · 로딩 ' + w.loadMs + 'ms · ' + s.fps + 'fps · 그리기 ' + s.calls + '회 · 삼각형 ' + s.triangles + ' · 물체 ' + s.cartons;
   }, 1000);
 })().catch(() => { document.getElementById('info').textContent = '3D 화면을 불러오지 못했습니다.'; });
 </script>

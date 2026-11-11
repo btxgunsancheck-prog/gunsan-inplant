@@ -265,6 +265,91 @@
       UI.field('엑셀 파일', file), sheetSel, preview, cfg);
   }
 
+  /* 순환재고: 재고정확도 파일의 Data 시트를 '재고실사계획년월'별로 나눠 계산한다.
+     품목기준 = 1 - 불일치 건 / 실사 건(파일 Sheet1과 같은 방식), 금액기준 = 1 - |차이금액 합| / 전산금액 합,
+     재고보정 = |차이금액 합|(백만원). 금액기준·재고보정·클레임은 반영 전에 고칠 수 있다. */
+  function inventoryTab(host, info, reload) {
+    const file = h('input', { type: 'file', accept: '.xlsx,.xls,.xlsb,.csv' });
+    const preview = h('div');
+    const num = (v) => { const n = Number(String(v === undefined || v === null ? '' : v).replace(/,/g, '')); return isNaN(n) ? 0 : n; };
+    const ymOf = (v) => {
+      if (v instanceof Date) return v.getFullYear() + '-' + pad(v.getMonth() + 1);
+      const m = String(v || '').trim().match(/^(\d{4})[-./](\d{1,2})/);
+      return m ? m[1] + '-' + pad(m[2]) : '';
+    };
+    file.onchange = async () => {
+      const f = file.files[0];
+      if (!f) return;
+      preview.replaceChildren(UI.skeleton(3));
+      let grid = null;
+      try {
+        await loadSheet();
+        const wb = window.XLSX.read(await f.arrayBuffer(), { type: 'array', cellDates: true });
+        for (const name of wb.SheetNames) {
+          const g = window.XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: '' });
+          if (g.length && g[0].map(String).includes('일치여부')) { grid = g; break; }
+        }
+      } catch (e) { grid = null; }
+      if (!grid) { preview.replaceChildren(h('p', { class: 'form-error' }, '일치여부 열이 있는 시트를 찾지 못했습니다. 재고정확도 파일인지 확인해 주세요.')); return; }
+      const head = grid[0].map((x) => String(x).trim());
+      const at = (n) => head.indexOf(n);
+      const need = ['재고실사계획년월', '일치여부', '전산금액', '차이금액'];
+      if (need.some((n) => at(n) < 0)) { preview.replaceChildren(h('p', { class: 'form-error' }, '필요한 열(' + need.join(', ') + ')이 없습니다.')); return; }
+      const year = info.today.slice(0, 4), nowYm = info.today.slice(0, 7);
+      const byYm = {};
+      grid.slice(1).forEach((r) => {
+        const ym = ymOf(r[at('재고실사계획년월')]);
+        if (!ym || String(r[at('일치여부')]).trim() === '') return;
+        const x = (byYm[ym] = byYm[ym] || { total: 0, miss: 0, sys: 0, diff: 0 });
+        x.total++;
+        if (String(r[at('일치여부')]).trim() !== '일치') x.miss++;
+        x.sys += num(r[at('전산금액')]);
+        x.diff += num(r[at('차이금액')]);
+      });
+      const months = Object.keys(byYm).filter((m) => m.slice(0, 4) === year && m <= nowYm).sort();
+      if (!months.length) { preview.replaceChildren(h('p', { class: 'form-error' }, '올해 반영할 월이 없습니다.')); return; }
+      const r4 = (n) => Math.round(n * 10000) / 10000;
+      const rows = months.map((m) => {
+        const x = byYm[m];
+        return { ym: m, total: x.total, miss: x.miss, item: r4(1 - x.miss / x.total), amount: r4(x.sys ? 1 - Math.abs(x.diff) / x.sys : 1), adjust: r4(Math.abs(x.diff) / 1e6), claim: 0 };
+      });
+      const existing = months.filter((m) => info.inventoryMonths.includes(m));
+      const input = (r, k) => h('input', { class: 'cell', value: r[k], inputmode: 'decimal', 'aria-label': k, oninput: (e) => { r[k] = e.target.value; } });
+      const over = h('input', { type: 'checkbox' });
+      const result = h('p', { class: 'sub' });
+      const apply = h('button', { class: 'btn', type: 'button', onclick: async () => {
+        if (existing.length && !over.checked) { result.textContent = '덮어쓰기에 체크해 주세요.'; return; }
+        apply.disabled = true;
+        result.textContent = '반영하는 중입니다.';
+        try {
+          let fileId = '';
+          const f2 = file.files[0];
+          if (f2.size <= 10485760) {
+            const bytes = new Uint8Array(await f2.arrayBuffer());
+            let bin = '';
+            for (let i = 0; i < bytes.length; i += 32768) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768));
+            fileId = (await Api.call('uploadOriginal', { kind: 'inventory', name: f2.name, date: months[months.length - 1] + '-01', data: btoa(bin) })).fileId;
+          }
+          const r = await Api.call('uploadInventory', { rows: rows.map((x) => ({ ym: x.ym, item: x.item, amount: x.amount, adjust: x.adjust, claim: x.claim })), fileId, overwrite: over.checked });
+          UI.toast('완료: ' + r.months + '개월을 반영했습니다.');
+          reload();
+        } catch (e) { result.textContent = e.message; apply.disabled = false; }
+      } }, '반영');
+      fill(preview,
+        h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
+          h('thead', null, h('tr', null, ['연월', '실사 건', '불일치 건', '품목기준', '금액기준', '재고보정(백만원)', '클레임(백만원)', '상태'].map((x) => h('th', null, x)))),
+          h('tbody', null, rows.map((r) => h('tr', null, h('td', null, r.ym), h('td', { class: 'num' }, r.total), h('td', { class: 'num' }, r.miss),
+            h('td', { class: 'num' }, (r.item * 100).toFixed(2) + '%'), h('td', null, input(r, 'amount')), h('td', null, input(r, 'adjust')), h('td', null, input(r, 'claim')),
+            h('td', null, existing.includes(r.ym) ? '덮어쓰기' : '신규')))))),
+        h('p', { class: 'hint' }, '금액기준은 1 = 100%입니다. 금액기준, 재고보정, 클레임은 반영 전에 고칠 수 있습니다.'),
+        existing.length && h('label', { class: 'check' }, over, h('span', null, '이미 올라간 ' + existing.length + '개월을 덮어씁니다')),
+        h('div', { class: 'row-btns' }, apply), result);
+    };
+    fill(host, h('h2', { class: 'block-h' }, '순환재고 파일 올리기'),
+      h('p', { class: 'sub' }, '재고정확도 파일을 올리면 월별로 나눠 계산합니다. 올해 반영된 월: ' + (info.inventoryMonths.join(', ') || '없음')),
+      UI.field('엑셀 파일', file), preview);
+  }
+
   function historyTable(info) {
     return h('div', null, h('h2', { class: 'block-h' }, '업로드 이력'), h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
       h('thead', null, h('tr', null, ['대상일자', '업로더', '행 수', '일시', '원본'].map((x) => h('th', null, x)))),
@@ -294,7 +379,7 @@
           Object.keys(names).length > 1 && h('div', { class: 'tabs center-tabs' }, Object.keys(names).map((k) => h('button', { class: 'tab' + (k === tab ? ' on' : ''), type: 'button', onclick: () => { tab = k; load(); } }, names[k]))),
           content, historyTable(info));
         if (tab === 'abnormal') abnormalTab(content, info, load);
-        else if (tab === 'inventory') content.replaceChildren(h('p', { class: 'sub center' }, '순환재고 업로드는 실제 월 파일로 계산식을 확인한 뒤 제공됩니다.'));
+        else if (tab === 'inventory') inventoryTab(content, info, load);
       }, (e) => { if (alive()) body.replaceChildren(UI.error(e.message, load)); });
     };
     app.replaceChildren(UI.hero('실적 업로드'), h('section', { class: 'section' }, body));

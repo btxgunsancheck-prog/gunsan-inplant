@@ -240,3 +240,8 @@ button.cal-d { cursor: pointer; }
   .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .tile { min-height: 260px; }
 }
+.rules { margin: 8px 0 16px; }
+.rule-list { margin: 10px 0; padding-left: 20px; font-size: 14px; color: var(--text-sub); display: flex; flex-direction: column; gap: 6px; }
+.rule-list .bonus { color: var(--accent); }
+table.data tr.winner td { background: rgba(30, 142, 62, 0.06); }
+table.data select { min-height: 36px; padding: 4px 8px; font-size: 14px; width: auto; }
