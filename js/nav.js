@@ -40,6 +40,7 @@ const Nav = (() => {
       { key: 'suggest', label: '건의사항', first: suggest, groups: [] },
       { key: 'award', label: '우수사원', first: [link('우수사원 평가', '#/award')], groups: [] }
     ];
+    list.push({ key: 'qr', label: 'QR장비점검', first: [link('장비 점검', '#/qr')], groups: [] });
     if (admin.length) list.push({ key: 'admin', label: '관리자', first: admin, groups: [] });
     return list;
   }

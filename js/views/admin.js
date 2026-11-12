@@ -209,6 +209,29 @@
     return h('div', null, h('h2', { class: 'block-h' }, '작업 기록'), form, body);
   }
 
+  function qrImportBox() {
+    let rows = [];
+    const info = h('p', { class: 'sub' }, '장비를 추가하거나 주소가 바뀌었을 때만 올립니다. 올리면 기존 목록이 새 파일 내용으로 바뀝니다.');
+    const btn = h('button', { class: 'btn', type: 'button', disabled: true, onclick: async () => {
+      btn.disabled = true;
+      info.textContent = '등록하는 중입니다.';
+      try { const r = await Api.call('qrImport', { rows }); info.textContent = '완료: 장비 ' + r.count + '대를 등록했습니다.'; }
+      catch (e) { info.textContent = e.message; btn.disabled = false; }
+    } }, '장비 목록 등록');
+    const input = h('input', { type: 'file', accept: '.csv,text/csv', onchange: async () => {
+      const file = input.files[0];
+      if (!file) return;
+      const grid = parseCsv((await file.text()).replace(/^﻿/, ''));
+      const head = grid[0] || [];
+      const at = (name) => head.indexOf(name);
+      if (['장비ID', '장비명', '장비군', '주소'].some((n) => at(n) < 0)) { info.textContent = '파일 머리글이 올바르지 않습니다.'; btn.disabled = true; return; }
+      rows = grid.slice(1).filter((r) => r[at('장비ID')]).map((r) => ({ id: r[at('장비ID')], name: r[at('장비명')], group: r[at('장비군')], url: r[at('주소')] }));
+      info.textContent = '장비 ' + rows.length + '대를 읽었습니다. 장비 목록 등록을 눌러 주세요.';
+      btn.disabled = false;
+    } });
+    return h('div', { class: 'narrow' }, UI.field('CSV 파일 (QR장비_import.csv)', input), info, btn);
+  }
+
   function dataAdmin(box) {
     let year = '';
     const load = () => Api.call('dataInfo', { year }).then((d) => {
@@ -238,6 +261,8 @@
         d.nextExists ? h('p', { class: 'sub' }, d.nextYear + '년 파일이 준비되어 있습니다. 1월 1일부터 자동으로 새 파일을 씁니다.')
           : h('div', { class: 'row-btns' }, h('button', { class: 'btn', type: 'button', onclick: newYear }, d.nextYear + '년 KPI 파일 만들기'),
             h('span', { class: 'sub' }, '12월 중에 한 번 눌러 주세요. 실적은 비어 있는 상태로 시작합니다.')),
+        h('h2', { class: 'block-h' }, 'QR장비점검 장비 목록'),
+        qrImportBox(),
         h('h2', { class: 'block-h' }, '자동 백업'),
         h('p', null, d.backupTrigger ? '매주 일요일 새벽 3시에 자동 백업합니다(파일마다 최근 8개 보관).' : '자동 백업이 아직 예약되지 않았습니다.'),
         h('p', { class: 'sub' }, b ? '마지막 백업: ' + b.at + ' / ' + (b.ok ? '정상' : '실패') + ' / ' + b.message : '아직 백업한 기록이 없습니다.'));

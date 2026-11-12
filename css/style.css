@@ -341,3 +341,10 @@ input:not([type=checkbox]):not([type=file]):focus, select:focus, textarea:focus 
   .section { width: calc(100% - 24px); padding: 18px 14px; border-radius: 16px; margin-bottom: 32px; }
 }
 @media print { .section { width: 100%; max-width: none; margin: 0; padding: 0; box-shadow: none; background: #fff; } body { background: #fff !important; } }
+
+/* QR장비점검 */
+.qr-admin { display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 18px 20px; margin-bottom: 8px; background: var(--bg-alt); border-radius: 16px; }
+.qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.qr-item { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; background: var(--bg-alt); border-radius: 14px; color: var(--text); transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease); }
+.qr-item:hover { text-decoration: none; transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1); }
+.qr-item strong { font-size: 16px; }
