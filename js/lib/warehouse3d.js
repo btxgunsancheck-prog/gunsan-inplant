@@ -315,6 +315,55 @@ window.Warehouse3D = (() => {
       mesh.position.copy(vec);
       mesh.rotation.y = Math.atan2(tan.x, tan.z);
     };
+
+    /* 피킹 작업자 4명(2026-11 요청 위치): 선반 사이 통로를 오가며 물건을 집어 들고 반대편에 내려놓는다.
+       한 번 왕복은 15초로, 60초 반복 영상에서도 끊김 없이 이어진다. */
+    const ball = new THREE.SphereGeometry(0.5, 12, 10);
+    const SKIN = 0xe9c3a0, VEST = 0xff7a1a, PANTS = 0x2b3a55, HELMET = 0xffffff, CARTON = 0xc9a26b;
+    function person() {
+      const g = new THREE.Group();
+      const S = 1.5; /* 멀리서도 보이도록 실제보다 조금 크게 */
+      g.scale.set(S, S, S);
+      const leg = (x) => { const p = new THREE.Group(); p.position.set(x, 0.85, 0); addBox(p, PANTS, 0.17, 0.85, 0.2, 0, -0.42, 0); g.add(p); return p; };
+      const legs = [leg(-0.12), leg(0.12)];
+      const upper = new THREE.Group();
+      upper.position.y = 0.85;
+      g.add(upper);
+      addBox(upper, VEST, 0.5, 0.62, 0.3, 0, 0.31, 0);
+      const head = new THREE.Mesh(ball, flat(SKIN)); head.scale.set(0.26, 0.28, 0.26); head.position.set(0, 0.78, 0); upper.add(head);
+      addBox(upper, HELMET, 0.3, 0.1, 0.3, 0, 0.93, 0);
+      const arm = (x) => { const p = new THREE.Group(); p.position.set(x, 0.58, 0); addBox(p, VEST, 0.13, 0.55, 0.15, 0, -0.27, 0); upper.add(p); return p; };
+      const arms = [arm(-0.31), arm(0.31)];
+      const carton = addBox(upper, CARTON, 0.5, 0.36, 0.4, 0, 0.28, 0.42);
+      world.add(g);
+      return { g, legs, arms, upper, carton };
+    }
+    const PICK_T = 15;
+    const pickers = [
+      { a: [39.3, 2.6], b: [39.3, 12.6], off: 0 },
+      { a: [57.9, 2.2], b: [57.9, 11.8], off: 5 },
+      { a: [77.6, 18.2], b: [77.6, 29.5], off: 9 },
+      { a: [77.6, 38.4], b: [77.6, 49.6], off: 2.5 }
+    ].map((p) => Object.assign(p, person()));
+    function pickAt(sec) {
+      const walk = (2 * Math.PI) * 2; /* 걸음: 초당 2번 */
+      pickers.forEach((p) => {
+        const t = (((sec + p.off) % PICK_T) + PICK_T) % PICK_T;
+        let u, from, to, moving = false, carry = false, bend = 0;
+        if (t < 5.5) { u = ease(t / 5.5); from = p.a; to = p.b; moving = true; }
+        else if (t < 7.2) { u = 1; from = p.a; to = p.b; bend = Math.sin(Math.PI * (t - 5.5) / 1.7); carry = t > 6.4; }
+        else if (t < 12.7) { u = ease((t - 7.2) / 5.5); from = p.b; to = p.a; moving = true; carry = true; }
+        else if (t < 14.2) { u = 1; from = p.b; to = p.a; bend = Math.sin(Math.PI * (t - 12.7) / 1.5); carry = t < 13.5; }
+        else { u = 1; from = p.b; to = p.a; }
+        p.g.position.set(from[0] + (to[0] - from[0]) * u, 0, from[1] + (to[1] - from[1]) * u);
+        p.g.rotation.y = Math.atan2(to[0] - from[0], to[1] - from[1]) + (moving || t >= 14.2 || t < 5.5 ? 0 : 0);
+        const sw = moving ? Math.sin(sec * walk) * 0.55 : 0;
+        p.legs[0].rotation.x = sw; p.legs[1].rotation.x = -sw;
+        p.upper.rotation.x = bend * 0.6;
+        p.carton.visible = carry;
+        p.arms.forEach((arm, i) => { arm.rotation.x = carry ? -1.25 : (moving ? (i ? sw : -sw) : -bend * 0.9); });
+      });
+    }
     function place(sec) {
       routes.forEach((r) => {
         const k = (r.at * 2 + sec * r.speed) % 2;
@@ -332,6 +381,7 @@ window.Warehouse3D = (() => {
         });
       });
       truckAt(sec);
+      pickAt(sec);
       const fit = Math.max(0.82, 1.5 / camera.aspect);
       const a = 0.16 + Math.sin(sec * (LOOP ? Math.PI * 2 / LOOP : 0.06)) * 0.12;
       const dist = 108 * fit;
@@ -376,7 +426,7 @@ window.Warehouse3D = (() => {
       destroy() {
         cancelAnimationFrame(raf); ro.disconnect(); io.disconnect();
         scene.traverse((o) => { if (o.material) o.material.dispose(); });
-        box.dispose(); cyl.dispose(); logoGeo.dispose(); logoTex.dispose(); wheelGeo.dispose(); renderer.dispose(); renderer.domElement.remove();
+        box.dispose(); cyl.dispose(); ball.dispose(); logoGeo.dispose(); logoTex.dispose(); wheelGeo.dispose(); renderer.dispose(); renderer.domElement.remove();
       }
     };
   }

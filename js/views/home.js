@@ -5,15 +5,16 @@
 const Home3D = (() => {
   let host = null;
   const V = 'assets/video/';
+  const VER = '?v=2'; /* 영상을 다시 만들면 올린다 */
   return {
     element() {
       if (host) return host;
       const small = Math.max(window.innerWidth, screen.width || 0) < 1000;
       const size = small ? '960' : '1920';
       const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      const video = h('video', { class: 'scene-video', poster: V + 'warehouse-poster.jpg', muted: true, loop: true, playsinline: true, preload: reduced ? 'none' : 'auto', 'aria-hidden': 'true', tabindex: '-1' },
-        h('source', { src: V + 'warehouse-' + size + '.webm', type: 'video/webm' }),
-        h('source', { src: V + 'warehouse-' + size + '.mp4', type: 'video/mp4' }));
+      const video = h('video', { class: 'scene-video', poster: V + 'warehouse-poster.jpg' + VER, muted: true, loop: true, playsinline: true, preload: reduced ? 'none' : 'auto', 'aria-hidden': 'true', tabindex: '-1' },
+        h('source', { src: V + 'warehouse-' + size + '.webm' + VER, type: 'video/webm' }),
+        h('source', { src: V + 'warehouse-' + size + '.mp4' + VER, type: 'video/mp4' }));
       video.muted = true;
       if (!reduced) video.autoplay = true;
       /* 화면 밖으로 나가면 멈추고 다시 보이면 이어서 재생한다(전력 절약) */
