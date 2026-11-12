@@ -1,35 +1,33 @@
 /* 홈 화면. 데이터는 로그인 직후 받은 init 결과를 쓴다. */
 
-/* 메뉴 아래 3D 창고 장면. 화면을 먼저 그린 뒤 따로 불러오고, 홈을 다시 열면 같은 장면을 그대로 쓴다. */
+/* 메뉴 아래 3D 창고 영상. 3D 장면(js/lib/warehouse3d.js)을 고화질로 녹화한 60초 반복 영상이다.
+   먼저 정지 사진을 보여 주고, 화면 폭에 맞는 크기의 영상을 받는다. 움직임 줄이기 설정이면 사진만 보여 준다. */
 const Home3D = (() => {
   let host = null;
-  let started = false;
-  const load = (src) => new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = src; s.onload = resolve; s.onerror = reject;
-    document.head.append(s);
-  });
-  function start() {
-    started = true;
-    setTimeout(async () => {
-      try {
-        await load('js/lib/warehouse-layout.js?v=1');
-        await load('js/lib/warehouse3d.js?v=10');
-        if (!window.Warehouse3D.supported()) { host.hidden = true; return; }
-        await window.Warehouse3D.mount(host, { lookZ: -9 });
-      } catch (e) {
-        host.hidden = true;
-      }
-    }, 300);
-  }
+  const V = 'assets/video/';
   return {
     element() {
-      if (!host) host = h('div', { class: 'scene3d', 'aria-hidden': 'true' });
-      if (!started) start();
+      if (host) return host;
+      const small = Math.max(window.innerWidth, screen.width || 0) < 1000;
+      const size = small ? '960' : '1920';
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const video = h('video', { class: 'scene-video', poster: V + 'warehouse-poster.jpg', muted: true, loop: true, playsinline: true, preload: reduced ? 'none' : 'auto', 'aria-hidden': 'true', tabindex: '-1' },
+        h('source', { src: V + 'warehouse-' + size + '.webm', type: 'video/webm' }),
+        h('source', { src: V + 'warehouse-' + size + '.mp4', type: 'video/mp4' }));
+      video.muted = true;
+      if (!reduced) video.autoplay = true;
+      /* 화면 밖으로 나가면 멈추고 다시 보이면 이어서 재생한다(전력 절약) */
+      new IntersectionObserver((e) => {
+        if (reduced || !video.isConnected) return;
+        if (e[0].isIntersecting) video.play().catch(() => {});
+        else if (!video.paused) video.pause();
+      }).observe(video);
+      host = h('div', { class: 'scene3d' }, video);
       return host;
     }
   };
 })();
+
 /* 달성 비율 막대 한 줄 */
 function rateBar(label, href, k) {
   const total = k.G + k.Y + k.R;

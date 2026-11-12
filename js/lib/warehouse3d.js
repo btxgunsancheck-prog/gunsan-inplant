@@ -18,20 +18,37 @@ window.Warehouse3D = (() => {
     const low = quality === 'low';
     const FRAME_MS = low ? 33 : 0;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const LOOK_Z = opts && opts.lookZ !== undefined ? opts.lookZ : 3; /* 값이 작을수록 장면이 화면 아래로 내려간다 */
+    const LOOK_Z = opts && opts.lookZ !== undefined ? opts.lookZ : 3;
+    /* 영상 녹화용: hq는 그림자를 켜고, loop(초)를 주면 모든 움직임이 그 시간마다 정확히 처음으로 돌아온다 */
+    const HQ = !!(opts && opts.hq);
+    const LOOP = (opts && opts.loop) || 0; /* 값이 작을수록 장면이 화면 아래로 내려간다 */
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: low ? 'low-power' : 'high-performance', preserveDrawingBuffer: !!(opts && opts.keepFrame) });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, low ? 2 : 1.5));
+    renderer.setPixelRatio((opts && opts.pixelRatio) || Math.min(window.devicePixelRatio || 1, low ? 2 : 1.5));
     host.append(renderer.domElement);
     renderer.domElement.style.cssText = 'display:block;width:100%;height:100%';
 
     const scene = new THREE.Scene();
     scene.fog = new THREE.Fog(0xf5f5f7, 150, 260);
     const camera = new THREE.PerspectiveCamera(28, 2, 1, 400);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0xc8ccd6, 1.5));
+    const hemi = new THREE.HemisphereLight(0xffffff, 0xc8ccd6, 1.5);
+    scene.add(hemi);
     const sun = new THREE.DirectionalLight(0xffffff, 1.6);
     sun.position.set(30, 60, 40);
     scene.add(sun);
+    if (HQ) {
+      hemi.intensity = 1.15;
+      sun.intensity = 2.1;
+      sun.position.set(-38, 52, 30);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      sun.castShadow = true;
+      sun.shadow.mapSize.set(4096, 4096);
+      Object.assign(sun.shadow.camera, { left: -80, right: 80, top: 60, bottom: -60, near: 1, far: 200 });
+      sun.shadow.bias = -0.0004;
+      sun.shadow.normalBias = 0.03;
+      sun.shadow.radius = 3;
+    }
 
     /* 배치도 좌표(왼쪽 위 0,0)를 장면 좌표로 바꾼다 */
     const world = new THREE.Group();
@@ -222,9 +239,9 @@ window.Warehouse3D = (() => {
     const track = (pts, closed) => new THREE.CatmullRomCurve3(pts.map((p) => new THREE.Vector3(p[0], 0, p[1])), !!closed, 'centripetal');
     const FL = 0xf2c230;
     const routes = [
-      { path: track([[4, 32.3], [10, 32.3], [16.6, 32.3]]), speed: 0.06, at: 0, mesh: forklift(FL) },
-      { path: track([[3.5, 14.9], [28, 14.9], [52, 14.9]]), speed: 0.022, at: 0.3, mesh: forklift(FL) },
-      { path: track([[56, 34.4], [36, 34.4], [17, 34.4]]), speed: 0.026, at: 0.7, mesh: forklift(FL) }
+      { path: track([[4, 32.3], [10, 32.3], [16.6, 32.3]]), speed: LOOP ? 4 / LOOP : 0.06, at: 0, mesh: forklift(FL) },
+      { path: track([[3.5, 14.9], [28, 14.9], [52, 14.9]]), speed: LOOP ? 2 / LOOP : 0.022, at: 0.3, mesh: forklift(FL) },
+      { path: track([[56, 34.4], [36, 34.4], [17, 34.4]]), speed: LOOP ? 2 / LOOP : 0.026, at: 0.7, mesh: forklift(FL) }
     ];
     /* 견인차 2대: 남쪽 문으로 들어와 나타난다.
        1) 세로 통로로 올라와 가운데 통로 서쪽 끝에서 돌아 다시 남쪽으로 나간다.
@@ -234,7 +251,7 @@ window.Warehouse3D = (() => {
       { path: track([[57.5, 60], [57.5, 18.6], [55.6, 16.6], [30, 16.6], [3, 16.6], [-14, 16.6]]) }
     ];
     /* 두 견인차가 같은 세로 통로를 동시에 쓰지 않도록 70초 주기 안에서 출발 시간을 나눈다 */
-    const TOW_SPEED = 2.4, TOW_GAP = 2.8, TOW_CYCLE = 70;
+    const TOW_SPEED = 2.4, TOW_GAP = 2.8, TOW_CYCLE = LOOP || 70;
     towRoutes[0].start = 0;
     towRoutes[1].start = 13;
     towRoutes.forEach((r) => { r.len = r.path.getLength(); r.mesh = tractor(); r.carts = [0, 1, 2, 3].slice(0, low ? 3 : 4).map(cart); });
@@ -303,7 +320,7 @@ window.Warehouse3D = (() => {
         const k = (r.at * 2 + sec * r.speed) % 2;
         setOn(r.mesh, r.path, k < 1 ? k : 2 - k);
         if (k >= 1) r.mesh.rotation.y += Math.PI;
-        r.mesh.userData.lift.position.y = 0.32 + 0.22 * (1 + Math.sin(sec * 0.8 + r.at * 6)) / 2;
+        r.mesh.userData.lift.position.y = 0.32 + 0.22 * (1 + Math.sin(sec * (LOOP ? Math.PI * 2 * 8 / LOOP : 0.8) + r.at * 6)) / 2;
       });
       towRoutes.forEach((r) => {
         const d = ((((sec - r.start) % TOW_CYCLE) + TOW_CYCLE) % TOW_CYCLE) * TOW_SPEED;
@@ -316,7 +333,7 @@ window.Warehouse3D = (() => {
       });
       truckAt(sec);
       const fit = Math.max(0.82, 1.5 / camera.aspect);
-      const a = 0.16 + Math.sin(sec * 0.06) * 0.12;
+      const a = 0.16 + Math.sin(sec * (LOOP ? Math.PI * 2 / LOOP : 0.06)) * 0.12;
       const dist = 108 * fit;
       camera.position.set(Math.sin(a) * dist, 44 * fit, Math.cos(a) * dist);
       camera.lookAt(0, 0, LOOK_Z);
@@ -324,6 +341,9 @@ window.Warehouse3D = (() => {
       scene.fog.far = dist + 140;
     }
 
+    if (HQ) {
+      scene.traverse((o) => { if (o.isMesh || o.isInstancedMesh) { o.receiveShadow = true; o.castShadow = !(o.material && o.material.transparent); } });
+    }
     let running = true, visible = true, raf = 0, last = 0, sec = 0, frames = 0, tick = performance.now(), fps = 0;
     const draw = () => { place(sec); renderer.render(scene, camera); };
     function loopFrame(now) {
