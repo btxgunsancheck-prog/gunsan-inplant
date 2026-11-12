@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 240">
+<circle cx="250" cy="120" r="70" fill="#0b2282"/><circle cx="250" cy="120" r="30" fill="#f4f6fd"/>
+<g fill="#0b2282"><rect x="238" y="30" width="24" height="36" rx="6"/><rect x="238" y="174" width="24" height="36" rx="6"/><rect x="160" y="108" width="36" height="24" rx="6"/><rect x="304" y="108" width="36" height="24" rx="6"/><rect x="238" y="30" width="24" height="36" rx="6" transform="rotate(45 250 120)"/><rect x="238" y="174" width="24" height="36" rx="6" transform="rotate(45 250 120)"/><rect x="160" y="108" width="36" height="24" rx="6" transform="rotate(45 250 120)"/><rect x="304" y="108" width="36" height="24" rx="6" transform="rotate(45 250 120)"/></g>
+<circle cx="390" cy="70" r="34" fill="#f26522"/><circle cx="390" cy="70" r="14" fill="#f4f6fd"/>
+<g stroke="#b9c7f5" stroke-width="8" stroke-linecap="round"><path d="M400 160 h80"/><path d="M400 190 h80"/></g><circle cx="430" cy="160" r="9" fill="#0b2282"/><circle cx="455" cy="190" r="9" fill="#f26522"/>
+<circle cx="90" cy="180" r="32" fill="#dbe3fb"/>
+</svg>

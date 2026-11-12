@@ -16,6 +16,7 @@ const Router = {
     const path = Router.path().split('?')[0];
     const seq = (Router.seq = (Router.seq || 0) + 1);
     App.closeMenus();
+    document.body.dataset.page = path === '/' ? 'home' : (path === '/login' ? 'login' : 'sub');
     if (!App.authed()) {
       if (path !== '/login') Store.draftSet('return', Router.path());
       return Views.login();
