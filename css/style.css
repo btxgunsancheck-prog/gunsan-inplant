@@ -23,13 +23,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .nav-item:hover, .nav-item[aria-expanded='true'] { color: var(--text); }
 .nav-right { display: flex; align-items: center; gap: 10px; }
 .menu-btn { display: none; background: none; border: 0; width: 44px; height: 48px; align-items: center; justify-content: center; cursor: pointer; }
-.avatar-wrap { position: relative; }
-.avatar { width: 36px; height: 36px; border-radius: 50%; border: 0; padding: 0; overflow: hidden; background: var(--accent); cursor: pointer; display: block; }
+.avatar-wrap { position: relative; flex: none; }
+.avatar { flex: none; min-width: 36px; aspect-ratio: 1 / 1; width: 36px; height: 36px; border-radius: 50%; border: 0; padding: 0; overflow: hidden; background: var(--accent); cursor: pointer; display: block; }
 .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .avatar-letter { color: #fff; font-size: 13px; font-weight: 600; }
 .avatar-menu { position: absolute; right: 0; top: 46px; width: 280px; background: #fff; border-radius: 18px; padding: 24px 16px 14px; text-align: center; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.16); }
 .avatar-menu[hidden] { display: none; }
-.card-photo { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto 12px; }
+.card-photo { flex: none; aspect-ratio: 1 / 1; width: 96px; height: 96px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto 12px; }
 .card-letter { background: var(--accent); color: #fff; font-size: 40px; font-weight: 600; line-height: 96px; }
 .card-name { display: block; font-size: 18px; }
 .card-sub { display: block; font-size: 14px; color: var(--text-sub); margin: 4px 0 14px; }
