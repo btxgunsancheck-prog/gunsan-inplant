@@ -97,10 +97,29 @@ const Nav = (() => {
       ? h('img', { src: 'data:image/jpeg;base64,' + u.photo, alt: '' })
       : h('span', { class: 'avatar-letter' }, String(u.name || '').charAt(0)));
     const menu = document.getElementById('avatar-menu');
+    const fileIn = h('input', { type: 'file', accept: 'image/*', hidden: true, onchange: async () => {
+      const f = fileIn.files[0];
+      if (!f) return;
+      try {
+        const res = await Api.call('photoSelf', { photo: await ImageTool.square(f) });
+        App.user.photo = res.photo;
+        drawAvatar();
+        setAvatar(true);
+        UI.toast('사진을 변경했습니다.');
+      } catch (err) { UI.toast(err.message || '사진을 올리지 못했습니다.', true); }
+    } });
+    const big = u.photo
+      ? h('img', { class: 'card-photo', src: 'data:image/jpeg;base64,' + u.photo, alt: '' })
+      : h('span', { class: 'card-photo card-letter' }, String(u.name || '').charAt(0));
     menu.replaceChildren(
-      h('div', { class: 'avatar-info' }, h('strong', null, u.name), h('span', null, u.rank + ' · ' + u.dept)),
-      h('a', { href: '#/account/password' }, '비밀번호 변경'),
-      h('button', { type: 'button', onclick: () => App.logout() }, '로그아웃'));
+      big,
+      h('strong', { class: 'card-name' }, u.name),
+      h('span', { class: 'card-sub' }, u.dept + ' / ' + u.rank),
+      h('div', { class: 'card-actions' },
+        h('button', { type: 'button', onclick: () => fileIn.click() }, h('span', { class: 'card-ico' }, '✎'), '사진 변경'),
+        h('a', { href: '#/account/password', onclick: () => setAvatar(false) }, h('span', { class: 'card-ico' }, '⚿'), '비밀번호'),
+        h('button', { type: 'button', onclick: () => App.logout() }, h('span', { class: 'card-ico' }, '⇥'), '로그아웃')),
+      fileIn);
   }
 
   function setAvatar(open) {

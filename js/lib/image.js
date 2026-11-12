@@ -21,6 +21,24 @@ const ImageTool = {
   }
 };
 
+/* 프로필 사진: 가운데를 정사각형으로 잘라 300px JPEG로 만든다. */
+ImageTool.square = async function (file, size = 300) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = url;
+    });
+    const side = Math.min(img.naturalWidth, img.naturalHeight);
+    const canvas = document.createElement('canvas');
+    canvas.width = size; canvas.height = size;
+    canvas.getContext('2d').drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, size, size);
+    return canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+  } finally { URL.revokeObjectURL(url); }
+};
+
 /* 사진 선택 칸. 고른 사진의 미리보기와 삭제를 맡는다. */
 function PhotoPicker(max, label) {
   const files = [];
