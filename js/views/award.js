@@ -84,7 +84,13 @@
     const box = h('div', null, UI.skeleton(4));
     const load = () => Api.call('awardResults', { half: sel.value }).then((d) => {
       const rows = d.rows.slice().sort((a, b) => (a.dept < b.dept ? -1 : a.dept > b.dept ? 1 : a.rank - b.rank));
-      box.replaceChildren(h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
+      const winners = rows.filter((r) => r.winner);
+      box.replaceChildren(
+        winners.length ? h('div', { class: 'winner-grid' }, winners.map((r) => h('div', { class: 'winner-card' },
+          r.photo ? h('img', { class: 'winner-photo', src: 'data:image/jpeg;base64,' + r.photo, alt: '' }) : h('span', { class: 'winner-photo letter' }, r.name.charAt(0)),
+          h('span', { class: 'chip good' }, d.half.replace('-H1', ' 상반기').replace('-H2', ' 하반기') + ' 우수사원'),
+          h('strong', { class: 'winner-name' }, r.name), h('span', { class: 'sub' }, r.dept + ' · 반기 평균 ' + fmt(r.avg) + '점')))) : h('p', { class: 'sub' }, '아직 수상자가 정해지지 않았습니다.'),
+        h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
         h('thead', null, h('tr', null, ['직', '순위', '성명', d.quarters[0] + ' 합계', d.quarters[1] + ' 합계', '반기 평균', ''].map((x) => h('th', null, x)))),
         h('tbody', null, rows.map((r) => h('tr', { class: r.winner ? 'winner' : '' }, h('td', null, r.dept), h('td', { class: 'num' }, r.rank), h('td', null, r.name),
           h('td', { class: 'num' }, fmt(r.q1 && r.q1.total)), h('td', { class: 'num' }, fmt(r.q2 && r.q2.total)), h('td', { class: 'num' }, h('strong', null, fmt(r.avg))),

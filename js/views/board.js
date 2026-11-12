@@ -12,10 +12,16 @@
       if (!alive()) return;
       fill(body,
         data.items.length
-          ? h('ul', { class: 'post-list' }, data.items.map((p) => h('li', { class: p.pinned ? 'pinned' : '' },
-            h('a', { href: '#/board/' + board + '/' + p.id },
-              h('span', { class: 'post-title' }, p.pinned && h('span', { class: 'tag' }, '고정'), p.title),
-              h('span', { class: 'sub' }, p.author + ' · ' + UI.dateOnly(p.created) + (p.photoCount ? ' · 사진 ' + p.photoCount : ''))))))
+          ? h('table', { class: 'data board-table' },
+            h('thead', null, h('tr', null, h('th', { class: 'c-no' }, '번호'), h('th', { class: 'c-kind' }, '구분'), h('th', null, '제목'),
+              h('th', { class: 'c-who' }, '작성자'), h('th', { class: 'c-date' }, '등록일'), h('th', { class: 'c-att' }, '첨부'))),
+            h('tbody', null, data.items.map((p, i) => h('tr', { class: p.pinned ? 'pinned' : '', onclick: () => { location.hash = '#/board/' + board + '/' + p.id; } },
+              h('td', { class: 'c-no' }, p.pinned ? UI.icon('pin') : String(data.total - (data.page - 1) * data.size - i)),
+              h('td', { class: 'c-kind' }, h('span', { class: 'chip ' + (p.pinned ? 'bad' : '') }, p.pinned ? (board === 'notice' ? '중요' : '고정') : '일반')),
+              h('td', { class: 'c-title' }, h('a', { href: '#/board/' + board + '/' + p.id }, p.title)),
+              h('td', { class: 'c-who' }, p.author),
+              h('td', { class: 'c-date' }, UI.dateOnly(p.created)),
+              h('td', { class: 'c-att' }, p.photoCount ? h('span', { class: 'att', title: '사진 ' + p.photoCount + '장' }, UI.icon('photo'), p.photoCount) : '')))))
           : h('p', { class: 'sub center' }, q ? '검색 결과가 없습니다.' : '등록된 글이 없습니다.'),
         UI.pager(data.page, data.size, data.total, (n) => { page = n; load(); }) || '');
     };

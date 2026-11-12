@@ -277,4 +277,48 @@
     app.replaceChildren(UI.hero('데이터 관리', UI.has('ADMIN') ? '월 마감 해제, 신년도 파일, 백업 상태, 작업 기록' : '작업 기록 열람'),
       h('section', { class: 'section' }, h('div', { class: 'wrap wide' }, top, logs())));
   });
+
+  /* ---------- 관리자 대시보드 ---------- */
+  const SIDE = [['#/admin', 'home', '대시보드', () => true], ['#/admin/users', 'people', '사용자 관리', () => UI.has('ADMIN')],
+    ['#/kpi/team', 'chart', 'KPI 팀 현황', () => UI.has('KPI_VIEW_ALL')], ['#/suggest/all', 'chat', '건의사항 관리', () => UI.hasAny(['SUGGEST_VIEW', 'SUGGEST_READ'])],
+    ['#/award', 'trophy', '우수사원 관리', () => true], ['#/admin/license', 'lock', '장비면허 명부', () => UI.hasAny(['KPI_MANAGER', 'VIEW_EXEC'])],
+    ['#/admin/targets', 'list', '목표·평가기준', () => UI.hasAny(['ADMIN', 'KPI_TEAM', 'VIEW_EXEC'])], ['#/admin/data', 'gear', '데이터 관리', () => UI.hasAny(['ADMIN', 'VIEW_EXEC'])]];
+
+  Router.add('/admin', (params, app, alive) => {
+    if (!UI.hasAny(['ADMIN', 'VIEW_EXEC', 'KPI_TEAM'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
+    const main = h('div', { class: 'admin-main' }, UI.skeleton(8));
+    const side = h('nav', { class: 'admin-side', 'aria-label': '관리자 메뉴' }, h('p', { class: 'admin-side-h' }, UI.icon('gear'), '관리자 메뉴'),
+      SIDE.filter((x) => x[3]()).map(([href, icon, label]) => h('a', { class: href === '#/admin' ? 'on' : '', href }, UI.icon(icon), label)));
+    const stat = (href, icon, label, value, tone) => h('a', { class: 'stat ' + (tone || ''), href }, h('span', { class: 'stat-ico' }, UI.icon(icon)),
+      h('div', null, h('p', null, label), h('strong', null, value)), h('span', { class: 'more' }, '바로가기', UI.icon('arrow')));
+    const load = () => Api.call('adminDash').then((d) => {
+      if (!alive()) return;
+      const canvas = h('canvas');
+      const depts = Object.keys(d.kpi);
+      fill(main,
+        h('div', { class: 'admin-head' }, h('div', null, h('h1', null, '관리자 대시보드'), h('p', { class: 'sub' }, '처리할 일과 운영 현황을 한눈에 확인합니다.')), h('span', { class: 'date-pill' }, UI.icon('clock'), d.today)),
+        h('div', { class: 'stat-grid' },
+          stat('#/kpi/team', 'todo', 'KPI 확인 대기', d.pending + '건', d.pending ? 'warn' : ''),
+          stat('#/suggest/all', 'chat', '답변 전 건의', d.suggestOpen + '건', d.suggestOpen ? 'warn' : ''),
+          stat('#/award', 'trophy', '개선 제안 결정 대기', d.proposals === null ? '-' : d.proposals + '건', d.proposals ? 'warn' : ''),
+          stat('#/admin/users', 'people', '사용 중 직원', d.users.active + '명', d.users.locked ? 'bad' : '')),
+        d.users.locked ? h('p', { class: 'note' }, '로그인 잠금 상태 직원이 ' + d.users.locked + '명 있습니다. 사용자 관리에서 잠금을 풀 수 있습니다.') : null,
+        h('div', { class: 'panel-grid' },
+          h('div', { class: 'panel' }, UI.cardHead('chart', '직별 이번 달 KPI 달성 비율', '#/kpi/team'), h('div', { class: 'chart-area' }, canvas)),
+          h('div', { class: 'panel' }, UI.cardHead('chat', '최근 건의사항', '#/suggest/all'),
+            d.recent.length ? h('table', { class: 'data click' }, h('thead', null, h('tr', null, ['분류', '제목', '등록일', '상태'].map((x) => h('th', null, x)))),
+              h('tbody', null, d.recent.map((r) => h('tr', { onclick: () => { location.hash = '#/suggest/view/' + r.id; } },
+                h('td', null, r.category), h('td', { class: 'c-title' }, r.title), h('td', null, UI.dateOnly(r.created)),
+                h('td', null, h('span', { class: 'chip ' + ({ 검토중: 'warn', 답변완료: 'good' }[r.status] || '') }, r.status))))))
+              : h('p', { class: 'sub empty' }, '등록된 건의가 없습니다.'))));
+      const pct = (k) => { const t = k.G + k.Y + k.R; return t ? Math.round(k.G / t * 100) : 0; };
+      const s = document.createElement('script');
+      const draw = () => new window.Chart(canvas, { type: 'bar', data: { labels: depts, datasets: [{ label: '달성 비율(%)', data: depts.map((x) => pct(d.kpi[x])), backgroundColor: '#0b2282', borderRadius: 6, maxBarThickness: 48 }] },
+        options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { min: 0, max: 100, ticks: { callback: (v) => v + '%' } } } } });
+      if (window.Chart) draw();
+      else { s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'; s.onload = draw; document.head.append(s); }
+    }, (e) => { if (alive()) main.replaceChildren(UI.error(e.message, load)); });
+    app.replaceChildren(h('div', { class: 'admin-shell' }, side, main));
+    load();
+  });
 })();

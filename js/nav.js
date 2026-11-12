@@ -29,6 +29,7 @@ const Nav = (() => {
     if (!UI.has('VIEW_EXEC')) suggest.push(link('내 건의', '#/suggest/mine'));
     if (!UI.has('VIEW_EXEC') && (UI.hasAny(['SUGGEST_VIEW', 'SUGGEST_READ']) || u.perms.some((p) => p.startsWith('KPI_CHECK:')))) suggest.push(link('전체 건의', '#/suggest/all'));
     const admin = [];
+    if (UI.hasAny(['ADMIN', 'VIEW_EXEC', 'KPI_TEAM'])) admin.push(link('대시보드', '#/admin'));
     if (UI.has('ADMIN')) admin.push(link('사용자 관리', '#/admin/users'));
     if (UI.hasAny(['KPI_MANAGER', 'VIEW_EXEC'])) admin.push(link('장비면허 명부', '#/admin/license'));
     if (UI.hasAny(['ADMIN', 'KPI_TEAM', 'VIEW_EXEC'])) admin.push(link('목표·평가기준', '#/admin/targets'));
