@@ -40,7 +40,7 @@ const UI = {
   },
   hero(title, sub) {
     const key = Router.path().split('?')[0].split('/')[1] || '';
-    const art = ['board', 'kpi', 'suggest', 'award', 'admin', 'account'].indexOf(key) >= 0 ? key : '';
+    const art = ['board', 'kpi', 'suggest', 'award', 'admin', 'account', 'qr'].indexOf(key) >= 0 ? key : '';
     return h('section', { class: 'hero', style: art ? '--hero-img:url(../assets/hero-' + art + '.svg)' : null },
       h('h1', null, title), sub && h('p', null, sub));
   },
