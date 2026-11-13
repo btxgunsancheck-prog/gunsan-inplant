@@ -258,6 +258,35 @@
     return h('div', { class: 'narrow' }, UI.field('CSV 파일 (QR장비_import.csv)', input), info, btn);
   }
 
+  /* 이관 실적 파일(JSON): 월별 숫자와 건별 이력을 한 번에 올린다. 같은 월을 다시 올리면 그 월 내용이 바뀐다. */
+  function historyBox() {
+    let payload = null;
+    const info = h('p', { class: 'sub' }, '월별 실적 파일을 올립니다. 같은 월을 다시 올리면 그 월 이관 실적이 새 파일 내용으로 바뀝니다.');
+    const btn = h('button', { class: 'btn', type: 'button', disabled: true, onclick: async () => {
+      const months = [...new Set(payload.overlay.map((r) => r[0]))].sort();
+      if (!confirm(months.join(', ') + ' 월의 이관 실적을 올립니다. 해당 월은 파일 내용으로 계산됩니다. 계속할까요?')) return;
+      btn.disabled = true;
+      info.textContent = '올리는 중입니다. 잠시 기다려 주세요.';
+      try {
+        const r = await Api.call('historyImport', payload);
+        info.textContent = '완료: ' + r.months.length + '개월, 숫자 ' + r.overlay + '행, 건별 ' + r.activities + '건, 이상발생 ' + r.abnormal + '건. 작성자를 사용자 명단에서 못 찾은 건별 이력 ' + r.unmatched + '건';
+        UI.toast('올렸습니다.');
+      } catch (e) { info.textContent = e.message; btn.disabled = false; }
+    } }, '이관 실적 올리기');
+    const input = h('input', { type: 'file', accept: '.json,application/json', onchange: async () => {
+      const file = input.files[0];
+      if (!file) return;
+      try {
+        const d = JSON.parse(await file.text());
+        if (!d.year || !Array.isArray(d.overlay)) throw new Error('형식');
+        payload = { year: String(d.year), overlay: d.overlay, activities: d.activities || [], abnormal: d.abnormal || [] };
+        info.textContent = d.year + '년 파일을 읽었습니다: 숫자 ' + payload.overlay.length + '행, 건별 ' + payload.activities.length + '건, 이상발생 ' + payload.abnormal.length + '건. 이관 실적 올리기를 눌러 주세요.';
+        btn.disabled = false;
+      } catch (e) { info.textContent = '파일 형식이 올바르지 않습니다.'; btn.disabled = true; }
+    } });
+    return h('div', { class: 'narrow' }, UI.field('이관 실적 파일 (history_2026_01-09.json)', input), info, btn);
+  }
+
   function dataAdmin(box) {
     let year = '';
     const load = () => Api.call('dataInfo', { year }).then((d) => {
@@ -287,6 +316,8 @@
         d.nextExists ? h('p', { class: 'sub' }, d.nextYear + '년 파일이 준비되어 있습니다. 1월 1일부터 자동으로 새 파일을 씁니다.')
           : h('div', { class: 'row-btns' }, h('button', { class: 'btn', type: 'button', onclick: newYear }, d.nextYear + '년 KPI 파일 만들기'),
             h('span', { class: 'sub' }, '12월 중에 한 번 눌러 주세요. 실적은 비어 있는 상태로 시작합니다.')),
+        h('h2', { class: 'block-h' }, '이관 실적 올리기 (과거 월·월별 파일)'),
+        historyBox(),
         h('h2', { class: 'block-h' }, 'QR장비점검 장비 목록'),
         qrImportBox(),
         h('h2', { class: 'block-h' }, '자동 백업'),
