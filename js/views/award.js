@@ -17,7 +17,8 @@
   function rules() {
     return h('details', { class: 'config rules' }, h('summary', null, '평가 기준과 가산점'),
       h('ul', { class: 'rule-list' },
-        h('li', null, '분기마다 7개 항목을 5점 만점으로 평가하고, 두 분기 평균으로 반기 수상자(직별 1명)를 정합니다.'),
+        h('li', null, '분기마다 7개 항목을 5점 만점으로 평가하고, 두 분기 평균(KPI 종합평가 점수)으로 반기 수상자(직별 2명)를 정합니다.'),
+        h('li', null, '최우수사원: 직별 종합평가 점수 1등. 우수사원: 직별 2~4등 중에서 해당 직장이 1명을 고르고 선정 사유를 적습니다.'),
         h('li', null, '업무지식(납입이상 적출): 분기 월평균 2건 이상 5점, 1건 4점, 0건 3점.'),
         h('li', null, '수행능력(이상발생/비가동): 5점에서 월별 건수에 따라 감점. 물류1·2직은 4건 이상 -3, 3건 -2, 2건 -1. 물류3·4직은 3건 이상 -3, 2건 -2, 1건 -1. 직장이 -2~+1점 조정(사고 시 -2 포함).'),
         h('li', null, '협조능력(개선 제안): 합리적 제안 5점, 불합리적 제안 4점, 제안 없음 3점. 직장이 고르고 팀장이 회의를 거쳐 최종 결정합니다.'),
@@ -79,22 +80,52 @@
         })))));
   }
 
+
+  function pickBox() {
+    const sel = UI.select('half', halves(), halves()[0]);
+    const box = h('div', null, UI.skeleton(3));
+    const load = () => Api.call('awardPickInfo', { half: sel.value }).then((d) => {
+      box.replaceChildren(...d.depts.map((x) => {
+        const chosen = { empNo: x.pick ? x.pick.empNo : '' };
+        const reason = h('textarea', { rows: 3, maxlength: 500, placeholder: '선정한 이유를 적어 주세요 (필수)', 'aria-label': '선정 사유' }, x.pick ? x.pick.reason : '');
+        const radios = x.candidates.map((c) => h('label', { class: 'pick-opt' },
+          h('input', { type: 'radio', name: 'pick-' + x.dept, checked: chosen.empNo === c.empNo, onchange: () => { chosen.empNo = c.empNo; } }),
+          ' ' + c.rank + '위 ' + c.name + ' (' + d.quarters[0] + ' ' + fmt(c.q1) + ' / ' + d.quarters[1] + ' ' + fmt(c.q2) + ' / 평균 ' + fmt(c.avg) + ')'));
+        const save = async () => {
+          if (!chosen.empNo) { UI.toast('후보를 골라 주세요.', true); return; }
+          try { await Api.call('awardPick', { half: d.half, dept: x.dept, empNo: chosen.empNo, reason: reason.value }); UI.toast('우수사원을 저장했습니다.'); load(); }
+          catch (e) { UI.toast(e.message, true); }
+        };
+        return h('div', { class: 'pick-box' }, h('h3', { class: 'block-h' }, x.dept),
+          h('p', { class: 'sub' }, '최우수사원(1등): ' + (x.best ? x.best.name + ' (평균 ' + fmt(x.best.avg) + '점)' : '아직 없음')),
+          x.candidates.length ? h('div', null, h('p', { class: 'sub' }, '우수사원 후보(종합 2~4등) 중 1명을 고르세요.'), ...radios, reason, h('button', { class: 'btn', type: 'button', onclick: save }, x.pick ? '수정' : '저장'))
+            : h('p', { class: 'sub' }, '후보(2~4등)가 아직 없습니다.'));
+      }));
+    }, (e) => box.replaceChildren(UI.error(e.message, load)));
+    sel.onchange = load;
+    load();
+    return h('div', null, h('h2', { class: 'block-h' }, '우수사원 선정 (직장)'), h('div', { class: 'toolbar' }, sel), box);
+  }
+
   function results(host) {
     const sel = UI.select('half', halves(), halves()[0]);
     const box = h('div', null, UI.skeleton(4));
     const load = () => Api.call('awardResults', { half: sel.value }).then((d) => {
+      const note = d.pending && d.pending.length ? h('p', { class: 'sub' }, '우수사원 미선정 직: ' + d.pending.join(', ')) : null;
       const rows = d.rows.slice().sort((a, b) => (a.dept < b.dept ? -1 : a.dept > b.dept ? 1 : a.rank - b.rank));
       const winners = rows.filter((r) => r.winner);
       box.replaceChildren(
+        note,
         winners.length ? h('div', { class: 'winner-grid' }, winners.map((r) => h('div', { class: 'winner-card' },
           r.photo ? h('img', { class: 'winner-photo', src: 'data:image/jpeg;base64,' + r.photo, alt: '' }) : h('span', { class: 'winner-photo letter' }, r.name.charAt(0)),
-          h('span', { class: 'chip good' }, d.half.replace('-H1', ' 상반기').replace('-H2', ' 하반기') + ' 우수사원'),
-          h('strong', { class: 'winner-name' }, r.name), h('span', { class: 'sub' }, r.dept + ' · 반기 평균 ' + fmt(r.avg) + '점')))) : h('p', { class: 'sub' }, '아직 수상자가 정해지지 않았습니다.'),
+          h('span', { class: 'chip good' }, d.half.replace('-H1', ' 상반기').replace('-H2', ' 하반기') + ' ' + r.title),
+          h('strong', { class: 'winner-name' }, r.name), h('span', { class: 'sub' }, r.dept + ' · 반기 평균 ' + fmt(r.avg) + '점'),
+          r.reason ? h('span', { class: 'sub' }, '선정 사유(' + (r.chief || '직장') + '): ' + r.reason) : null))) : h('p', { class: 'sub' }, '아직 수상자가 정해지지 않았습니다.'),
         h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
         h('thead', null, h('tr', null, ['직', '순위', '성명', d.quarters[0] + ' 합계', d.quarters[1] + ' 합계', '반기 평균', ''].map((x) => h('th', null, x)))),
         h('tbody', null, rows.map((r) => h('tr', { class: r.winner ? 'winner' : '' }, h('td', null, r.dept), h('td', { class: 'num' }, r.rank), h('td', null, r.name),
           h('td', { class: 'num' }, fmt(r.q1 && r.q1.total)), h('td', { class: 'num' }, fmt(r.q2 && r.q2.total)), h('td', { class: 'num' }, h('strong', null, fmt(r.avg))),
-          h('td', null, r.winner ? h('span', { class: 'chip good' }, '우수사원') : '')))))));
+          h('td', null, r.winner ? h('span', { class: 'chip good' }, r.title) : '')))))));
     }, (e) => box.replaceChildren(UI.error(e.message, load)));
     sel.onchange = load;
     host.replaceChildren(h('h2', { class: 'block-h' }, '반기 수상 결과'), h('p', { class: 'sub' }, '팀장과 사업부장만 볼 수 있습니다.'), h('div', { class: 'toolbar' }, sel), box);
@@ -113,6 +144,7 @@
         d.me && myResult(d.me, d.selfRating, quarter, load),
         d.targets && d.targets.length && rateTable(d, load),
         d.role.lead && proposals(d, load),
+        d.role.chiefDepts && d.role.chiefDepts.length && pickBox(),
         d.role.results && resultBox,
         !d.me && !d.targets && !d.role.results && h('p', { class: 'sub center' }, '우수사원 평가 대상이 아닙니다.'));
       if (d.role.results && !resultBox.childNodes.length) results(resultBox);
