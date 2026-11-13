@@ -511,3 +511,8 @@ a.sum-card:hover { text-decoration: none; transform: translateY(-2px); }
 
 /* 홈 3D 영상 */
 .scene-video { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 60%; background: var(--bg-alt); }
+
+/* 우수사원 선정(직장) */
+.pick-box { border: 1px solid var(--line, #e5e7eb); border-radius: 12px; padding: 14px 16px; margin: 12px 0; display: grid; gap: 8px; }
+.pick-box textarea { width: 100%; box-sizing: border-box; }
+.pick-opt { display: block; padding: 4px 0; }
