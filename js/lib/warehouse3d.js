@@ -1,7 +1,7 @@
 /* 홈 화면용 3D 창고 장면(주하역장 배치도 기준). 실제 재고와 연결되지 않은 연출용이다. 단위는 미터. */
 window.Warehouse3D = (() => {
   const THREE_URL = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
-  const NAVY = 0x0b2282, ORANGE = 0xe0651e, FLOOR = 0xeceef2, WOOD = 0xc9a877, DARK = 0x2b2d33, STEEL = 0x8a8f99, YELLOW = 0xe3b23c;
+  const NAVY = 0x0b2282, ORANGE = 0xe0651e, FLOOR = 0xe9f1ff, WALL = 0xd2e2fc, WOOD = 0xc9a877, DARK = 0x2b2d33, STEEL = 0x8a8f99, YELLOW = 0xe3b23c;
   const BINS = [0x2f5bd0, 0xe0651e, 0x0f9d8a, 0xe3b23c, 0xc9a877, 0x9aa3b5];
   const W = 88, D = 54;
   const CART_GREEN = 0x4f9d5a;
@@ -29,7 +29,7 @@ window.Warehouse3D = (() => {
     renderer.domElement.style.cssText = 'display:block;width:100%;height:100%';
 
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0xf5f5f7, 150, 260);
+    scene.fog = new THREE.Fog(0xe8effc, 150, 260); /* 홈 배너 바탕색과 같게 */
     const camera = new THREE.PerspectiveCamera(28, 2, 1, 400);
     const hemi = new THREE.HemisphereLight(0xffffff, 0xc8ccd6, 1.5);
     scene.add(hemi);
@@ -74,7 +74,8 @@ window.Warehouse3D = (() => {
     const skip = () => low && rnd() < 0.45;
 
     /* 바닥, 구역 색, 벽 */
-    addBox(world, 0xdfe2e8, W + 30, 0.2, D + 30, W / 2 - 15, -0.12, D / 2 - 8);
+    const apron = addBox(world, 0xffffff, W + 30, 0.2, D + 30, W / 2 - 15, -0.12, D / 2 - 8);
+    apron.visible = false; /* 바깥 바닥판은 그리지 않는다(배너 무늬 위에 창고만) */
     addBox(world, FLOOR, W, 0.2, D, W / 2, -0.1, D / 2);
     const zone = (x, z, w, d, color) => addBox(world, color, w, 0.02, d, x + w / 2, 0.01, z + d / 2);
     zone(0.3, 0.3, 26.7, 13.9, 0xf3ead9);
@@ -88,9 +89,9 @@ window.Warehouse3D = (() => {
     zone(20, 39, 14, 7, 0xe5ede0);
     zone(2.6, 41, 11.4, 7, 0xe5ede0);
     [[0, 16.2, W, 0.08], [0, 37.2, 59, 0.08]].forEach((l) => addBox(world, 0xf2c94c, l[2], 0.03, l[3], l[0] + l[2] / 2, 0.03, l[1]));
-    addBox(world, 0xdfe2e8, W, 4, 0.3, W / 2, 2, -0.15);
-    addBox(world, 0xdfe2e8, 0.3, 4, D, W + 0.15, 2, D / 2);
-    [[0, 14.4], [18.4, 35.6], [40.6, 54]].forEach((s) => addBox(world, 0xdfe2e8, 0.3, 4, s[1] - s[0], -0.15, 2, (s[0] + s[1]) / 2));
+    addBox(world, WALL, W, 4, 0.3, W / 2, 2, -0.15);
+    addBox(world, WALL, 0.3, 4, D, W + 0.15, 2, D / 2);
+    [[0, 14.4], [18.4, 35.6], [40.6, 54]].forEach((s) => addBox(world, WALL, 0.3, 4, s[1] - s[0], -0.15, 2, (s[0] + s[1]) / 2));
     /* 사무실 */
     addBox(world, 0xf3d4d4, 14, 3, 6.5, 41, 1.5, 42.5);
     [35.6, 39.2, 42.8, 46.4].forEach((x) => [45.78, 39.22].forEach((z) => {

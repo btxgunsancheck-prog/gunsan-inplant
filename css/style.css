@@ -557,3 +557,18 @@ a.sum-card:hover { text-decoration: none; transform: translateY(-2px); }
 .admin-head h1 { color: #14204a; }
 .admin-head .date-pill { background: #fff; }
 @media (max-width: 600px) { .hb-slogan { display: none; } }
+/* 홈 배너 2차(2026-11-13): 영상에 무늬 배경이 들어 있어 배너 전체를 영상으로 채운다. 글자는 위쪽 */
+.home-banner { background: url(../assets/hero-bg.svg) center / 100% 100% no-repeat, #e1ebfd; }
+.home-banner .scene3d { inset: 0; width: 100%; height: 100%; -webkit-mask-image: none; mask-image: none; }
+.home-banner .scene-video { mix-blend-mode: normal; background: transparent; object-fit: cover; object-position: 50% 50%; }
+.home-banner { height: auto; aspect-ratio: 4.1 / 1; min-height: 300px; }
+.hb-text { top: 17%; transform: none; }
+@media (max-width: 833px) {
+  .hb-text { top: 22px; }
+  .home-banner .scene3d { top: 0; height: 100%; }
+  .home-banner .scene-video { object-position: 72% 50%; }
+}
+/* 홈 배너 3차(2026-11-14): 제목 묶음 약 2cm 위로, Together 문구는 더 연한 파랑 세로 그라데이션 */
+.hb-text { top: 44px; }
+.hb-slogan { top: 40px; color: #5a8bef; background: linear-gradient(180deg, #8fb3fa 0%, #5a8bef 55%, #3f73e6 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+@media (max-width: 833px) { .hb-text { top: 22px; } .hb-slogan { top: 22px; } }
