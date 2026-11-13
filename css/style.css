@@ -516,3 +516,5 @@ a.sum-card:hover { text-decoration: none; transform: translateY(-2px); }
 .pick-box { border: 1px solid var(--line, #e5e7eb); border-radius: 12px; padding: 14px 16px; margin: 12px 0; display: grid; gap: 8px; }
 .pick-box textarea { width: 100%; box-sizing: border-box; }
 .pick-opt { display: block; padding: 4px 0; }
+.pick-opt { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+.pick-opt input[type=radio] { width: 20px; height: 20px; min-height: 0; padding: 0; flex: none; margin: 0; border: 0; box-shadow: none; accent-color: var(--accent, #0b2282); }
