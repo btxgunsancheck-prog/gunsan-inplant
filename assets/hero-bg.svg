@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" preserveAspectRatio="none">
+<defs><linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3f7ff"/><stop offset="0.5" stop-color="#e4edff"/><stop offset="1" stop-color="#eef3ff"/></linearGradient>
+<linearGradient id="v" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.85"/><stop offset="1" stop-color="#fff" stop-opacity="0.1"/></linearGradient>
+<linearGradient id="u" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#bcd0fb" stop-opacity="0.7"/><stop offset="1" stop-color="#c9dafc" stop-opacity="0"/></linearGradient></defs>
+<rect width="1440" height="320" fill="url(#a)"/>
+<path d="M0 230 C 300 120, 620 330, 980 170 S 1360 60, 1440 90 V 0 H 0 Z" fill="url(#u)"/>
+<path d="M0 250 C 320 150, 640 340, 1000 190 S 1380 90, 1440 110" fill="none" stroke="url(#v)" stroke-width="26"/>
+<path d="M0 120 C 260 40, 560 200, 900 80 S 1300 10, 1440 40" fill="none" stroke="url(#v)" stroke-width="14" opacity="0.8"/>
+<path d="M300 320 C 600 230, 900 300, 1440 210 V 320 Z" fill="#fff" opacity="0.35"/>
+</svg>
