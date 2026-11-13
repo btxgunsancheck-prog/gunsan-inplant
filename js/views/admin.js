@@ -127,6 +127,31 @@
     load();
   });
 
+  function licenseImportBox(reload) {
+    let rows = [];
+    const info = h('p', { class: 'sub' }, '파일을 올리면 지금 명부 전체가 파일 내용으로 바뀝니다.');
+    const btn = h('button', { class: 'btn', type: 'button', disabled: true, onclick: async () => {
+      if (!confirm('현재 명부 전체를 파일 내용(' + rows.length + '명)으로 바꿀까요? 장비면허 취득현황 실적이 다시 계산됩니다.')) return;
+      btn.disabled = true;
+      info.textContent = '등록하는 중입니다.';
+      try { const r = await Api.call('licenseImport', { rows }); UI.toast(r.count + '명을 등록했습니다.'); reload(); }
+      catch (e) { info.textContent = e.message; btn.disabled = false; }
+    } }, '명부 일괄 등록');
+    const input = h('input', { type: 'file', accept: '.csv,text/csv', onchange: async () => {
+      const file = input.files[0];
+      if (!file) return;
+      const grid = parseCsv((await file.text()).replace(/^﻿/, ''));
+      const head = grid[0] || [];
+      const at = (name) => head.indexOf(name);
+      if (['성명', '소속', '면허종류', '유효기간', '비고'].some((n) => at(n) < 0)) { info.textContent = '파일 머리글이 올바르지 않습니다.'; btn.disabled = true; return; }
+      rows = grid.slice(1).filter((r) => r[at('성명')]).map((r) => ({ name: r[at('성명')], dept: r[at('소속')], kind: r[at('면허종류')], expires: r[at('유효기간')], note: r[at('비고')] }));
+      info.textContent = rows.length + '명을 읽었습니다. 명부 일괄 등록을 눌러 주세요.';
+      btn.disabled = false;
+    } });
+    return h('details', { class: 'config' }, h('summary', null, 'CSV 파일로 일괄 등록 (license_import.csv)'),
+      h('div', { class: 'narrow' }, UI.field('CSV 파일', input), info, btn));
+  }
+
   Router.add('/admin/license', (params, app, alive) => {
     if (!UI.hasAny(['KPI_MANAGER', 'VIEW_EXEC'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
     const body = h('div', { class: 'wrap' }, UI.skeleton(6));
@@ -139,6 +164,7 @@
         catch (e) { UI.toast(e.message, true); }
       };
       fill(body,
+        d.canEdit && licenseImportBox(load),
         d.canEdit && h('div', { class: 'toolbar wrap-row' }, f.name, f.dept, f.kind, f.expires, f.note, h('button', { class: 'btn', type: 'button', onclick: add }, '추가')),
         h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
           h('thead', null, h('tr', null, ['성명', '소속', '면허종류', '유효기간', '비고', ''].map((x) => h('th', null, x)))),
