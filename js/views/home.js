@@ -65,8 +65,10 @@ Router.add('/', (params, app) => {
   if (!UI.has('VIEW_EXEC')) quick.push(q('#/suggest', 'chat', '건의 등록'));
   quick.push(q('#/qr', 'qr', 'QR장비점검'), q(kpiLink, 'chart', 'KPI 현황'), q('#/award', 'trophy', '우수사원'));
 
-  const top = h('div', { class: 'home-top' }, Home3D.element(), UI.hero('군산 사내물류팀', '오늘의 현장을 함께 기록합니다.'));
-  top.lastChild.classList.add('hero-over');
+  const top = h('section', { class: 'home-banner' },
+    Home3D.element(),
+    h('div', { class: 'hb-text' }, h('h1', null, '군산 사내물류팀'), h('p', null, '오늘의 현장을 ', h('em', { class: 'hand' }, '함께'), ' 기록합니다.')),
+    h('p', { class: 'hb-slogan', lang: 'en' }, 'Together', h('br'), 'for a Better Tomorrow'));
   app.replaceChildren(
     top,
     h('section', { class: 'home-grid' },
