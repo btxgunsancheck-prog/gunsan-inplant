@@ -90,7 +90,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field-label { font-size: 14px; color: var(--text-sub); }
 .hint { font-size: 13px; color: var(--text-sub); }
-input:not([type=checkbox]):not([type=file]), select, textarea { width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+input:not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea { width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
 textarea { resize: vertical; }
 input:disabled { background: var(--bg-alt); color: var(--text-sub); }
 .check { display: flex; align-items: center; gap: 8px; font-size: 15px; }
@@ -328,8 +328,8 @@ table.data thead th { background: var(--bg); }
 /* 3. 버튼과 입력창: 높이 44px, 같은 모양 */
 .btn, .tab { min-height: var(--ctl-h); }
 .btn.wide { min-height: var(--ctl-h); font-size: 16px; }
-input:not([type=checkbox]):not([type=file]):not(.cell), select, textarea { min-height: var(--ctl-h); font-size: 16px; border-radius: 12px; border: 1px solid var(--line); background: #fff; transition: border-color 0.15s, box-shadow 0.15s; }
-input:not([type=checkbox]):not([type=file]):focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(11, 34, 130, 0.14); }
+input:not([type=checkbox]):not([type=radio]):not([type=file]):not(.cell), select, textarea { min-height: var(--ctl-h); font-size: 16px; border-radius: 12px; border: 1px solid var(--line); background: #fff; transition: border-color 0.15s, box-shadow 0.15s; }
+input:not([type=checkbox]):not([type=radio]):not([type=file]):focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(11, 34, 130, 0.14); }
 .btn { font-weight: 600; }
 .btn.ghost { background: #fff; }
 
@@ -518,3 +518,4 @@ a.sum-card:hover { text-decoration: none; transform: translateY(-2px); }
 .pick-opt { display: block; padding: 4px 0; }
 .pick-opt { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
 .pick-opt input[type=radio] { width: 20px; height: 20px; min-height: 0; padding: 0; flex: none; margin: 0; border: 0; box-shadow: none; accent-color: var(--accent, #0b2282); }
+.pick-opt input[type=radio]:focus-visible { outline: 2px solid var(--accent, #0b2282); outline-offset: 2px; }
