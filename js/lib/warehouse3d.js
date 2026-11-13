@@ -383,7 +383,7 @@ window.Warehouse3D = (() => {
       truckAt(sec);
       pickAt(sec);
       const fit = Math.max(0.82, 1.5 / camera.aspect);
-      const a = 0.16 + Math.sin(sec * (LOOP ? Math.PI * 2 / LOOP : 0.06)) * 0.12;
+      const a = 0.16; /* 화면 고정(회전 없음) */
       const dist = 108 * fit;
       camera.position.set(Math.sin(a) * dist, 44 * fit, Math.cos(a) * dist);
       camera.lookAt(0, 0, LOOK_Z);
