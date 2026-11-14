@@ -681,3 +681,9 @@ a.sum-card:hover { text-decoration: none; transform: translateY(-2px); }
 input[type=date], input[type=month], input[type=time] { min-width: 0; max-width: 100%; box-sizing: border-box; display: block; -webkit-appearance: none; appearance: none; }
 input[type=date]::-webkit-date-and-time-value { text-align: left; }
 .field, .card-form > *, .optional { min-width: 0; }
+
+/* 사진 미리 올리기 상태 */
+.picker-state { position: absolute; left: 4px; right: 4px; bottom: 4px; padding: 2px 4px; border-radius: 8px; font-size: 11px; line-height: 1.4; text-align: center; background: rgba(23, 42, 102, .75); color: #fff; pointer-events: none; }
+.picker-item.up-wait img { opacity: .7; }
+.picker-item.up-done .picker-state { background: rgba(26, 127, 55, .88); }
+.picker-item.up-fail .picker-state { background: rgba(217, 48, 37, .92); }

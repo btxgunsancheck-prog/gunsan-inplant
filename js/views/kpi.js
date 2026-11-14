@@ -30,7 +30,7 @@
     const saved = Store.draftGet('kpi') || {};
     let code = saved.code || 'S1';
     let values = saved.values || {};
-    let issuePicker, counterPicker;
+    let issuePicker, counterPicker, pre, issuePre, counterPre;
     const body = h('div');
     const tabs = h('div', { class: 'tabs', role: 'tablist' });
     const form = h('form', { class: 'narrow write-form' });
@@ -47,8 +47,13 @@
         type: 'button', class: 'tab' + (c === code ? ' on' : ''), role: 'tab', 'aria-selected': String(c === code),
         onclick: () => { values = collect(); code = c; draw(); save(); }
       }, n)));
-      issuePicker = PhotoPicker(3, '문제 사진');
-      counterPicker = PhotoPicker(3, '대책 사진');
+      /* 사진은 고르는 즉시 미리 올린다. 지표를 바꾸면 새로 고른다(사고발생은 비공개 폴더). */
+      const drawCode = code;
+      pre = PhotoPreload(() => Api.call('photoDraft', { code: drawCode, date: form.elements.date ? form.elements.date.value : '' }).then((r) => r.ticket));
+      issuePre = pre.kind('issue');
+      counterPre = pre.kind('counter');
+      issuePicker = PhotoPicker(3, '문제 사진', issuePre);
+      counterPicker = PhotoPicker(3, '대책 사진', counterPre);
       const val = (n) => values[n] || '';
       const today = App.home.today;
       const submit = h('button', { class: 'btn wide', type: 'submit' }, '저장');
@@ -78,16 +83,27 @@
       form.onsubmit = async (e) => {
         e.preventDefault();
         submit.disabled = true;
+        let photos = null;
+        let left = [];
+        if (issuePicker.files.length || counterPicker.files.length) {
+          submit.textContent = '사진 올리는 중';
+          const a = await issuePre.collect(issuePicker.files);
+          const b = await counterPre.collect(counterPicker.files);
+          issuePicker.draw(); counterPicker.draw();
+          const done = a.done.concat(b.done);
+          left = a.failed.map((file) => ({ file, kind: 'issue' })).concat(b.failed.map((file) => ({ file, kind: 'counter' })));
+          if (done.length) photos = { ticket: await pre.ticket(), files: done };
+        }
+        submit.textContent = '저장 중';
         let ticket;
         try {
-          ticket = (await Api.call('kpiSave', Object.assign(collect(), { code }))).ticket;
-        } catch (err) { UI.toast(err.message, true); submit.disabled = false; return; }
+          ticket = (await Api.call('kpiSave', Object.assign(collect(), { code }, photos ? { photos } : {}))).ticket;
+        } catch (err) { UI.toast(err.message, true); submit.disabled = false; submit.textContent = '저장'; return; }
         Store.draftClear('kpi');
         const box = ProgressBox(progress);
         const finish = () => { UI.toast('저장했습니다.'); values = {}; App.refreshInit(); draw(); };
-        const jobs = issuePicker.files.map((file) => ({ file, kind: 'issue' }))
-          .concat(counterPicker.files.map((file) => ({ file, kind: 'counter' })));
-        if (jobs.length) sendPhotos(jobs, ticket, box, finish); else finish();
+        /* 미리 올리기에 실패한 사진만 저장 뒤에 다시 올린다. */
+        if (left.length) sendPhotos(left, ticket, box, finish); else finish();
       };
     }
     form.addEventListener('input', save);
@@ -160,27 +176,24 @@
             UI.field('완료일', h('input', { name: 'doneDate', type: 'date', value: d.doneDate || '' })),
             UI.field('현황', UI.select('progress', ['진행중', '완료'], d.progress, '선택')))));
       forms[item.id] = form;
-      const counter = PhotoPicker(Math.max(0, 3 - item.counterCount), '대책 사진 추가');
+      /* 대책 사진은 고르는 즉시 미리 올리고, 확인할 때 함께 붙인다. */
+      const pre = PhotoPreload(() => item.ticket || Api.call('photoTicket', { id: item.id }).then((r) => r.ticket));
+      const counterPre = pre.kind('counter');
+      const counter = PhotoPicker(Math.max(0, 3 - item.counterCount), '대책 사진 추가', counterPre);
       const reason = h('input', { placeholder: '집계 제외 사유(필수)', 'aria-label': '집계 제외 사유' });
+      const confirmBtn = h('button', { class: 'btn', type: 'button' }, '확인');
       const confirmOne = async () => {
-        if (counter.files.length) {
-          const jobs = counter.files.map((file, i) => ({ file, kind: 'counter', seq: i + 1 }));
-          UI.toast('사진 올리는 중입니다.');
-          try {
-            const ticket = item.ticket || (await Api.call('photoTicket', { id: item.id })).ticket;
-            const { done, failed } = await uploadPhotos(jobs, ticket, () => {});
-            if (failed.length) {
-              if (done.length) await Api.call('photoAttach', { ticket, files: done });
-              counter.files.splice(0, counter.files.length, ...failed.map((j) => j.file));
-              UI.toast('사진 ' + failed.length + '장을 올리지 못했습니다. 다시 시도해 주세요.', true);
-              return;
-            }
-            confirmItems([item.id], { [item.id]: { ticket, files: done.map((d) => ({ fileId: d.fileId, kind: 'counter' })) } });
-            return;
-          } catch (e) { UI.toast(e.message, true); return; }
-        }
-        confirmItems([item.id]);
+        confirmBtn.disabled = true;
+        try {
+          if (!counter.files.length) { await confirmItems([item.id]); return; }
+          if (counter.files.some((f) => counterPre.state(f) !== 'done')) UI.toast('사진 올리는 중입니다.');
+          const { done, failed } = await counterPre.collect(counter.files);
+          counter.draw();
+          if (failed.length) { UI.toast('사진 ' + failed.length + '장을 올리지 못했습니다. 사진을 빼거나 다시 눌러 주세요.', true); return; }
+          await confirmItems([item.id], { [item.id]: { ticket: await pre.ticket(), files: done } });
+        } finally { confirmBtn.disabled = false; }
       };
+      confirmBtn.onclick = confirmOne;
       return h('article', { class: 'card' },
         h('header', { class: 'card-head' }, check,
           h('span', { class: 'tag' }, item.code + ' ' + nameOf(item.code)),
@@ -191,7 +204,7 @@
         photosOf(item, 'counter', item.counterPhotos, item.counterCount),
         form, counter.el,
         h('div', { class: 'row-btns confirm-actions' },
-          h('button', { class: 'btn', type: 'button', onclick: confirmOne }, '확인'),
+          confirmBtn,
           h('details', { class: 'exclude' }, h('summary', null, '집계 제외'),
             h('div', { class: 'row-btns' }, reason,
               h('button', { class: 'btn ghost', type: 'button', onclick: async () => {
