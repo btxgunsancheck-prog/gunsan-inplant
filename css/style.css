@@ -799,3 +799,28 @@ select:not([multiple]) {
 }
 table.data select:not([multiple]) { padding-right: 30px; background-position: right 11px center; }
 .toolbar select:not([multiple]) { padding-right: 38px; background-position: right 16px center; }
+
+/* ---------- 개선사항(관리자용) 입력과 우수개선현황 ---------- */
+.best-link { margin: 4px 0 8px; }
+.best-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; }
+.best-h { margin: 8px 0 -4px; }
+.period-row { display: flex; align-items: center; gap: 8px; }
+.period-row input { flex: 1 1 0; min-width: 0; }
+.best-card { margin-bottom: 20px; padding: 18px 20px; border: 1px solid #dfe4f0; border-radius: 16px; background: #fff; }
+.best-no { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 10px; margin-bottom: 12px; border-bottom: 2px solid var(--accent); }
+.best-no strong { font-size: 16px; color: var(--accent); }
+.best-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 0 0 14px; }
+.best-meta dt { font-size: 12px; color: var(--text-sub); }
+.best-meta dd { margin: 2px 0 0; font-weight: 600; overflow-wrap: anywhere; }
+.best-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
+.best-cols > div, .best-effect { padding: 12px 14px; border-radius: 12px; background: #f6f8fd; }
+.best-cols h4, .best-effect h4 { margin: 0 0 6px; font-size: 14px; color: var(--accent); }
+.best-cols h4.center { text-align: center; letter-spacing: 4px; }
+.best-effect { margin-bottom: 14px; }
+.best-effect p { margin: 0 0 4px; }
+@media (max-width: 833px) {
+  .best-grid, .best-cols { grid-template-columns: minmax(0, 1fr); }
+  .best-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .best-card { padding: 14px; }
+}
+@media print { .best-card { break-inside: avoid; } }
