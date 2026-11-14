@@ -39,26 +39,85 @@ ImageTool.square = async function (file, size = 300) {
   } finally { URL.revokeObjectURL(url); }
 };
 
-/* 사진 선택 칸. 고른 사진의 미리보기와 삭제를 맡는다. */
-function PhotoPicker(max, label) {
+/* 사진 선택 칸. 고른 사진의 미리보기와 삭제를 맡는다.
+   preload를 주면 고르는 즉시 뒤에서 미리 올리고, 사진 위에 진행 상태를 보여 준다. */
+function PhotoPicker(max, label, preload) {
   const files = [];
+  const urls = new Map();
   const row = h('div', { class: 'picker-row' });
   const input = h('input', { type: 'file', accept: 'image/*', multiple: true, hidden: true, onchange: () => {
-    Array.from(input.files).forEach((f) => { if (files.length < max) files.push(f); });
+    Array.from(input.files).forEach((f) => {
+      if (files.length >= max) return;
+      files.push(f);
+      if (preload) preload.add(f, draw);
+    });
     if (input.files.length && files.length >= max) UI.toast('사진은 최대 ' + max + '장까지 올릴 수 있습니다.');
     input.value = '';
     draw();
   } });
+  const STATE = { wait: '올리는 중', done: '올림', fail: '다시 올림 필요' };
   function draw() {
     fill(row,
-      files.map((f, i) => h('div', { class: 'picker-item' },
-        h('img', { src: URL.createObjectURL(f), alt: '선택한 사진' }),
-        h('button', { type: 'button', class: 'picker-x', 'aria-label': '사진 빼기', onclick: () => { files.splice(i, 1); draw(); } }, '×'))),
+      files.map((f, i) => {
+        if (!urls.has(f)) urls.set(f, URL.createObjectURL(f));
+        const st = preload ? preload.state(f) : '';
+        return h('div', { class: 'picker-item' + (st ? ' up-' + st : '') },
+          h('img', { src: urls.get(f), alt: '선택한 사진' }),
+          st ? h('span', { class: 'picker-state' }, STATE[st]) : null,
+          h('button', { type: 'button', class: 'picker-x', 'aria-label': '사진 빼기', onclick: () => { files.splice(i, 1); draw(); } }, '×'));
+      }),
       files.length < max ? h('button', { type: 'button', class: 'picker-add', onclick: () => input.click() }, UI.icon('photo'), h('span', null, '사진 추가')) : ''
     );
   }
   draw();
-  return { el: h('div', { class: 'field' }, h('span', { class: 'field-label' }, label + ' (최대 ' + max + '장)'), row, input), files };
+  return { el: h('div', { class: 'field' }, h('span', { class: 'field-label' }, label + ' (최대 ' + max + '장)'), row, input), files, draw };
+}
+
+/* 미리 올리기. getTicket은 표(ticket)를 돌려주는 함수로, 처음 사진을 고를 때 한 번만 부른다.
+   저장할 때 collect로 끝난 결과를 모은다. 실패한 사진은 한 번 더 올려 본다. */
+let preloadSeq = 0;
+function PhotoPreload(getTicket) {
+  const jobs = new Map();
+  const states = new Map();
+  let ticketP = null;
+  const ticket = () => {
+    if (!ticketP) ticketP = Promise.resolve().then(getTicket).catch((e) => { ticketP = null; throw e; });
+    return ticketP;
+  };
+  const start = (file, kind, redraw) => {
+    states.set(file, 'wait');
+    const p = (async () => {
+      const t = await ticket();
+      const data = await ImageTool.compress(file);
+      const res = await Api.call('photoUpload', { ticket: t, seq: ++preloadSeq, data });
+      return { fileId: res.fileId, kind };
+    })();
+    jobs.set(file, p);
+    p.then(() => states.set(file, 'done'), () => states.set(file, 'fail')).then(() => { if (redraw) redraw(); });
+    return p;
+  };
+  return {
+    ticket,
+    /* 사진 칸 하나(kind: issue, counter)에 붙일 미리 올리기 */
+    kind(kind) {
+      let redraw = null;
+      return {
+        add(file, draw) { redraw = draw; start(file, kind, draw); },
+        state(file) { return states.get(file) || ''; },
+        async collect(files) {
+          const done = [];
+          const failed = [];
+          for (const f of files) {
+            if (!jobs.has(f)) start(f, kind, redraw);
+            let r = await jobs.get(f).catch(() => null);
+            if (!r) r = await start(f, kind, redraw).catch(() => null);
+            if (r) done.push(r); else failed.push(f);
+          }
+          return { done, failed };
+        }
+      };
+    }
+  };
 }
 
 /* 사진을 최대 3장씩 동시에 올린다. job: { file, kind, seq } */
