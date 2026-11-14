@@ -676,3 +676,8 @@ a.sum-card:hover { text-decoration: none; transform: translateY(-2px); }
   .confirm-actions details.exclude .row-btns { flex-direction: column; align-items: stretch; }
   body:has(.tabbar:not([hidden])) .bulk-bar { position: fixed; left: 0; right: 0; bottom: calc(60px + env(safe-area-inset-bottom)); }
 }
+
+/* 아이폰 Safari: 날짜 칸이 고유 최소 폭 때문에 카드 밖으로 나가는 것 방지 */
+input[type=date], input[type=month], input[type=time] { min-width: 0; max-width: 100%; box-sizing: border-box; display: block; -webkit-appearance: none; appearance: none; }
+input[type=date]::-webkit-date-and-time-value { text-align: left; }
+.field, .card-form > *, .optional { min-width: 0; }

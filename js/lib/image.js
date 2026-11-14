@@ -62,7 +62,7 @@ function PhotoPicker(max, label) {
 }
 
 /* 사진을 최대 3장씩 동시에 올린다. job: { file, kind, seq } */
-async function uploadPhotos(jobs, ticket, onProgress) {
+async function uploadPhotos(jobs, ticket, onProgress, attachOne) {
   let next = 0;
   let finished = 0;
   const done = [];
@@ -72,8 +72,8 @@ async function uploadPhotos(jobs, ticket, onProgress) {
       const job = jobs[next++];
       try {
         const data = await ImageTool.compress(job.file);
-        const res = await Api.call('photoUpload', { ticket, seq: job.seq, data });
-        done.push({ fileId: res.fileId, kind: job.kind || '' });
+        const res = await Api.call('photoUpload', Object.assign({ ticket, seq: job.seq, data }, attachOne ? { attach: true, kind: job.kind || '' } : {}));
+        done.push({ fileId: res.fileId, kind: job.kind || '', attached: !!res.attached });
       } catch (e) {
         failed.push(job);
       }
@@ -89,8 +89,8 @@ function sendPhotos(jobs, ticket, box, finish) {
   jobs.forEach((job, i) => { job.seq = i + 1; });
   const go = async (list) => {
     box.show(0, list.length);
-    const { done, failed } = await uploadPhotos(list, ticket, (i, n) => box.show(i, n));
-    if (done.length) {
+    const { done, failed } = await uploadPhotos(list, ticket, (i, n) => box.show(i, n), list.length === 1);
+    if (done.length && !done.every((d) => d.attached)) {
       try {
         await Api.call('photoAttach', { ticket, files: done });
       } catch (e) {
