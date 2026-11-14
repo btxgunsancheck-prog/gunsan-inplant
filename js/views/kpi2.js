@@ -292,7 +292,7 @@ const KpiData = (() => {
       const deptTabs = d.depts.filter((x) => /^물류[1-4]직$/.test(x));
       const trend = h('div');
       fill(body,
-        deptTabs.length > 1 ? h('div', { class: 'seg' }, deptTabs.map((x) => h('a', { class: 'seg-btn' + (x === dept ? ' on' : ''), href: '#/kpi/' + x.charAt(2) }, x))) : null,
+        deptTabs.length > 1 ? h('div', { class: 'seg' }, (UI.has('KPI_VIEW_ALL') ? [h('a', { class: 'seg-btn', href: '#/kpi/team' }, '팀 전체')] : []).concat(deptTabs.map((x) => h('a', { class: 'seg-btn' + (x === dept ? ' on' : ''), href: '#/kpi/' + x.charAt(2) }, x)))) : null,
         summaryCards(judgeCount(T, dept, T.curMon)),
         h('div', { class: 'panel-grid' },
           h('div', { class: 'panel' }, UI.cardHead('chart', '월별 달성 비율 추이'), trend),
