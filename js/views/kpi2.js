@@ -393,7 +393,7 @@ const KpiData = (() => {
         try { await Api.call(name, { ym: sel.value }); UI.toast('처리했습니다.'); Router.render(); } catch (e) { UI.toast(e.message, true); }
       };
       if (UI.has('KPI_TEAM') || UI.has('ADMIN')) {
-        closeBox.append(sel);
+        closeBox.append(h('span', { class: 'sub' }, '마감할 월'), sel);
         if (UI.has('KPI_TEAM')) closeBox.append(h('button', { class: 'btn', type: 'button', onclick: () => act('kpiClose') }, '월 확인(마감)'));
         if (UI.has('ADMIN')) closeBox.append(h('button', { class: 'btn ghost', type: 'button', onclick: () => act('kpiReopen') }, '마감 해제'));
       }
