@@ -65,3 +65,26 @@ const App = {
 
 Router.add('/login', (params, app) => { Router.go('/'); });
 App.boot();
+
+/* 새 버전 확인. 홈 화면 앱은 예전 화면을 오래 들고 있으므로 version.json을 캐시 없이 확인한다.
+   켤 때 바뀌었으면 바로 새로 열고, 쓰는 도중에 다시 볼 때는 안내 막대만 띄운다(입력 중인 내용 보호). */
+(function () {
+  const mine = document.documentElement.dataset.ver || '';
+  let shown = false;
+  const latest = () => fetch('version.json?nc=' + Date.now(), { cache: 'no-store' }).then((r) => r.json()).then((j) => j.v || '').catch(() => '');
+  const open = (v) => location.replace(location.pathname + '?v=' + encodeURIComponent(v) + location.hash);
+  latest().then((v) => {
+    if (!v || v === mine) return;
+    try { if (sessionStorage.getItem('gi_ver_try') === v) return; sessionStorage.setItem('gi_ver_try', v); } catch (e) { return; }
+    open(v);
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || shown) return;
+    latest().then((v) => {
+      if (!v || v === mine || shown) return;
+      shown = true;
+      document.body.append(h('div', { class: 'update-bar', role: 'status' }, h('span', null, '새 버전이 나왔습니다.'),
+        h('button', { class: 'btn', type: 'button', onclick: () => open(v) }, '새로 열기')));
+    });
+  });
+})();
