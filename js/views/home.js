@@ -5,7 +5,7 @@
 const Home3D = (() => {
   let host = null;
   const V = 'assets/video/';
-  const VER = '?v=4'; /* 영상을 다시 만들면 올린다 */
+  const VER = '?v=5'; /* 영상을 다시 만들면 올린다 */
   return {
     element() {
       if (host) return host;
