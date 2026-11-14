@@ -118,7 +118,7 @@
     const stopMsg = x.name + '님의 사이트 사용을 중지할까요? QR장비점검 사용은 그대로입니다.';
     return h('div', { class: 'tile user-edit' },
       h('h2', { class: 'block-h' }, isNew ? '새 사용자 등록' : x.name + ' (' + x.empNo + ')' + (x.site ? '' : ' 사이트 등록')),
-      h('div', { class: 'toolbar wrap-row' }, UI.field('사번', f.empNo), UI.field('성명', f.name), UI.field('직급', f.rank), UI.field('소속', f.dept)),
+      h('div', { class: 'user-fields' }, UI.field('사번', f.empNo), UI.field('성명', f.name), UI.field('직급', f.rank), UI.field('소속', f.dept)),
       h('p', { class: 'field-label' }, '권한'),
       h('div', { class: 'perm-grid' }, boxes.map((b) => h('label', { class: 'check' }, b.el, h('span', null, PERM_NAME[b.p] || b.p)))),
       h('p', { class: 'sub' }, '성명, 직급, 소속은 QR장비점검과 함께 쓰는 정보라 바꾸면 QR장비점검에도 반영됩니다.'),
