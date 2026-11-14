@@ -166,8 +166,10 @@ const KpiData = (() => {
     }
     const add = cumulative(T, dept, code);
     if (add) out.push(add);
+    const vend = code === 'Q2' ? vendorChart(T, dept) : null;
+    if (vend) out.push(vend);
     host.replaceChildren(...out.map((o) => o.c.el));
-    loadChart().then(() => { out.forEach((o) => charts.push(new window.Chart(o.c.canvas, o.cfg))); }).catch(() => UI.toast('차트를 불러오지 못했습니다.', true));
+    loadChart().then(() => { out.forEach((o) => { if (o.cfg) charts.push(new window.Chart(o.c.canvas, o.cfg)); }); }).catch(() => UI.toast('차트를 불러오지 못했습니다.', true));
   }
 
   function cumulative(T, dept, code) {
@@ -199,6 +201,29 @@ const KpiData = (() => {
     if (['Q2', 'Q3', 'C1', 'D1', 'D2'].includes(code)) { opts.scales.x.stacked = true; opts.scales.y.stacked = true; }
     opts.scales.x.ticks.font.size = 9;
     return { c: box, cfg: { type: 'bar', data: { labels: names, datasets: sets }, options: opts } };
+  }
+  /* 업체별 납입이상 건수(올해 누적). 건수가 가장 많은 업체를 Worst 업체로 빨간색 표시한다. 업체명을 적은 건만 센다. */
+  function vendorChart(T, dept) {
+    const totals = {};
+    (dept === TEAM ? DEPTS : [dept]).forEach((d) => {
+      const want = d + '|Q2|v|';
+      Object.keys(T.m).filter((id) => id.startsWith(want)).forEach((id) => {
+        const name = id.slice(want.length);
+        totals[name] = (totals[name] || 0) + Object.values(T.m[id]).reduce((s, c) => s + c.v, 0);
+      });
+    });
+    const list = Object.entries(totals).filter((x) => x[1] > 0).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, 10);
+    if (!list.length) return { c: { el: h('figure', { class: 'chart-box' }, h('figcaption', null, '업체별 납입이상 (Worst 업체)'), h('p', { class: 'sub' }, '업체명이 입력된 납입이상 건이 아직 없습니다.')), canvas: null }, cfg: null };
+    const worst = list[0];
+    const box = chartBox('업체별 납입이상 누적 (Worst 업체: ' + worst[0] + ', ' + worst[1] + '건)');
+    const opts = baseOpts(false);
+    opts.indexAxis = 'y';
+    opts.plugins = Object.assign({}, opts.plugins, { legend: { display: false } });
+    const cfg = { type: 'bar', data: { labels: list.map((x) => x[0]), datasets: [{
+      label: '납입이상 건수', data: list.map((x) => x[1]), borderRadius: 3,
+      backgroundColor: list.map((x, i) => (i === 0 ? '#D93025' : '#7F95E8')), borderColor: list.map((x, i) => (i === 0 ? '#D93025' : '#7F95E8')), borderWidth: 1
+    }] }, options: opts };
+    return { c: box, cfg };
   }
   const sumOf = (o) => Object.values(o).reduce((a, b) => a + b, 0);
 
