@@ -69,6 +69,18 @@ Router.add('/', (params, app) => {
     Home3D.element(),
     h('div', { class: 'hb-text' }, h('h1', null, '군산 사내물류팀'), h('p', null, '오늘의 현장을 ', h('em', { class: 'hand' }, '함께'), ' 기록합니다.')),
     h('p', { class: 'hb-slogan', lang: 'en' }, 'Together', h('br'), 'for a Better Tomorrow'));
+  if (home.guest) {
+    /* 외부 열람: 마감월 팀 전체 KPI와 우수개선현황 바로가기만 보여 준다. */
+    const gk = kpi['팀'] || { G: 0, Y: 0, R: 0 };
+    const gt = gk.G + gk.Y + gk.R;
+    app.replaceChildren(top, h('section', { class: 'home-grid guest-grid' },
+      h('div', { class: 'tile t-kpi' }, UI.cardHead('chart', home.kpiMonth ? '마감월(' + Number(home.kpiMonth.slice(5, 7)) + '월) KPI' : '마감월 KPI', '#/kpi/team'),
+        gt ? h('p', { class: 'big-rate' }, h('strong', null, UI.num(UI.pct(gk.G, gt), '%')), h('span', { class: 'sub' }, '팀 전체 달성 비율'))
+          : UI.empty(home.kpiMonth ? '표시할 KPI가 없습니다.' : '마감이 끝난 달이 없습니다.', 'data', true)),
+      h('div', { class: 'tile' }, UI.cardHead('trophy', '우수개선현황', '#/kpi/best'),
+        h('p', { class: 'sub' }, '개선 활동 중 우수 사례로 선정된 건을 확인할 수 있습니다.'))));
+    return;
+  }
   app.replaceChildren(
     top,
     h('section', { class: 'home-grid' },

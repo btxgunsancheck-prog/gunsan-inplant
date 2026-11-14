@@ -847,3 +847,11 @@ table.data select:not([multiple]) { padding-right: 30px; background-position: ri
 /* 조회 월 선택 */
 .month-pick { align-items: center; margin: 0 0 16px; }
 .month-pick select { width: auto; min-width: 110px; }
+
+/* 외부 열람 홈: 카드 2개 */
+.home-grid.guest-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 833px) { .home-grid.guest-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* 로그인 화면의 게스트 입장 */
+.guest-entry { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); text-align: center; }
+.guest-entry .hint { margin: 8px 0 0; font-size: 13px; color: var(--text-sub); word-break: keep-all; }

@@ -234,10 +234,10 @@
       return h('article', { class: 'best-card' },
         h('header', { class: 'best-no' },
           h('span', { class: 'best-tags' }, isBest(it) ? h('span', { class: 'chip good' }, '우수개선') : h('span', { class: 'chip' }, '검토 대기'),
-            it.status === '확인' ? null : h('span', { class: 'chip warn' }, '직장 확인 전')),
+            it.status === '확인' || UI.has('GUEST') ? null : h('span', { class: 'chip warn' }, '직장 확인 전')),
           h('strong', null, isBest(it) ? year + '-사내-' + String(no).padStart(2, '0') : it.date)),
         h('dl', { class: 'best-meta' },
-          [['팀', it.dept === '팀' ? '사내물류팀' : '사내물류팀 (' + it.dept + ')'], ['직장(공정)', d.process || '-'], ['활동기간', d.period || it.date], ['담당자', d.owner || it.author]]
+          [['팀', it.dept === '팀' || UI.has('GUEST') ? '사내물류팀' : '사내물류팀 (' + it.dept + ')'], ['직장(공정)', d.process || '-'], ['활동기간', d.period || it.date], ['담당자', d.owner || it.author]]
             .map(([k, v]) => h('div', null, h('dt', null, k), h('dd', null, v)))),
         h('div', { class: 'best-cols' },
           h('div', null, h('h4', null, '문제점'), bullet(d.issue)),

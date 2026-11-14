@@ -11,6 +11,13 @@ const Nav = (() => {
 
   function menus() {
     const u = App.user;
+    /* 외부 열람 계정: 팀 전체 KPI와 우수개선현황만 보인다. */
+    if (UI.has('GUEST')) {
+      return [
+        { key: 'kpi', label: 'KPI', first: [link('팀 전체 현황', '#/kpi/team')], groups: [] },
+        { key: 'best', label: '우수개선현황', first: [link('우수개선현황', '#/kpi/best')], groups: [] }
+      ];
+    }
     const notices = (App.home.notices || []).map((n) => link(n.title, '#/board/notice/' + n.id));
     const viewAll = UI.has('KPI_VIEW_ALL');
     const kpiFirst = [];
@@ -119,9 +126,9 @@ const Nav = (() => {
       h('strong', { class: 'card-name' }, u.name),
       h('span', { class: 'card-sub' }, u.dept + ' / ' + u.rank),
       h('div', { class: 'card-actions' },
-        h('button', { type: 'button', onclick: () => fileIn.click() }, h('span', { class: 'card-ico' }, '✎'), '사진 변경'),
-        h('a', { href: '#/account/password', onclick: () => setAvatar(false) }, h('span', { class: 'card-ico' }, '⚿'), '비밀번호'),
-        h('button', { type: 'button', onclick: () => App.logout() }, h('span', { class: 'card-ico' }, '⇥'), '로그아웃')),
+        UI.has('GUEST') ? null : h('button', { type: 'button', onclick: () => fileIn.click() }, h('span', { class: 'card-ico' }, '✎'), '사진 변경'),
+        u.empNo === 'GUEST' ? null : h('a', { href: '#/account/password', onclick: () => setAvatar(false) }, h('span', { class: 'card-ico' }, '⚿'), '비밀번호'),
+        h('button', { type: 'button', onclick: () => App.logout() }, h('span', { class: 'card-ico' }, '⇥'), u.empNo === 'GUEST' ? '나가기' : '로그아웃')),
       fileIn);
   }
 
@@ -180,6 +187,12 @@ const Nav = (() => {
     const bar = document.getElementById('tabbar');
     const exec = UI.has('VIEW_EXEC');
     const tab = (key, href, icon, label) => h('a', { class: 'tab-item', href, dataset: { tab: key } }, UI.icon(icon), h('span', null, label));
+    if (UI.has('GUEST')) {
+      bar.replaceChildren(tab('home', '#/', 'home', '홈'), tab('kpi', '#/kpi/team', 'chart', 'KPI'), tab('best', '#/kpi/best', 'trophy', '우수개선'));
+      bar.hidden = false;
+      markTab();
+      return;
+    }
     bar.replaceChildren(
       tab('home', '#/', 'home', '홈'),
       exec ? tab('notice', '#/board/notice', 'megaphone', '공지') : tab('write', '#/kpi/write', 'edit', '작성'),
@@ -193,7 +206,7 @@ const Nav = (() => {
     const bar = document.getElementById('tabbar');
     if (!bar || bar.hidden) return;
     const p = Router.path().split('?')[0];
-    const key = p === '/' ? 'home' : p.startsWith('/kpi/write') ? 'write' : p.startsWith('/board/notice') ? 'notice' : p === '/qr' ? 'qr' : p.startsWith('/kpi') ? 'kpi' : '';
+    const key = p === '/' ? 'home' : p.startsWith('/kpi/best') ? 'best' : p.startsWith('/kpi/write') ? 'write' : p.startsWith('/board/notice') ? 'notice' : p === '/qr' ? 'qr' : p.startsWith('/kpi') ? 'kpi' : '';
     bar.querySelectorAll('[data-tab]').forEach((a) => a.classList.toggle('on', a.dataset.tab === key));
   }
 
