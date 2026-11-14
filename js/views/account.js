@@ -26,9 +26,15 @@ Views.login = function () {
     UI.field('사번', emp), UI.field('비밀번호', pw),
     h('label', { class: 'check' }, remember, h('span', null, '로그인 상태 유지')),
     msg, btn);
-  app.replaceChildren(h('div', { class: 'login' },
-    h('img', { src: 'assets/logo.png', alt: 'BTRIPLE', class: 'login-logo', width: 172, height: 32 }),
-    h('h1', null, '군산 사내물류팀'), form));
+  /* 왼쪽(PC): 물류 그림(unDraw)과 소개, 오른쪽: 로그인 카드. 휴대폰에서는 위아래로 쌓인다. */
+  app.replaceChildren(h('div', { class: 'login login-split' },
+    h('section', { class: 'login-art' },
+      h('p', { class: 'login-tag', lang: 'en' }, 'Together for a Better Tomorrow'),
+      h('h2', null, '오늘의 현장을 ', h('em', { class: 'hand' }, '함께'), ' 기록합니다.'),
+      h('img', { src: 'assets/illust/logistics.svg', alt: '', class: 'login-illust', width: 400, height: 203, decoding: 'async' })),
+    h('section', { class: 'login-card' },
+      h('img', { src: 'assets/logo.png', alt: 'BTRIPLE', class: 'login-logo', width: 172, height: 32 }),
+      h('h1', null, '군산 사내물류팀'), form)));
 };
 
 Router.add('/account/password', (params, app) => {
