@@ -431,6 +431,7 @@ const KpiData = (() => {
     if (!UI.has('KPI_VIEW_ALL')) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
     const body = h('div', { class: 'wrap wide' }, UI.skeleton(10));
     const draw = (d) => {
+      destroyCharts();
       const T = tools(d);
       const closedSet = new Set(d.closed);
       const year = d.year;
@@ -487,13 +488,25 @@ const KpiData = (() => {
       };
       paintM();
       requestAnimationFrame(() => { chips.scrollLeft = chips.scrollWidth; });
-      fill(body, deptCards,
+      /* 직별 화면과 같은 구성: 직 선택, 달성·주의·미달 카드, 월별 추이와 항목별 비율을 맨 위에 둔다. */
+      const deptTabs = d.depts.filter((x) => /^물류[1-4]직$/.test(x));
+      const trend = h('div');
+      fill(body,
+        h('div', { class: 'seg' }, [h('a', { class: 'seg-btn on', href: '#/kpi/team' }, '팀 전체')].concat(deptTabs.map((x) => h('a', { class: 'seg-btn', href: '#/kpi/' + x.charAt(2) }, x)))),
+        summaryCards(judgeCount(T, TEAM, cur)),
+        h('div', { class: 'panel-grid' },
+          h('div', { class: 'panel' }, UI.cardHead('chart', '월별 달성 비율 추이'), trend),
+          h('div', { class: 'panel' }, UI.cardHead('list', cur + '월 항목별 달성 비율'), tabBars(T, TEAM))),
+        deptCards,
         h('div', { class: 'row-btns no-print' }, h('a', { class: 'btn ghost', href: '#/kpi/meeting' }, '미팅용 보기'), h('button', { class: 'btn ghost pc-only', type: 'button', onclick: () => window.print() }, '인쇄')),
         closeBox.childNodes.length ? closeBox : null,
+        h('h2', { class: 'block-h pc-only' }, '지표별 월 실적'),
         h('div', { class: 'table-wrap pc-only' }, h('table', { class: 'data click' },
           h('thead', null, h('tr', null, h('th', null, '지표'), h('th', null, '구분'), MONTHS.map((x) => h('th', { class: 'num' }, x + '월', closedSet.has(ymOf(x)) ? h('span', { class: 'closed' }, '마감') : '')))),
           h('tbody', null, rows))),
+        h('h2', { class: 'block-h m-only' }, '지표별 월 실적'),
         h('div', { class: 'm-only' }, chips, mlist));
+      trendChart(trend, T, TEAM);
     };
     app.replaceChildren(UI.hero('팀 전체 현황', new Date().getFullYear() + '년 ScoreCard'), h('section', { class: 'section' }, body));
     load(alive, draw, body);
