@@ -777,3 +777,12 @@ table.month-table th, table.month-table td { padding: 9px 8px; }
   .admin-head { flex-wrap: wrap; gap: 8px; }
   .admin-head h1 { font-size: 26px; word-break: keep-all; }
 }
+
+/* 우수사원 자기평가: 선택 칸 3개와 저장 버튼 */
+.self-rate { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 12px; align-items: end; margin-bottom: 16px; }
+.self-rate select { width: 100%; height: 44px; min-height: 44px; flex: none; }
+.self-rate .btn { height: 44px; }
+@media (max-width: 833px) {
+  .self-rate { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .self-rate .btn { grid-column: 1 / -1; width: 100%; }
+}
