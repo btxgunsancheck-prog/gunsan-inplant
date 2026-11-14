@@ -169,6 +169,32 @@ const Nav = (() => {
       onclick: () => { if (current === m.key) hide(); else show(m.key); }
     }, m.label)));
     drawAvatar();
+    drawTabbar();
+  }
+
+  function kpiHref() {
+    const u = App.user;
+    return UI.has('KPI_VIEW_ALL') || !/^물류[1-4]직$/.test(u.dept) ? '#/kpi/team' : '#/kpi/' + u.dept.charAt(2);
+  }
+  function drawTabbar() {
+    const bar = document.getElementById('tabbar');
+    const exec = UI.has('VIEW_EXEC');
+    const tab = (key, href, icon, label) => h('a', { class: 'tab-item', href, dataset: { tab: key } }, UI.icon(icon), h('span', null, label));
+    bar.replaceChildren(
+      tab('home', '#/', 'home', '홈'),
+      exec ? tab('notice', '#/board/notice', 'megaphone', '공지') : tab('write', '#/kpi/write', 'edit', '작성'),
+      tab('qr', '#/qr', 'qr', 'QR점검'),
+      tab('kpi', kpiHref(), 'chart', 'KPI'),
+      h('button', { class: 'tab-item', type: 'button', 'aria-label': '전체 메뉴', onclick: () => setMobile(document.getElementById('mobile-menu').hidden) }, UI.icon('list'), h('span', null, '전체')));
+    bar.hidden = false;
+    markTab();
+  }
+  function markTab() {
+    const bar = document.getElementById('tabbar');
+    if (!bar || bar.hidden) return;
+    const p = Router.path().split('?')[0];
+    const key = p === '/' ? 'home' : p.startsWith('/kpi/write') ? 'write' : p.startsWith('/board/notice') ? 'notice' : p === '/qr' ? 'qr' : p.startsWith('/kpi') ? 'kpi' : '';
+    bar.querySelectorAll('[data-tab]').forEach((a) => a.classList.toggle('on', a.dataset.tab === key));
   }
 
   function bind() {
@@ -185,5 +211,5 @@ const Nav = (() => {
     document.getElementById('menu-btn').addEventListener('click', () => setMobile(document.getElementById('mobile-menu').hidden));
   }
 
-  return { draw, bind, closeAll() { hide(); setAvatar(false); setMobile(false); } };
+  return { draw, bind, closeAll() { hide(); setAvatar(false); setMobile(false); markTab(); } };
 })();

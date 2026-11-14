@@ -54,7 +54,7 @@ function PhotoPicker(max, label) {
       files.map((f, i) => h('div', { class: 'picker-item' },
         h('img', { src: URL.createObjectURL(f), alt: '선택한 사진' }),
         h('button', { type: 'button', class: 'picker-x', 'aria-label': '사진 빼기', onclick: () => { files.splice(i, 1); draw(); } }, '×'))),
-      files.length < max ? h('button', { type: 'button', class: 'picker-add', onclick: () => input.click() }, '사진 추가') : ''
+      files.length < max ? h('button', { type: 'button', class: 'picker-add', onclick: () => input.click() }, UI.icon('photo'), h('span', null, '사진 추가')) : ''
     );
   }
   draw();

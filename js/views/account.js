@@ -3,6 +3,7 @@ const Views = {};
 
 Views.login = function () {
   document.getElementById('nav').hidden = true;
+  document.getElementById('tabbar').hidden = true;
   const app = document.getElementById('app');
   const msg = h('p', { class: 'form-error', role: 'alert' });
   const emp = h('input', { name: 'empNo', autocomplete: 'username', autocapitalize: 'characters', spellcheck: 'false', required: true });

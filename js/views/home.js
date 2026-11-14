@@ -72,15 +72,15 @@ Router.add('/', (params, app) => {
   app.replaceChildren(
     top,
     h('section', { class: 'home-grid' },
-      h('div', { class: 'tile' }, UI.cardHead('chart', '이번 달 KPI', kpiLink),
+      h('div', { class: 'tile t-kpi' }, UI.cardHead('chart', '이번 달 KPI', kpiLink),
         depts.length ? [
           h('p', { class: 'big-rate' }, h('strong', null, UI.num(teamPct, '%')), h('span', { class: 'sub' }, depts.length > 1 ? '팀 전체 달성 비율' : depts[0] + ' 달성 비율')),
           depts.length > 1 ? h('div', { class: 'rate-list' }, depts.map((d) => rateBar(d, '#/kpi/' + d.charAt(2), kpi[d]))) : null
         ] : UI.empty('표시할 KPI가 없습니다.', 'data', true)),
-      h('div', { class: 'tile' }, UI.cardHead('megaphone', '최신 공지', '#/board/notice'), list(home.notices, '#/board/notice/', '등록된 공지가 없습니다.')),
-      h('div', { class: 'tile' }, UI.cardHead('todo', '내 할 일'), tasks.length ? h('div', { class: 'task-list' }, tasks) : UI.empty('지금 처리할 일이 없습니다.', 'done', true)),
-      h('div', { class: 'tile' }, UI.cardHead('board', '업무 게시판', '#/board/work'), list(home.works, '#/board/work/', '등록된 글이 없습니다.')),
-      h('div', { class: 'tile span3' }, UI.cardHead('list', '주요 업무 바로가기'), h('div', { class: 'quick-grid' }, quick)),
+      h('div', { class: 'tile t-notice' }, UI.cardHead('megaphone', '최신 공지', '#/board/notice'), list(home.notices, '#/board/notice/', '등록된 공지가 없습니다.')),
+      h('div', { class: 'tile t-todo' }, UI.cardHead('todo', '내 할 일'), tasks.length ? h('div', { class: 'task-list' }, tasks) : UI.empty('지금 처리할 일이 없습니다.', 'done', true)),
+      h('div', { class: 'tile t-work' }, UI.cardHead('board', '업무 게시판', '#/board/work'), list(home.works, '#/board/work/', '등록된 글이 없습니다.')),
+      h('div', { class: 'tile span3 t-quick' }, UI.cardHead('list', '주요 업무 바로가기'), h('div', { class: 'quick-grid' }, quick)),
       h('div', { class: 'tile team-tile' }, UI.cardHead('people', '우리 팀 현황'),
         h('p', { class: 'big-rate' }, h('strong', null, (home.teamCount || '-') + '명'), h('span', { class: 'sub' }, '사이트 사용 중인 직원')))));
 });

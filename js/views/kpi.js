@@ -33,7 +33,7 @@
     let issuePicker, counterPicker;
     const body = h('div');
     const tabs = h('div', { class: 'tabs', role: 'tablist' });
-    const form = h('form', { class: 'narrow' });
+    const form = h('form', { class: 'narrow write-form' });
     const collect = () => {
       const out = {};
       new FormData(form).forEach((v, k) => { out[k] = v; });
@@ -67,12 +67,14 @@
         issuePicker.el,
         UI.field('대책(COUNTERMEASURE)', h('textarea', { name: 'counter', rows: 3, value: val('counter') })),
         counterPicker.el,
-        UI.field('담당자', h('input', { name: 'owner', value: val('owner') })),
-        UI.field('개선목표일', h('input', { name: 'targetDate', type: 'date', value: val('targetDate') })),
-        UI.field('완료일', h('input', { name: 'doneDate', type: 'date', value: val('doneDate') })),
-        UI.field('현황', UI.select('progress', ['진행중', '완료'], val('progress'), '선택')),
-        UI.field('비고', h('input', { name: 'note', value: val('note') })),
-        submit, progress);
+        h('details', { class: 'optional', open: window.innerWidth >= 834 || ['owner', 'targetDate', 'doneDate', 'progress', 'note'].some((n) => val(n)) },
+          h('summary', null, '담당자·일정·현황 (선택)'),
+          UI.field('담당자', h('input', { name: 'owner', value: val('owner') })),
+          UI.field('개선목표일', h('input', { name: 'targetDate', type: 'date', value: val('targetDate') })),
+          UI.field('완료일', h('input', { name: 'doneDate', type: 'date', value: val('doneDate') })),
+          UI.field('현황', UI.select('progress', ['진행중', '완료'], val('progress'), '선택')),
+          UI.field('비고', h('input', { name: 'note', value: val('note') }))),
+        h('div', { class: 'submit-bar' }, submit), progress);
       form.onsubmit = async (e) => {
         e.preventDefault();
         submit.disabled = true;
@@ -144,14 +146,19 @@
         if (check.checked) selected.add(item.id); else selected.delete(item.id);
         drawBar();
       } });
+      /* 대책·판정·코멘트는 늘 보이고, 담당자·일정·현황은 접어 둔다(PC에서는 펼침, 값이 있으면 펼침). */
+      const wide = window.innerWidth >= 834;
       const form = h('form', { class: 'card-form' },
         UI.field('대책', h('textarea', { name: 'counter', rows: 2, value: d.counter || '' })),
-        UI.field('담당자', h('input', { name: 'owner', value: d.owner || '' })),
-        UI.field('개선목표일', h('input', { name: 'targetDate', type: 'date', value: d.targetDate || '' })),
-        UI.field('완료일', h('input', { name: 'doneDate', type: 'date', value: d.doneDate || '' })),
-        UI.field('현황', UI.select('progress', ['진행중', '완료'], d.progress, '선택')),
         item.code === 'CP' && UI.field('직장 판정', UI.select('judge', ['합리적', '불합리적'], d.judge, '선택')),
-        UI.field('코멘트', h('input', { name: 'comment' })));
+        UI.field('코멘트', h('input', { name: 'comment' })),
+        h('details', { class: 'optional card-more', open: wide || !!(d.owner || d.targetDate || d.doneDate || d.progress) },
+          h('summary', null, '담당자·일정·현황'),
+          h('div', { class: 'card-form' },
+            UI.field('담당자', h('input', { name: 'owner', value: d.owner || '' })),
+            UI.field('개선목표일', h('input', { name: 'targetDate', type: 'date', value: d.targetDate || '' })),
+            UI.field('완료일', h('input', { name: 'doneDate', type: 'date', value: d.doneDate || '' })),
+            UI.field('현황', UI.select('progress', ['진행중', '완료'], d.progress, '선택')))));
       forms[item.id] = form;
       const counter = PhotoPicker(Math.max(0, 3 - item.counterCount), '대책 사진 추가');
       const reason = h('input', { placeholder: '집계 제외 사유(필수)', 'aria-label': '집계 제외 사유' });
@@ -180,14 +187,15 @@
         photosOf(item, 'issue', item.issuePhotos, item.issueCount),
         photosOf(item, 'counter', item.counterPhotos, item.counterCount),
         form, counter.el,
-        h('div', { class: 'row-btns' },
+        h('div', { class: 'row-btns confirm-actions' },
           h('button', { class: 'btn', type: 'button', onclick: confirmOne }, '확인'),
-          reason,
-          h('button', { class: 'btn ghost', type: 'button', onclick: async () => {
-            if (!reason.value.trim()) { UI.toast('집계 제외 사유를 입력해 주세요.', true); return; }
-            try { await Api.call('kpiExclude', { id: item.id, reason: reason.value }); UI.toast('집계에서 제외했습니다.'); App.refreshInit(); load(); }
-            catch (e) { UI.toast(e.message, true); }
-          } }, '집계 제외')));
+          h('details', { class: 'exclude' }, h('summary', null, '집계 제외'),
+            h('div', { class: 'row-btns' }, reason,
+              h('button', { class: 'btn ghost', type: 'button', onclick: async () => {
+                if (!reason.value.trim()) { UI.toast('집계 제외 사유를 입력해 주세요.', true); return; }
+                try { await Api.call('kpiExclude', { id: item.id, reason: reason.value }); UI.toast('집계에서 제외했습니다.'); App.refreshInit(); load(); }
+                catch (e) { UI.toast(e.message, true); }
+              } }, '제외하기')))));
     }
 
     function load() {
