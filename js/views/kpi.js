@@ -123,11 +123,11 @@
       new FormData(forms[id]).forEach((v, k) => { out[k] = v; });
       return out;
     };
-    const confirmItems = async (ids) => {
+    const confirmItems = async (ids, photos) => {
       const patches = {};
       ids.forEach((id) => { patches[id] = patchOf(id); });
       try {
-        await Api.call('kpiConfirm', { ids, patches });
+        await Api.call('kpiConfirm', Object.assign({ ids, patches }, photos ? { photos } : {}));
         UI.toast(ids.length + '건을 확인했습니다.');
         App.refreshInit();
         load();
@@ -165,15 +165,18 @@
       const confirmOne = async () => {
         if (counter.files.length) {
           const jobs = counter.files.map((file, i) => ({ file, kind: 'counter', seq: i + 1 }));
+          UI.toast('사진 올리는 중입니다.');
           try {
-            const { ticket } = await Api.call('photoTicket', { id: item.id });
+            const ticket = item.ticket || (await Api.call('photoTicket', { id: item.id })).ticket;
             const { done, failed } = await uploadPhotos(jobs, ticket, () => {});
-            if (done.length) await Api.call('photoAttach', { ticket, files: done });
             if (failed.length) {
+              if (done.length) await Api.call('photoAttach', { ticket, files: done });
               counter.files.splice(0, counter.files.length, ...failed.map((j) => j.file));
               UI.toast('사진 ' + failed.length + '장을 올리지 못했습니다. 다시 시도해 주세요.', true);
               return;
             }
+            confirmItems([item.id], { [item.id]: { ticket, files: done.map((d) => ({ fileId: d.fileId, kind: 'counter' })) } });
+            return;
           } catch (e) { UI.toast(e.message, true); return; }
         }
         confirmItems([item.id]);
