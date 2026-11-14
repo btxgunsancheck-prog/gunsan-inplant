@@ -12,7 +12,11 @@
       if (!alive()) return;
       fill(body,
         data.items.length
-          ? h('table', { class: 'data board-table' },
+          ? [h('ul', { class: 'post-cards m-only' }, data.items.map((p) => h('li', { class: p.pinned ? 'pinned' : '' },
+            h('a', { href: '#/board/' + board + '/' + p.id },
+              h('span', { class: 'pc-title' }, p.pinned ? h('span', { class: 'chip mini bad' }, board === 'notice' ? '중요' : '고정') : null, p.title),
+              h('span', { class: 'sub pc-meta' }, [p.author, UI.dateOnly(p.created), p.photoCount ? '사진 ' + p.photoCount : ''].filter(Boolean).join(' · ')))))),
+          h('table', { class: 'data board-table pc-only' },
             h('thead', null, h('tr', null, h('th', { class: 'c-no' }, '번호'), h('th', { class: 'c-kind' }, '구분'), h('th', null, '제목'),
               h('th', { class: 'c-who' }, '작성자'), h('th', { class: 'c-date' }, '등록일'), h('th', { class: 'c-att' }, '첨부'))),
             h('tbody', null, data.items.map((p, i) => h('tr', { class: p.pinned ? 'pinned' : '', onclick: () => { location.hash = '#/board/' + board + '/' + p.id; } },
@@ -21,7 +25,7 @@
               h('td', { class: 'c-title' }, h('a', { href: '#/board/' + board + '/' + p.id }, p.title)),
               h('td', { class: 'c-who' }, p.author),
               h('td', { class: 'c-date' }, UI.dateOnly(p.created)),
-              h('td', { class: 'c-att' }, p.photoCount ? h('span', { class: 'att', title: '사진 ' + p.photoCount + '장' }, UI.icon('photo'), p.photoCount) : '')))))
+              h('td', { class: 'c-att' }, p.photoCount ? h('span', { class: 'att', title: '사진 ' + p.photoCount + '장' }, UI.icon('photo'), p.photoCount) : '')))))]
           : UI.empty(q ? '검색 결과가 없습니다.' : '등록된 글이 없습니다.', q ? 'data' : 'board'),
         UI.pager(data.page, data.size, data.total, (n) => { page = n; load(); }) || '');
     };
@@ -99,7 +103,7 @@
       h('button', { type: 'button', class: 'picker-x', 'aria-label': '사진 빼기', onclick: () => { removed.push(x); drawKeep(); } }, '×'))));
     drawKeep();
     const btn = h('button', { class: 'btn wide', type: 'submit' }, cur ? '수정' : '등록');
-    const form = h('form', { class: 'narrow', onsubmit: async (e) => {
+    const form = h('form', { class: 'narrow write-form', onsubmit: async (e) => {
       e.preventDefault();
       btn.disabled = true;
       let postId = id;
@@ -115,7 +119,7 @@
     } },
       UI.field('제목', title), UI.field('내용', body),
       board === 'notice' && UI.has('NOTICE_WRITE') && h('label', { class: 'check' }, pinned, h('span', null, '상단 고정')),
-      existing.length ? keep : null, picker.el, btn);
+      existing.length ? keep : null, picker.el, h('div', { class: 'submit-bar' }, btn));
     const progress = ProgressBox(form);
     app.replaceChildren(UI.hero(cur ? '글 수정' : NAMES[board] + ' 글쓰기'), h('section', { class: 'section' }, form));
   }

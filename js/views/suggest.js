@@ -46,7 +46,7 @@
     const cat = catPicker();
     const picker = PhotoPicker(3, '사진');
     const btn = h('button', { class: 'btn', type: 'submit' }, '건의 등록');
-    const form = h('form', { class: 'form-grid', onsubmit: async (e) => {
+    const form = h('form', { class: 'form-grid write-form', onsubmit: async (e) => {
       e.preventDefault();
       if (!cat.value) { UI.toast('분류를 골라 주세요.', true); return; }
       btn.disabled = true;
@@ -58,7 +58,7 @@
       if (jobs.length) sendPhotos(jobs, res.ticket, progress, finish); else finish();
     } },
       UI.field('제목', title), h('div', { class: 'field' }, h('span', { class: 'field-label' }, '분류'), cat.el), UI.field('내용', body), picker.el,
-      h('div', { class: 'form-foot' }, h('p', { class: 'sub' }, '작성자는 누구에게도 표시되지 않습니다.'), btn));
+      h('div', { class: 'form-foot submit-bar' }, h('p', { class: 'sub' }, '작성자는 누구에게도 표시되지 않습니다.'), btn));
     const progress = ProgressBox(form);
     app.replaceChildren(UI.hero('건의사항', '더 나은 업무 환경을 위해 의견을 남겨 주세요. 익명으로 전달됩니다.'),
       h('section', { class: 'section' }, h('div', { class: 'wrap wide split' },
