@@ -572,3 +572,10 @@ a.sum-card:hover { text-decoration: none; transform: translateY(-2px); }
 .hb-text { top: 44px; }
 .hb-slogan { top: 40px; color: #5a8bef; background: linear-gradient(180deg, #8fb3fa 0%, #5a8bef 55%, #3f73e6 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 @media (max-width: 833px) { .hb-text { top: 22px; } .hb-slogan { top: 22px; } }
+/* 홈 배너 4차(2026-11-14): 글자 각 2pt 크게, 물결 배경과 어울리는 남청색 + 흰 테두리 빛 + 연한 파랑 그림자 */
+.hb-text h1 { font-size: 51px; font-weight: 800; letter-spacing: -0.035em; color: #172a66;
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.9), 0 1px 0 rgba(255, 255, 255, 0.85), 0 3px 14px rgba(40, 90, 200, 0.22); }
+.hb-text p { font-size: 25px; font-weight: 600; letter-spacing: -0.02em; color: #2a3e78; margin-top: 14px;
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.9), 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 10px rgba(40, 90, 200, 0.18); }
+.hb-text .hand { color: #2f62e0; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85), 0 2px 8px rgba(47, 98, 224, 0.25); }
+@media (max-width: 833px) { .hb-text h1 { font-size: 30px; } .hb-text p { font-size: 17px; margin-top: 6px; } }
