@@ -533,7 +533,7 @@ const KpiData = (() => {
           h('div', { class: 'panel-grid' },
             h('div', { class: 'panel' }, UI.cardHead('chart', '월별 달성 비율 추이'), trend),
             h('div', { class: 'panel' }, UI.cardHead('list', selMon + '월 항목별 달성 비율'), tabBars(T, TEAM))),
-          guest ? null : deptCardsOf(selMon));
+          ...(guest ? [] : [deptCardsOf(selMon)]));
         trendChart(trend, T, TEAM);
         T.curMon = cur;
       };
