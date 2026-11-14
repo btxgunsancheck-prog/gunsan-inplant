@@ -579,3 +579,7 @@ a.sum-card:hover { text-decoration: none; transform: translateY(-2px); }
   text-shadow: 0 0 1px rgba(255, 255, 255, 0.9), 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 10px rgba(40, 90, 200, 0.18); }
 .hb-text .hand { color: #2f62e0; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85), 0 2px 8px rgba(47, 98, 224, 0.25); }
 @media (max-width: 833px) { .hb-text h1 { font-size: 30px; } .hb-text p { font-size: 17px; margin-top: 6px; } }
+
+/* 일괄 등록 안내 순서 */
+.steps { margin: 0 0 12px; padding-left: 20px; color: var(--text-sub); font-size: 14px; line-height: 1.7; }
+.config .narrow > .btn.ghost { margin-bottom: 8px; }
