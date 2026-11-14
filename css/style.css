@@ -731,3 +731,20 @@ table.month-table th, table.month-table td { padding: 9px 8px; }
 /* 새 버전 안내 막대 */
 .update-bar { position: fixed; left: 16px; right: 16px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 80; display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 480px; margin: 0 auto; padding: 10px 12px 10px 18px; border-radius: 16px; background: var(--text); color: #fff; font-size: 15px; box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
 .update-bar .btn { padding: 8px 16px; background: #fff; color: var(--accent); }
+
+/* ---------- 휴대폰 4단계: 게시판·건의 ---------- */
+.post-cards { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.post-cards li { border-bottom: 1px solid var(--line); }
+.post-cards li.pinned { background: rgba(217, 48, 37, 0.03); }
+.post-cards a { display: block; padding: 14px 4px; color: var(--text); }
+.post-cards a:hover { text-decoration: none; background: var(--bg-alt); }
+.post-cards .pc-title { display: block; font-size: 16px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.post-cards .pc-title .chip { margin-right: 6px; vertical-align: 1px; }
+.post-cards .pc-meta { display: block; margin-top: 4px; font-size: 13px; }
+@media (max-width: 833px) {
+  .write-form .submit-bar.form-foot { flex-direction: column; align-items: stretch; gap: 6px; }
+  .write-form .submit-bar.form-foot .sub { text-align: center; font-size: 12px; }
+  .write-form .submit-bar .btn { width: 100%; }
+  .back { display: inline-block; padding: 8px 0; }
+  .answer-form { padding-bottom: 24px; }
+}
