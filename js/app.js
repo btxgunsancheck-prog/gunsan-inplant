@@ -24,7 +24,7 @@ const App = {
     Store.clearAll();
     Store.setRemember(remember);
     Store.set('token', login.token);
-    await App.refreshInit();
+    if (login.init) App.apply(login.init); else await App.refreshInit();
     Router.go(App.user.mustChange ? '/account/password' : (ret && ret !== '/login' ? ret : '/'));
     Router.render();
   },
