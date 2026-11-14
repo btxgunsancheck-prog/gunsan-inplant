@@ -18,6 +18,33 @@
     return rows;
   }
 
+  /* 지금 명부를 일괄 등록 파일과 같은 모양으로 내려받는다. 엑셀에서 한글이 깨지지 않게 UTF-8(BOM)으로 저장한다. */
+  function downloadCsv(name, head, rows) {
+    const q = (v) => { const s = v === null || v === undefined ? '' : String(v); return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const text = '\ufeff' + [head].concat(rows).map((r) => r.map(q).join(',')).join('\r\n') + '\r\n';
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+    const a = h('a', { href: url, download: name });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  /* 엑셀의 'CSV UTF-8'과 'CSV(쉼표로 분리)'(한글 ANSI) 저장 파일을 모두 읽는다 */
+  async function readCsv(file) {
+    const buf = await file.arrayBuffer();
+    let text;
+    try { text = new TextDecoder('utf-8', { fatal: true }).decode(buf); } catch (e) { text = new TextDecoder('euc-kr').decode(buf); }
+    return parseCsv(text.replace(/^\ufeff/, ''));
+  }
+  /* 엑셀이 바꿔 놓은 날짜(2027.3.1, 2027/3/1)를 2027-03-01로 맞춘다 */
+  const normDate = (v) => {
+    const s = String(v || '').trim();
+    const m = s.match(/^(\d{4})\s*[-./]\s*(\d{1,2})\s*[-./]\s*(\d{1,2})\.?$/);
+    return m ? m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0') : s;
+  };
+  const today = () => { const d = new Date(); return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'); };
+  const steps = (...lines) => h('ol', { class: 'steps' }, lines.map((x) => h('li', null, x)));
+
   const PERM_NAME = {
     USER: '기본(로그인, 게시판, 건의, 소속 직 KPI)', KPI_VIEW_ALL: 'KPI 전체 열람', VIEW_EXEC: '열람 전용(사업부장)', NOTICE_WRITE: '공지 작성',
     'KPI_CHECK:물류1직': '물류1직 확인(직장)', 'KPI_CHECK:물류2직': '물류2직 확인(직장)', 'KPI_CHECK:물류3직': '물류3직 확인(직장)', 'KPI_CHECK:물류4직': '물류4직 확인(직장)',
@@ -27,7 +54,7 @@
   const stateOf = (u) => (!u.site ? '미등록' : !u.active ? '사용 중지' : u.locked ? '잠김' : u.mustChange ? '첫 로그인 전' : '사용');
   const stateClass = { 사용: 'good', '사용 중지': 'bad', 잠김: 'bad', '첫 로그인 전': 'warn', 미등록: '' };
 
-  function importBox() {
+  function importBox(getData) {
     let rows = [];
     const info = h('p', { class: 'sub' });
     const btn = h('button', { class: 'btn', type: 'button', disabled: true, onclick: async () => {
@@ -42,7 +69,7 @@
     const input = h('input', { type: 'file', accept: '.csv,text/csv', onchange: async () => {
       const file = input.files[0];
       if (!file) return;
-      const grid = parseCsv((await file.text()).replace(/^﻿/, ''));
+      const grid = await readCsv(file);
       const head = grid[0] || [];
       const at = (name) => head.indexOf(name);
       if (['사번', '성명', '직급', '소속', '권한', '사진Base64'].some((n) => at(n) < 0)) { info.textContent = '파일 머리글이 올바르지 않습니다.'; btn.disabled = true; return; }
@@ -52,8 +79,18 @@
       info.textContent = rows.length + '명, 사진 ' + rows.filter((r) => r.photo).length + '장을 읽었습니다. 일괄 등록을 눌러 주세요.';
       btn.disabled = false;
     } });
+    const download = () => {
+      const d = getData();
+      if (!d) { UI.toast('명부를 아직 불러오지 못했습니다.', true); return; }
+      const rows = d.rows.filter((u) => u.site).map((u) => [u.empNo, u.name, u.rank, u.dept, u.perms.concat(u.siteOff ? ['OFF'] : []).join(','), '']);
+      downloadCsv('users_import_' + today() + '.csv', ['사번', '성명', '직급', '소속', '권한', '사진Base64'], rows);
+    };
     return h('details', { class: 'config' }, h('summary', null, 'CSV 파일로 일괄 등록 (users_import.csv)'),
-      h('div', { class: 'narrow' }, UI.field('CSV 파일', input), info, btn));
+      h('div', { class: 'narrow' },
+        steps('현재 명부를 내려받아 엑셀에서 고칩니다.', '저장할 때 파일 형식은 CSV UTF-8 또는 CSV(쉼표로 분리)를 고릅니다.', '고친 파일을 올리고 일괄 등록을 누릅니다.'),
+        h('button', { class: 'btn ghost', type: 'button', onclick: download }, '현재 명부 내려받기'),
+        h('p', { class: 'sub' }, '사이트 사용자만 내려받습니다. 이미 있는 사람은 권한만 바뀌고, 성명·직급·소속은 위 표에서 한 명씩 고칩니다. 사진 칸이 비어 있으면 기존 사진을 그대로 두며, 파일에 없는 사람은 지워지지 않습니다.'),
+        UI.field('CSV 파일', input), info, btn));
   }
 
   function editor(u, d, done) {
@@ -123,11 +160,11 @@
       h('section', { class: 'section' }, h('div', { class: 'wrap wide' },
         h('div', { class: 'toolbar wrap-row' }, search, h('label', { class: 'check' }, showAll, h('span', null, 'QR장비점검에만 있는 사람도 보기')),
           h('button', { class: 'btn', type: 'button', onclick: () => open(null) }, '새 사용자 등록')),
-        edit, body, importBox())));
+        edit, body, importBox(() => data))));
     load();
   });
 
-  function licenseImportBox(reload) {
+  function licenseImportBox(reload, current) {
     let rows = [];
     const info = h('p', { class: 'sub' }, '파일을 올리면 지금 명부 전체가 파일 내용으로 바뀝니다.');
     const btn = h('button', { class: 'btn', type: 'button', disabled: true, onclick: async () => {
@@ -140,16 +177,20 @@
     const input = h('input', { type: 'file', accept: '.csv,text/csv', onchange: async () => {
       const file = input.files[0];
       if (!file) return;
-      const grid = parseCsv((await file.text()).replace(/^﻿/, ''));
+      const grid = await readCsv(file);
       const head = grid[0] || [];
       const at = (name) => head.indexOf(name);
       if (['성명', '소속', '면허종류', '유효기간', '비고'].some((n) => at(n) < 0)) { info.textContent = '파일 머리글이 올바르지 않습니다.'; btn.disabled = true; return; }
-      rows = grid.slice(1).filter((r) => r[at('성명')]).map((r) => ({ name: r[at('성명')], dept: r[at('소속')], kind: r[at('면허종류')], expires: r[at('유효기간')], note: r[at('비고')] }));
+      rows = grid.slice(1).filter((r) => r[at('성명')]).map((r) => ({ name: r[at('성명')], dept: r[at('소속')], kind: r[at('면허종류')], expires: normDate(r[at('유효기간')]), note: r[at('비고')] }));
       info.textContent = rows.length + '명을 읽었습니다. 명부 일괄 등록을 눌러 주세요.';
       btn.disabled = false;
     } });
+    const download = () => downloadCsv('license_import_' + today() + '.csv', ['성명', '소속', '면허종류', '유효기간', '비고'], current.map((r) => r.v.slice(0, 5)));
     return h('details', { class: 'config' }, h('summary', null, 'CSV 파일로 일괄 등록 (license_import.csv)'),
-      h('div', { class: 'narrow' }, UI.field('CSV 파일', input), info, btn));
+      h('div', { class: 'narrow' },
+        steps('현재 명부를 내려받아 엑셀에서 고칩니다.', '저장할 때 파일 형식은 CSV UTF-8 또는 CSV(쉼표로 분리)를 고릅니다.', '고친 파일을 올리고 명부 일괄 등록을 누릅니다.'),
+        h('button', { class: 'btn ghost', type: 'button', onclick: download }, '현재 명부 내려받기 (' + current.length + '명)'),
+        UI.field('CSV 파일', input), info, btn));
   }
 
   Router.add('/admin/license', (params, app, alive) => {
@@ -164,7 +205,7 @@
         catch (e) { UI.toast(e.message, true); }
       };
       fill(body,
-        d.canEdit && licenseImportBox(load),
+        d.canEdit && licenseImportBox(load, d.rows),
         d.canEdit && h('div', { class: 'toolbar wrap-row' }, f.name, f.dept, f.kind, f.expires, f.note, h('button', { class: 'btn', type: 'button', onclick: add }, '추가')),
         h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
           h('thead', null, h('tr', null, ['성명', '소속', '면허종류', '유효기간', '비고', ''].map((x) => h('th', null, x)))),
@@ -247,7 +288,7 @@
     const input = h('input', { type: 'file', accept: '.csv,text/csv', onchange: async () => {
       const file = input.files[0];
       if (!file) return;
-      const grid = parseCsv((await file.text()).replace(/^﻿/, ''));
+      const grid = await readCsv(file);
       const head = grid[0] || [];
       const at = (name) => head.indexOf(name);
       if (['장비ID', '장비명', '장비군', '주소'].some((n) => at(n) < 0)) { info.textContent = '파일 머리글이 올바르지 않습니다.'; btn.disabled = true; return; }
@@ -255,7 +296,19 @@
       info.textContent = '장비 ' + rows.length + '대를 읽었습니다. 장비 목록 등록을 눌러 주세요.';
       btn.disabled = false;
     } });
-    return h('div', { class: 'narrow' }, UI.field('CSV 파일 (QR장비_import.csv)', input), info, btn);
+    const download = async () => {
+      try {
+        const d = await Api.call('qrList');
+        const rows = [];
+        d.groups.forEach((g) => g.items.forEach((x) => rows.push([x.id, x.name, g.group, g.dept, x.url])));
+        if (!rows.length) { UI.toast('등록된 장비가 없습니다.', true); return; }
+        downloadCsv('QR장비_import_' + today() + '.csv', ['장비ID', '장비명', '장비군', '소속', '주소'], rows);
+      } catch (e) { UI.toast(e.message, true); }
+    };
+    return h('div', { class: 'narrow' },
+      steps('현재 목록을 내려받아 엑셀에서 고칩니다.', '저장할 때 파일 형식은 CSV UTF-8 또는 CSV(쉼표로 분리)를 고릅니다.', '고친 파일을 올리고 장비 목록 등록을 누릅니다.'),
+      h('button', { class: 'btn ghost', type: 'button', onclick: download }, '현재 목록 내려받기'),
+      UI.field('CSV 파일 (QR장비_import.csv)', input), info, btn);
   }
 
   /* 이관 실적 파일(JSON): 월별 숫자와 건별 이력을 한 번에 올린다. 같은 월을 다시 올리면 그 월 내용이 바뀐다. */
