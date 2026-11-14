@@ -7,8 +7,8 @@
   const DEPTS = ['물류1직', '물류2직', '물류3직', '물류4직'];
   const opt = (code, key) => ((App.home.options || {})[code] || {})[key] || [];
   const LABELS = {
-    process: '공정', counter: '대책', owner: '담당자', targetDate: '개선목표일', doneDate: '완료일', progress: '현황', note: '비고',
-    kind: '구분', finder: '발굴자', effect: '기대효과', judge: '직장 판정', item: '항목', category: '구분', partNo: '품번', product: '품목', proposer: '제안자', period: '활동기간', amount: '효과금액(백만원)'
+    process: '공정(작업장)', counter: '대책', owner: '담당자', targetDate: '개선목표일', doneDate: '완료일', progress: '현황', note: '비고',
+    kind: '구분', finder: '발굴자', effect: '기대효과', judge: '직장 판정', item: '항목', category: '구분', partNo: '품번', vendor: '업체명', product: '품목', proposer: '제안자', period: '활동기간', amount: '효과금액(백만원)'
   };
 
   function extras(code, v) {
@@ -17,7 +17,7 @@
     switch (code) {
       case 'S1': return [sel('kind', '발생구분', opt('S1', '발생구분'))];
       case 'S2': return [text('finder', '발굴자', App.user.name)];
-      case 'Q2': return [sel('item', '항목', opt('Q2', '항목')), sel('category', '구분', opt('Q2', '구분')), text('partNo', '품번')];
+      case 'Q2': return [sel('item', '항목', opt('Q2', '항목')), text('partNo', '품번'), text('vendor', '업체명')];
       case 'Q3': return [sel('kind', '개선/보수', opt('Q3', '구분')), text('product', '품목'), sel('category', '분류', opt('Q3', '분류')), text('proposer', '제안자')];
       case 'CP': return [];
       default: return [sel('category', '분류', opt('C1', '분류')), text('period', '활동기간'),
@@ -60,7 +60,7 @@
           : UI.field('소속 직', h('input', { value: App.user.dept, disabled: true })),
         UI.field('작성자', h('input', { value: App.user.name, disabled: true })),
         extras(code, values),
-        UI.field('공정', h('input', { name: 'process', value: val('process') })),
+        UI.field('공정(작업장)', h('input', { name: 'process', value: val('process') })),
         UI.field(code === 'CP' ? '제안 내용(낭비 제거, 업무 효율)' : '문제(ISSUE)', h('textarea', { name: 'issue', rows: 4, required: true, value: val('issue') })),
         code === 'CP' && UI.field('기대효과', h('input', { name: 'effect', value: val('effect') })),
         code === 'S1' && h('p', { class: 'hint' }, '사고발생 사진은 비공개로 저장됩니다.'),
