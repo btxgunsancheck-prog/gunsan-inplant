@@ -748,3 +748,32 @@ table.month-table th, table.month-table td { padding: 9px 8px; }
   .back { display: inline-block; padding: 8px 0; }
   .answer-form { padding-bottom: 24px; }
 }
+
+/* ---------- 휴대폰 5단계: 표를 카드로 바꾸는 공통 규칙 ---------- */
+@media (max-width: 833px) {
+  table.stack, table.stack tbody { display: block; width: 100%; }
+  table.stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  table.stack tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; margin: 0 0 12px; padding: 12px 14px; border: 1px solid #e6e9f2; border-radius: 14px; background: #fff; }
+  table.stack td { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 4px 0; border: 0; text-align: left; font-size: 15px; }
+  table.stack td.num { text-align: left; }
+  table.stack td::before { content: attr(data-l); font-size: 12px; color: var(--text-sub); font-weight: 400; }
+  table.stack td[data-l=""]::before { content: none; }
+  table.stack td.who { font-weight: 700; font-size: 16px; }
+  table.stack td.act, table.stack td.prize:not(:empty) { grid-column: 1 / -1; }
+  table.stack td.act .btn { width: 100%; }
+  table.stack td select { width: 100%; }
+  table.stack td.total strong { color: var(--accent); font-size: 18px; }
+  table.stack3 tr { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  table.stack tr.winner { background: rgba(30, 142, 62, 0.06); border-color: rgba(30, 142, 62, 0.3); }
+  .table-wrap:has(table.stack) { overflow: visible; }
+}
+.pc-notice { margin: 12px 16px 0; padding: 10px 14px; border-radius: 12px; background: #fff7e0; color: #7a5200; font-size: 14px; line-height: 1.5; word-break: keep-all; }
+@media (max-width: 833px) {
+  .admin-main .pc-notice { margin: 0 0 12px; }
+  .stat .more { white-space: nowrap; }
+  .admin-shell { overflow-x: clip; }
+}
+@media (max-width: 833px) {
+  .admin-head { flex-wrap: wrap; gap: 8px; }
+  .admin-head h1 { font-size: 26px; word-break: keep-all; }
+}
