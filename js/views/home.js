@@ -45,7 +45,7 @@ Router.add('/', (params, app) => {
   const list = (items, base, empty) => (items && items.length
     ? h('ul', { class: 'tile-list' }, items.map((n) => h('li', null,
       h('a', { href: base + n.id }, n.pinned && h('span', { class: 'chip bad mini' }, '중요'), n.title), h('span', { class: 'sub' }, UI.dateOnly(n.created).slice(5)))))
-    : h('p', { class: 'sub empty' }, empty));
+    : UI.empty(empty, 'board', true));
   const tasks = [];
   const task = (href, label, value, hot) => h('a', { class: 'task', href }, h('span', null, label), h('strong', { class: hot ? 'hot' : '' }, value));
   if (u.perms.some((p) => p.startsWith('KPI_CHECK:'))) tasks.push(task('#/kpi/pending', 'KPI 확인 대기', (home.pending || 0) + '건', home.pending > 0));
@@ -76,9 +76,9 @@ Router.add('/', (params, app) => {
         depts.length ? [
           h('p', { class: 'big-rate' }, h('strong', null, teamPct === null ? '-' : teamPct + '%'), h('span', { class: 'sub' }, depts.length > 1 ? '팀 전체 달성 비율' : depts[0] + ' 달성 비율')),
           depts.length > 1 ? h('div', { class: 'rate-list' }, depts.map((d) => rateBar(d, '#/kpi/' + d.charAt(2), kpi[d]))) : null
-        ] : h('p', { class: 'sub empty' }, '표시할 KPI가 없습니다.')),
+        ] : UI.empty('표시할 KPI가 없습니다.', 'data', true)),
       h('div', { class: 'tile' }, UI.cardHead('megaphone', '최신 공지', '#/board/notice'), list(home.notices, '#/board/notice/', '등록된 공지가 없습니다.')),
-      h('div', { class: 'tile' }, UI.cardHead('todo', '내 할 일'), tasks.length ? h('div', { class: 'task-list' }, tasks) : h('p', { class: 'sub empty' }, '지금 처리할 일이 없습니다.')),
+      h('div', { class: 'tile' }, UI.cardHead('todo', '내 할 일'), tasks.length ? h('div', { class: 'task-list' }, tasks) : UI.empty('지금 처리할 일이 없습니다.', 'done', true)),
       h('div', { class: 'tile' }, UI.cardHead('board', '업무 게시판', '#/board/work'), list(home.works, '#/board/work/', '등록된 글이 없습니다.')),
       h('div', { class: 'tile span3' }, UI.cardHead('list', '주요 업무 바로가기'), h('div', { class: 'quick-grid' }, quick)),
       h('div', { class: 'tile team-tile' }, UI.cardHead('people', '우리 팀 현황'),

@@ -6,7 +6,7 @@
   const canRead = () => !UI.has('VIEW_EXEC') && (UI.hasAny(['SUGGEST_VIEW', 'SUGGEST_READ']) || ((App.user && App.user.perms) || []).some((p) => p.startsWith('KPI_CHECK:')));
 
   function list(items, empty) {
-    if (!items.length) return h('p', { class: 'sub center' }, empty);
+    if (!items.length) return UI.empty(empty, 'feedback');
     return h('ul', { class: 'post-list' }, items.map((s) => h('li', null,
       h('a', { href: '#/suggest/view/' + s.id },
         h('span', { class: 'post-title' }, h('span', { class: 'chip mini ' + chipClass[s.status] }, s.status), h('span', { class: 'tag' }, s.category || '기타'), s.title),

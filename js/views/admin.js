@@ -420,7 +420,7 @@
               h('tbody', null, d.recent.map((r) => h('tr', { onclick: () => { location.hash = '#/suggest/view/' + r.id; } },
                 h('td', null, r.category), h('td', { class: 'c-title' }, r.title), h('td', null, UI.dateOnly(r.created)),
                 h('td', null, h('span', { class: 'chip ' + ({ 검토중: 'warn', 답변완료: 'good' }[r.status] || '') }, r.status))))))
-              : h('p', { class: 'sub empty' }, '등록된 건의가 없습니다.'))));
+              : UI.empty('등록된 건의가 없습니다.', 'feedback', true))));
       const pct = (k) => { const t = k.G + k.Y + k.R; return t ? Math.round(k.G / t * 100) : 0; };
       const s = document.createElement('script');
       const draw = () => new window.Chart(canvas, { type: 'bar', data: { labels: depts, datasets: [{ label: '달성 비율(%)', data: depts.map((x) => pct(d.kpi[x])), backgroundColor: '#0b2282', borderRadius: 6, maxBarThickness: 48 }] },

@@ -341,7 +341,7 @@ const KpiData = (() => {
     const load2 = () => {
       Api.call('kpiList', { year, dept, code, month: month.value ? year + '-' + month.value : '', status: status.value }).then((d) => {
         if (!alive()) return;
-        list.replaceChildren(...(d.items.length ? d.items.map(row) : [h('p', { class: 'sub center' }, '내역이 없습니다.')]));
+        list.replaceChildren(...(d.items.length ? d.items.map(row) : [UI.empty('내역이 없습니다.', 'data')]));
       }, (e) => { if (alive()) list.replaceChildren(UI.error(e.message, load2)); });
     };
     const row = (it) => h('article', { class: 'item' },
