@@ -406,7 +406,8 @@ const KpiData = (() => {
         h('a', { class: 'back no-print', href: params.team === 'team' ? '#/kpi/team' : '#/kpi/' + params.team }, dept === TEAM ? '팀 전체 현황' : dept),
         h('h1', { class: 'post-h' }, metric.code + ' ' + metric.name),
         h('p', { class: 'sub' }, dept + (x && x.desc ? ' · ' + x.desc : '')),
-        h('div', { class: 'row-btns no-print' }, h('button', { class: 'btn ghost pc-only', type: 'button', onclick: () => window.print() }, '인쇄')),
+        h('div', { class: 'row-btns no-print' }, h('button', { class: 'btn ghost pc-only', type: 'button', onclick: () => window.print() }, '인쇄'),
+          metric.code === 'C1' ? h('a', { class: 'btn ghost', href: '#/kpi/best' }, '우수개선현황') : null),
         charts2, descTable(T, dept, metric), descMobile(T, dept, metric), extra);
       drawCharts(charts2, T, dept, metric.code);
       if (!listed) {

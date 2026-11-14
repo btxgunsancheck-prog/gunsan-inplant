@@ -1,14 +1,19 @@
 /* KPI 건별 작성과 직장 일일 확인. 나머지 KPI 화면은 2단계에서 만든다. */
 (() => {
+  /* 이름표(확인 대기 등 모든 화면에서 쓴다). 팔레트(Q3)는 별도 QR 화면으로 옮길 예정이라 작성 탭에서 뺐다. */
   const CODES = [
-    ['S1', '사고발생'], ['S2', '위험요소 적출'], ['Q2', '납입이상 적출'], ['Q3', '팔레트 개선/보수'], ['C1', '개선사항'], ['CP', '개선 제안']
+    ['S1', '사고발생'], ['S2', '위험요소 적출'], ['Q2', '납입이상 적출'], ['CP', '개선 제안'], ['C1', '개선사항(관리자용)'], ['Q3', '팔레트 개선/보수']
   ];
   const nameOf = (code) => CODES.find((c) => c[0] === code)[1];
+  /* 개선사항(우수개선현황)은 관리자 직급만 작성한다. 서버에서도 같은 기준으로 막는다. */
+  const MANAGER_RANKS = ['팀장', '과장', '주임', '공장', '직장', '반장'];
+  const canC1 = () => MANAGER_RANKS.includes(String((App.user && App.user.rank) || '').trim());
+  const writeCodes = () => CODES.filter(([c]) => c !== 'Q3' && (c !== 'C1' || canC1()));
   const DEPTS = ['물류1직', '물류2직', '물류3직', '물류4직'];
   const opt = (code, key) => ((App.home.options || {})[code] || {})[key] || [];
   const LABELS = {
     process: '공정(작업장)', counter: '대책', owner: '담당자', targetDate: '개선목표일', doneDate: '완료일', progress: '현황', note: '비고',
-    kind: '구분', finder: '발굴자', effect: '기대효과', judge: '직장 판정', item: '항목', category: '구분', partNo: '품번', vendor: '업체명', product: '품목', proposer: '제안자', period: '활동기간', amount: '효과금액(백만원)'
+    kind: '구분', finder: '발굴자', effect: '기대효과', judge: '직장 판정', item: '항목', category: '구분', partNo: '품번', vendor: '업체명', product: '품목', proposer: '제안자', period: '활동기간', amount: '효과금액(백만원)', qual: '정성적 효과', quant: '정량적 효과'
   };
 
   function extras(code, v) {
@@ -29,6 +34,7 @@
     if (UI.has('VIEW_EXEC')) { app.replaceChildren(UI.placeholder('열람 전용 계정은 작성할 수 없습니다')); return; }
     const saved = Store.draftGet('kpi') || {};
     let code = saved.code || 'S1';
+    if (!writeCodes().some(([c]) => c === code)) code = 'S1';
     let values = saved.values || {};
     let issuePicker, counterPicker, pre, issuePre, counterPre;
     const body = h('div');
@@ -43,7 +49,7 @@
     const isManager = UI.has('KPI_MANAGER');
 
     function draw() {
-      tabs.replaceChildren(...CODES.map(([c, n]) => h('button', {
+      tabs.replaceChildren(...writeCodes().map(([c, n]) => h('button', {
         type: 'button', class: 'tab' + (c === code ? ' on' : ''), role: 'tab', 'aria-selected': String(c === code),
         onclick: () => { values = collect(); code = c; draw(); save(); }
       }, n)));
@@ -52,18 +58,50 @@
       pre = PhotoPreload(() => Api.call('photoDraft', { code: drawCode, date: form.elements.date ? form.elements.date.value : '' }).then((r) => r.ticket));
       issuePre = pre.kind('issue');
       counterPre = pre.kind('counter');
-      issuePicker = PhotoPicker(3, '문제 사진', issuePre);
-      counterPicker = PhotoPicker(3, '대책 사진', counterPre);
+      const isBest = code === 'C1';
+      issuePicker = PhotoPicker(3, isBest ? '개선 전 사진' : '문제 사진', issuePre);
+      counterPicker = PhotoPicker(3, isBest ? '개선 후 사진' : '대책 사진', counterPre);
       const val = (n) => values[n] || '';
       const today = App.home.today;
       const submit = h('button', { class: 'btn wide', type: 'submit' }, '저장');
       const progress = h('div');
-      fill(form,
+      const head = [
         UI.field('일자', h('input', { name: 'date', type: 'date', required: true, max: today, value: val('date') || today })),
         isManager
           ? UI.field('소속 직', UI.select('dept', DEPTS, val('dept') || (DEPTS.includes(App.user.dept) ? App.user.dept : ''), '선택'))
           : UI.field('소속 직', h('input', { value: App.user.dept, disabled: true })),
-        UI.field('작성자', h('input', { value: App.user.name, disabled: true })),
+        UI.field('작성자', h('input', { value: App.user.name, disabled: true }))
+      ];
+      if (isBest) {
+        /* 우수개선현황 카드와 같은 구성: 팀, 직장(공정), 활동기간, 담당자 / 문제점, 개선내용 / 기대효과 / 개선 전·후 사진 */
+        const from = h('input', { type: 'date', name: 'periodFrom', value: val('periodFrom'), 'aria-label': '활동 시작일' });
+        const to = h('input', { type: 'date', name: 'periodTo', value: val('periodTo'), 'aria-label': '활동 종료일' });
+        const period = h('input', { type: 'hidden', name: 'period', value: val('period') });
+        const sync = () => {
+          const f = from.value.replace(/-/g, '.');
+          const t = to.value.replace(/-/g, '.');
+          period.value = f ? (t && t !== f ? f + '~' + t : f) : '';
+        };
+        [from, to].forEach((x) => { x.addEventListener('input', sync); x.addEventListener('change', sync); });
+        fill(form, ...head,
+          h('div', { class: 'best-link' }, h('a', { class: 'btn ghost', href: '#/kpi/best' }, '우수개선현황 보기')),
+          h('div', { class: 'best-grid' },
+            UI.field('팀', h('input', { value: '사내물류팀', disabled: true })),
+            UI.field('직장(공정)', h('input', { name: 'process', value: val('process') })),
+            h('div', { class: 'field' }, h('span', { class: 'field-label' }, '활동기간'), h('div', { class: 'period-row' }, from, h('span', null, '~'), to), period),
+            UI.field('담당자', h('input', { name: 'owner', value: val('owner'), placeholder: '예: 홍길동, 김철수' }))),
+          UI.field('문제점', h('textarea', { name: 'issue', rows: 4, required: true, value: val('issue') })),
+          UI.field('개선내용', h('textarea', { name: 'counter', rows: 4, required: true, value: val('counter') })),
+          h('h3', { class: 'block-h best-h' }, '기대효과'),
+          UI.field('정성적 효과', h('textarea', { name: 'qual', rows: 2, value: val('qual') })),
+          h('div', { class: 'best-grid' },
+            UI.field('정량적 효과', h('input', { name: 'quant', value: val('quant'), placeholder: '예: 업체 제작 의뢰 비용 절감 (약 100만원)' })),
+            UI.field('효과금액(백만원)', h('input', { name: 'amount', inputmode: 'decimal', value: val('amount') })),
+            UI.field('분류', UI.select('category', opt('C1', '분류'), val('category'), '선택'))),
+          issuePicker.el, counterPicker.el,
+          h('div', { class: 'submit-bar' }, submit), progress);
+      } else fill(form,
+        ...head,
         extras(code, values),
         UI.field('공정(작업장)', h('input', { name: 'process', value: val('process') })),
         UI.field(code === 'CP' ? '제안 내용(낭비 제거, 업무 효율)' : '문제(ISSUE)', h('textarea', { name: 'issue', rows: 4, required: true, value: val('issue') })),
@@ -82,6 +120,13 @@
         h('div', { class: 'submit-bar' }, submit), progress);
       form.onsubmit = async (e) => {
         e.preventDefault();
+        if (isBest) {
+          const f = form.elements.periodFrom.value;
+          const t = form.elements.periodTo.value;
+          if (t && !f) { UI.toast('활동 시작일을 입력해 주세요.', true); return; }
+          if (f && t && t < f) { UI.toast('활동 종료일이 시작일보다 빠릅니다.', true); return; }
+          if (!form.elements.counter.value.trim()) { UI.toast('개선내용을 입력해 주세요.', true); return; }
+        }
         submit.disabled = true;
         let photos = null;
         let left = [];
@@ -111,6 +156,46 @@
     body.append(tabs, form);
     draw();
     app.replaceChildren(UI.hero('실적 작성', '문제와 사진만 입력해도 저장됩니다.'), h('section', { class: 'section' }, h('div', { class: 'wrap' }, body)));
+  });
+
+  /* 우수개선현황: 엑셀 시트와 같은 카드 모양(번호, 팀, 직장(공정), 활동기간, 담당자, 문제점, 개선내용, 기대효과, 개선 전·후 사진). */
+  Router.add('/kpi/best', (params, app, alive) => {
+    const thisYear = new Date().getFullYear();
+    let year = thisYear;
+    const list = h('div', null, UI.skeleton(4));
+    const ySel = UI.select('year', [String(thisYear), String(thisYear - 1)], String(year));
+    const seq = (id) => Number(String(id).split('-')[1]) || 0;
+    const bullet = (label, text) => (text ? h('p', { class: 'pre' }, '▶ ' + label + ' : ' + text) : null);
+    const card = (it, no) => {
+      const d = it.detail;
+      const photos = (ids) => (ids.length ? h('div', { class: 'thumbs' }, ids.map((f) => UI.thumb(f))) : h('p', { class: 'sub' }, '사진 없음'));
+      const effects = [bullet('정성적 효과', d.qual), bullet('정량적 효과', d.quant), d.amount ? bullet('효과금액', d.amount + ' 백만원') : null].filter(Boolean);
+      return h('article', { class: 'best-card' },
+        h('header', { class: 'best-no' }, h('span', { class: 'chip ' + (it.status === '확인' ? 'good' : '') }, it.status === '확인' ? '확인' : '확인 대기'), h('strong', null, year + '-사내-' + String(no).padStart(2, '0'))),
+        h('dl', { class: 'best-meta' },
+          [['팀', '사내물류팀 (' + it.dept + ')'], ['직장(공정)', d.process || '-'], ['활동기간', d.period || it.date], ['담당자', d.owner || it.author]]
+            .map(([k, v]) => h('div', null, h('dt', null, k), h('dd', null, v)))),
+        h('div', { class: 'best-cols' },
+          h('div', null, h('h4', null, '문제점'), h('p', { class: 'pre' }, d.issue)),
+          h('div', null, h('h4', null, '개선내용'), h('p', { class: 'pre' }, d.counter || '-'))),
+        h('div', { class: 'best-effect' }, h('h4', null, '기대효과'), effects.length ? effects : h('p', { class: 'sub' }, '-')),
+        h('div', { class: 'best-cols' },
+          h('div', null, h('h4', { class: 'center' }, '개 선 전'), photos(it.issuePhotos)),
+          h('div', null, h('h4', { class: 'center' }, '개 선 후'), photos(it.counterPhotos))));
+    };
+    const load = () => Api.call('kpiList', { year: String(year), code: 'C1' }).then((d) => {
+      if (!alive()) return;
+      const items = d.items.filter((x) => x.status !== '제외').sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : seq(a.id) - seq(b.id)));
+      list.replaceChildren(...(items.length ? items.map((it, i) => card(it, i + 1)) : [UI.empty('등록된 개선사항이 없습니다.', 'data')]));
+    }, (e) => { if (alive()) list.replaceChildren(UI.error(e.message, load)); });
+    ySel.onchange = () => { year = Number(ySel.value); list.replaceChildren(UI.skeleton(4)); load(); };
+    app.replaceChildren(UI.hero('우수개선현황', '개선사항(관리자용)으로 등록한 개선 사례입니다.'),
+      h('section', { class: 'section print-page' }, h('div', { class: 'wrap wide' },
+        h('div', { class: 'toolbar no-print' }, ySel,
+          canC1() && !UI.has('VIEW_EXEC') ? h('a', { class: 'btn', href: '#/kpi/write' }, '개선사항 작성') : null,
+          h('button', { class: 'btn ghost pc-only', type: 'button', onclick: () => window.print() }, '인쇄')),
+        list)));
+    load();
   });
 
   async function privatePhoto(item, kind, index) {
