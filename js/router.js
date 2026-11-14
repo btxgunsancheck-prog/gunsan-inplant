@@ -32,7 +32,7 @@ const Router = {
         return r.view(params, app, () => seq === Router.seq);
       }
     }
-    app.replaceChildren(UI.placeholder('페이지를 찾을 수 없습니다'));
+    app.replaceChildren(UI.hero('페이지를 찾을 수 없습니다', '주소가 바뀌었거나 없는 화면입니다.'), h('section', { class: 'section' }, UI.empty('메뉴에서 다시 골라 주세요.', 'notfound'), h('p', { class: 'center' }, h('a', { class: 'btn', href: '#/' }, '홈으로'))));
     return undefined;
   }
 };

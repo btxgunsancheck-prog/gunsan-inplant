@@ -101,8 +101,15 @@ const UI = {
       h('span', { class: 'sub' }, page + ' / ' + pages),
       h('button', { class: 'btn ghost', type: 'button', disabled: page >= pages, onclick: () => go(page + 1) }, '다음'));
   },
-  placeholder(title) {
-    return h('div', null, UI.hero(title, '이 화면은 다음 제작 단계에서 제공됩니다.'));
+  placeholder(title, sub) {
+    return h('div', null, UI.hero(title, sub || ''));
+  },
+  /* 내용이 없을 때 보여 주는 그림과 안내. name: board, done, data, feedback, notfound */
+  empty(text, name, small) {
+    const file = { board: 'pin-to-board', done: 'completed-task', data: 'no-data', feedback: 'feedback', notfound: 'page-not-found' }[name] || 'no-data';
+    return h('div', { class: 'empty-state' + (small ? ' small' : '') },
+      h('img', { src: 'assets/illust/' + file + '.svg', alt: '', loading: 'lazy', decoding: 'async', width: 160, height: 120 }),
+      h('p', { class: 'sub' }, text));
   },
   has(perm) { return ((App.user && App.user.perms) || []).includes(perm); },
   hasAny(perms) { return perms.some(UI.has); },

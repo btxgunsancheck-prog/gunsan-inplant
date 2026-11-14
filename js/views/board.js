@@ -22,7 +22,7 @@
               h('td', { class: 'c-who' }, p.author),
               h('td', { class: 'c-date' }, UI.dateOnly(p.created)),
               h('td', { class: 'c-att' }, p.photoCount ? h('span', { class: 'att', title: '사진 ' + p.photoCount + '장' }, UI.icon('photo'), p.photoCount) : '')))))
-          : h('p', { class: 'sub center' }, q ? '검색 결과가 없습니다.' : '등록된 글이 없습니다.'),
+          : UI.empty(q ? '검색 결과가 없습니다.' : '등록된 글이 없습니다.', q ? 'data' : 'board'),
         UI.pager(data.page, data.size, data.total, (n) => { page = n; load(); }) || '');
     };
     const load = () => {

@@ -17,7 +17,7 @@
             const a = open(it.url);
             a.append(h('strong', null, it.name), h('span', { class: 'sub' }, '점검 화면 열기'));
             return a;
-          })))) : h('p', { class: 'sub center' }, '내 직(' + App.user.dept + ')에 등록된 장비가 없습니다.'));
+          })))) : UI.empty('내 직(' + App.user.dept + ')에 등록된 장비가 없습니다.', 'data'));
     }, (e) => { if (alive()) body.replaceChildren(UI.error(e.message, load)); });
     app.replaceChildren(UI.hero('QR장비점검', '장비를 골라 점검 화면으로 이동합니다.'), h('section', { class: 'section' }, body));
     load();

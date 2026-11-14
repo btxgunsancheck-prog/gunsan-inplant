@@ -195,7 +195,7 @@
         if (!alive()) return;
         selected.clear();
         drawBar();
-        list.replaceChildren(...(data.items.length ? data.items.map(card) : [h('p', { class: 'sub center' }, '확인할 건이 없습니다.')]));
+        list.replaceChildren(...(data.items.length ? data.items.map(card) : [UI.empty('확인할 건이 없습니다.', 'done')]));
       }, (e) => { if (alive()) list.replaceChildren(UI.error(e.message, load)); });
     }
     app.replaceChildren(UI.hero('확인 대기', '확인한 건만 월 실적에 반영됩니다.'), h('section', { class: 'section' }, list), bar);

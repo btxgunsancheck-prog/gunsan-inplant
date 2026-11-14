@@ -583,3 +583,10 @@ a.sum-card:hover { text-decoration: none; transform: translateY(-2px); }
 /* 일괄 등록 안내 순서 */
 .steps { margin: 0 0 12px; padding-left: 20px; color: var(--text-sub); font-size: 14px; line-height: 1.7; }
 .config .narrow > .btn.ghost { margin-bottom: 8px; }
+
+/* 빈 화면 그림(unDraw) */
+.empty-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 28px 12px; text-align: center; }
+.empty-state img { width: 160px; height: auto; max-height: 120px; object-fit: contain; opacity: 0.92; }
+.empty-state .sub { margin: 0; }
+.empty-state.small { padding: 10px 8px 4px; gap: 6px; }
+.empty-state.small img { width: 96px; max-height: 72px; }
