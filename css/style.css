@@ -590,3 +590,29 @@ a.sum-card:hover { text-decoration: none; transform: translateY(-2px); }
 .empty-state .sub { margin: 0; }
 .empty-state.small { padding: 10px 8px 4px; gap: 6px; }
 .empty-state.small img { width: 96px; max-height: 72px; }
+
+/* 로그인(2026-11-14): 왼쪽 물류 그림, 오른쪽 로그인 카드 */
+.login-split { flex-direction: row; gap: 0; padding: 32px; background: var(--bg-alt); }
+.login-art { flex: 1 1 520px; max-width: 640px; align-self: stretch; display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 48px; border-radius: 24px 0 0 24px; text-align: left;
+  background: url(../assets/hero-bg.svg) center / 100% 100% no-repeat, #e1ebfd; }
+.login-art h2 { font-size: 30px; font-weight: 700; letter-spacing: -0.03em; color: #172a66; margin: 0; }
+.login-tag { margin: 0; font-size: 17px; font-style: italic; font-weight: 500; color: #4a7deb; }
+.login-illust { width: 100%; max-width: 440px; height: auto; margin-top: 18px; }
+.login-card { flex: 0 1 440px; align-self: stretch; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 48px 40px; background: #fff; border-radius: 0 24px 24px 0; box-shadow: var(--card-shadow); }
+.login-card h1 { font-size: 32px; }
+@media (max-width: 833px) {
+  .login-split { flex-direction: column; padding: 16px; justify-content: flex-start; align-items: stretch; }
+  .login-art, .login-card { width: 100%; max-width: 520px; margin: 0 auto; box-sizing: border-box; }
+  .login-art { flex: none; padding: 24px 20px 16px; border-radius: 20px 20px 0 0; align-items: center; text-align: center; }
+  .login-art h2 { font-size: 22px; }
+  .login-tag { font-size: 14px; }
+  .login-illust { max-width: 260px; margin-top: 4px; }
+  .login-card { flex: none; padding: 28px 20px; border-radius: 0 0 20px 20px; }
+  .login-card h1 { font-size: 26px; }
+}
+
+/* KPI 막대: 화면에 나올 때 왼쪽에서 채워진다(0.8초) */
+@keyframes bar-grow { from { transform: scaleX(0); } }
+.rate-bar span { transform-origin: left center; animation: bar-grow 0.8s cubic-bezier(0.33, 1, 0.68, 1); }
+.count { font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .rate-bar span { animation: none; } }

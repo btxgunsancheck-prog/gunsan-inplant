@@ -36,7 +36,7 @@ function rateBar(label, href, k) {
   return h('a', { class: 'rate-row', href },
     h('span', { class: 'rate-name' }, label),
     h('span', { class: 'rate-bar' }, h('span', { style: 'width:' + (pct || 0) + '%' })),
-    h('strong', { class: 'rate-val' }, pct === null ? '-' : pct + '%'));
+    h('strong', { class: 'rate-val' }, UI.num(pct, '%')));
 }
 
 Router.add('/', (params, app) => {
@@ -74,7 +74,7 @@ Router.add('/', (params, app) => {
     h('section', { class: 'home-grid' },
       h('div', { class: 'tile' }, UI.cardHead('chart', '이번 달 KPI', kpiLink),
         depts.length ? [
-          h('p', { class: 'big-rate' }, h('strong', null, teamPct === null ? '-' : teamPct + '%'), h('span', { class: 'sub' }, depts.length > 1 ? '팀 전체 달성 비율' : depts[0] + ' 달성 비율')),
+          h('p', { class: 'big-rate' }, h('strong', null, UI.num(teamPct, '%')), h('span', { class: 'sub' }, depts.length > 1 ? '팀 전체 달성 비율' : depts[0] + ' 달성 비율')),
           depts.length > 1 ? h('div', { class: 'rate-list' }, depts.map((d) => rateBar(d, '#/kpi/' + d.charAt(2), kpi[d]))) : null
         ] : UI.empty('표시할 KPI가 없습니다.', 'data', true)),
       h('div', { class: 'tile' }, UI.cardHead('megaphone', '최신 공지', '#/board/notice'), list(home.notices, '#/board/notice/', '등록된 공지가 없습니다.')),

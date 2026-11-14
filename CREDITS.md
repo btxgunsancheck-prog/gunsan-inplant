@@ -7,6 +7,8 @@
 | assets/illust/no-data.svg | No data | unDraw | unDraw License |
 | assets/illust/feedback.svg | Feedback | unDraw | unDraw License |
 | assets/illust/page-not-found.svg | Page not found | unDraw | unDraw License |
+| assets/illust/logistics.svg | Logistics (로그인 화면) | unDraw | unDraw License |
+| js/ui.js ICONS (아이콘 20개) | Tabler Icons | https://tabler.io/icons | MIT (Copyright (c) 2020-2024 Paweł Kuna) |
 | 글꼴 | Pretendard | https://github.com/orioncactus/pretendard | SIL Open Font License 1.1 |
 | 글꼴('함께' 두 글자) | Nanum Pen Script | Google Fonts | SIL Open Font License 1.1 |
 | 차트 | Chart.js | https://www.chartjs.org | MIT |

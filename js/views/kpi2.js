@@ -276,7 +276,7 @@ const KpiData = (() => {
   function summaryCards(c) {
     const total = c.G + c.Y + c.R;
     const card = (k, icon, label) => h('div', { class: 'sum-card ' + JUDGE[k][1] }, h('span', { class: 'sum-ico' }, UI.icon(icon)),
-      h('div', null, h('p', null, label), h('strong', null, total ? UI.pct(c[k], total) + '%' : '-'), h('span', { class: 'sub' }, c[k] + '개 지표')));
+      h('div', null, h('p', null, label), h('strong', null, UI.num(total ? UI.pct(c[k], total) : null, '%')), h('span', { class: 'sub' }, c[k] + '개 지표')));
     return h('div', { class: 'sum-cards' }, card('G', 'trophy', '달성'), card('Y', 'warn', '주의'), card('R', 'clock', '미달'));
   }
   function trendChart(host, T, dept) {
@@ -293,7 +293,7 @@ const KpiData = (() => {
     return h('div', { class: 'bar-list' }, ['S', 'P', 'Q', 'D'].map((k) => {
       const c = judgeCount(T, dept, T.curMon, k);
       const pct = UI.pct(c.G, c.G + c.Y + c.R);
-      return h('div', { class: 'rate-row' }, h('span', { class: 'rate-name' }, TABS[k]), h('span', { class: 'rate-bar' }, h('span', { style: 'width:' + (pct || 0) + '%' })), h('strong', { class: 'rate-val' }, pct === null ? '-' : pct + '%'));
+      return h('div', { class: 'rate-row' }, h('span', { class: 'rate-name' }, TABS[k]), h('span', { class: 'rate-bar' }, h('span', { style: 'width:' + (pct || 0) + '%' })), h('strong', { class: 'rate-val' }, UI.num(pct, '%')));
     }));
   }
 
@@ -437,7 +437,7 @@ const KpiData = (() => {
         const c = judgeCount(T, x, cur);
         const pct = UI.pct(c.G, c.G + c.Y + c.R);
         return h('a', { class: 'sum-card good', href: '#/kpi/' + x.charAt(2) }, h('span', { class: 'sum-ico' }, UI.icon('chart')),
-          h('div', null, h('p', null, x + ' ' + cur + '월'), h('strong', null, pct === null ? '-' : pct + '%'), h('span', { class: 'sub' }, '달성 ' + c.G + ' · 주의 ' + c.Y + ' · 미달 ' + c.R)));
+          h('div', null, h('p', null, x + ' ' + cur + '월'), h('strong', null, UI.num(pct, '%')), h('span', { class: 'sub' }, '달성 ' + c.G + ' · 주의 ' + c.Y + ' · 미달 ' + c.R)));
       }));
       fill(body, deptCards,
         h('div', { class: 'row-btns no-print' }, h('a', { class: 'btn ghost', href: '#/kpi/meeting' }, '미팅용 보기'), h('button', { class: 'btn ghost', type: 'button', onclick: () => window.print() }, '인쇄')),
