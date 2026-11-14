@@ -247,7 +247,7 @@
             return h('tr', null, h('td', null, d), h('td', { class: 'num' }, x.total), KpiData.DEPTS.map((k) => h('td', { class: 'num' }, x.depts[k] || 0)), h('td', { class: 'num' }, etc), h('td', null, existing.includes(d) ? '덮어쓰기' : '신규'));
           })))),
         h('p', { class: 'sub' }, '총 ' + rows.length + '건. 이상발생이 없는 날은 0건으로 처리됩니다.'),
-        existing.length && h('label', { class: 'check' }, over, h('span', null, '이미 올라간 ' + existing.length + '일을 덮어씁니다')),
+        existing.length > 0 && h('label', { class: 'check' }, over, h('span', null, '이미 올라간 ' + existing.length + '일을 덮어씁니다')),
         h('div', { class: 'row-btns' }, apply), result);
     }
 
@@ -342,7 +342,7 @@
             h('td', { class: 'num' }, (r.item * 100).toFixed(2) + '%'), h('td', null, input(r, 'amount')), h('td', null, input(r, 'adjust')), h('td', null, input(r, 'claim')),
             h('td', null, existing.includes(r.ym) ? '덮어쓰기' : '신규')))))),
         h('p', { class: 'hint' }, '금액기준은 1 = 100%입니다. 금액기준, 재고보정, 클레임은 반영 전에 고칠 수 있습니다.'),
-        existing.length && h('label', { class: 'check' }, over, h('span', null, '이미 올라간 ' + existing.length + '개월을 덮어씁니다')),
+        existing.length > 0 && h('label', { class: 'check' }, over, h('span', null, '이미 올라간 ' + existing.length + '개월을 덮어씁니다')),
         h('div', { class: 'row-btns' }, apply), result);
     };
     fill(host, h('h2', { class: 'block-h' }, '순환재고 파일 올리기'),

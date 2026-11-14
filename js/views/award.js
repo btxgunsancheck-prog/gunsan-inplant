@@ -40,7 +40,7 @@
         h('tbody', null, h('tr', null, ITEMS.map((it) => h('td', { class: 'num', 'data-l': it[1] }, fmt(me[it[0]]))), h('td', { class: 'num', 'data-l': '가산점' }, fmt(me.bonus)), h('td', { class: 'num total', 'data-l': '합계' }, h('strong', null, fmt(me.total))))))),
       h('p', { class: 'sub' }, '이번 분기 실적: 납입이상 ' + me.counts.q2 + '건, 위험요소 ' + me.counts.s2 + '건, 개선 제안 ' + me.counts.cp + '건, 이상발생 ' + me.counts.abnormal + '건'),
       h('h2', { class: 'block-h' }, '자기평가 (본인 10%)'),
-      h('div', { class: 'toolbar wrap-row' }, UI.field(label('m1'), sel.m1), UI.field(label('m2'), sel.m2), UI.field(label('m3'), sel.m3), h('button', { class: 'btn', type: 'button', onclick: save }, '저장')));
+      h('div', { class: 'self-rate' }, UI.field(label('m1'), sel.m1), UI.field(label('m2'), sel.m2), UI.field(label('m3'), sel.m3), h('button', { class: 'btn', type: 'button', onclick: save }, '저장')));
   }
 
   function rateTable(data, reload) {
@@ -144,9 +144,9 @@
       fill(body,
         h('div', { class: 'toolbar center-tools' }, qSel), rules(),
         d.me && myResult(d.me, d.selfRating, quarter, load),
-        d.targets && d.targets.length && rateTable(d, load),
+        d.targets && d.targets.length > 0 && rateTable(d, load),
         d.role.lead && proposals(d, load),
-        d.role.chiefDepts && d.role.chiefDepts.length && pickBox(),
+        d.role.chiefDepts && d.role.chiefDepts.length > 0 && pickBox(),
         d.role.results && resultBox,
         !d.me && !d.targets && !d.role.results && h('p', { class: 'sub center' }, '우수사원 평가 대상이 아닙니다.'));
       if (d.role.results && !resultBox.childNodes.length) results(resultBox);
