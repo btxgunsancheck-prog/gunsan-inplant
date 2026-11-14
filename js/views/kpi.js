@@ -16,6 +16,13 @@
     kind: '구분', finder: '발굴자', effect: '기대효과', judge: '직장 판정', item: '항목', category: '구분', partNo: '품번', vendor: '업체명', product: '품목', proposer: '제안자', period: '활동기간', amount: '효과금액(백만원)', qual: '정성적 효과', quant: '정량적 효과'
   };
 
+  /* 관리자 입력: 직 선택에 사내물류팀(팀 단위)을 더한다. 저장 값은 '팀'. */
+  function deptSelect(current) {
+    return h('select', { name: 'dept' }, h('option', { value: '' }, '선택'),
+      DEPTS.map((d) => h('option', { value: d, selected: d === current }, d)),
+      h('option', { value: '팀', selected: current === '팀' }, '사내물류팀'));
+  }
+
   function extras(code, v) {
     const text = (name, label, def) => UI.field(label, h('input', { name, value: v[name] !== undefined ? v[name] : (def || '') }));
     const sel = (name, label, values) => UI.field(label, UI.select(name, values, v[name], '선택'));
@@ -68,7 +75,7 @@
       const head = [
         UI.field('일자', h('input', { name: 'date', type: 'date', required: true, max: today, value: val('date') || today })),
         isManager
-          ? UI.field('소속 직', UI.select('dept', DEPTS, val('dept') || (DEPTS.includes(App.user.dept) ? App.user.dept : ''), '선택'))
+          ? UI.field('소속 직', deptSelect(val('dept') || (DEPTS.includes(App.user.dept) ? App.user.dept : '')))
           : UI.field('소속 직', h('input', { value: App.user.dept, disabled: true })),
         UI.field('작성자', h('input', { value: App.user.name, disabled: true }))
       ];
@@ -158,43 +165,125 @@
     app.replaceChildren(UI.hero('실적 작성', '문제와 사진만 입력해도 저장됩니다.'), h('section', { class: 'section' }, h('div', { class: 'wrap' }, body)));
   });
 
-  /* 우수개선현황: 엑셀 시트와 같은 카드 모양(번호, 팀, 직장(공정), 활동기간, 담당자, 문제점, 개선내용, 기대효과, 개선 전·후 사진). */
+  /* 우수개선현황: 엑셀 시트와 같은 카드 모양(번호, 팀, 직장(공정), 활동기간, 담당자, 문제점, 개선내용, 기대효과, 개선 전·후 사진).
+     개선사항(관리자용)으로 등록된 건 중 검토자(과장, 팀장)가 '우수개선으로 등록'한 건만 현황에 올라간다. */
   Router.add('/kpi/best', (params, app, alive) => {
     const thisYear = new Date().getFullYear();
     let year = thisYear;
+    let tab = '';
+    let all = [];
+    let reviewer = false;
     const list = h('div', null, UI.skeleton(4));
+    const tabsEl = h('div', { class: 'seg small no-print' });
     const ySel = UI.select('year', [String(thisYear), String(thisYear - 1)], String(year));
-    const seq = (id) => Number(String(id).split('-')[1]) || 0;
-    const bullet = (label, text) => (text ? h('p', { class: 'pre' }, '▶ ' + label + ' : ' + text) : null);
-    const card = (it, no) => {
+    const isBest = (it) => it.detail.best === 'Y';
+    const bullet = (text) => (text ? h('p', { class: 'pre' }, text) : h('p', { class: 'sub' }, '-'));
+
+    const bestImg = (id) => {
+      const img = h('img', { src: UI.thumbUrl(id, 1000), loading: 'lazy', alt: '첨부 사진' });
+      let tried = false;
+      img.addEventListener('error', () => { if (!tried) { tried = true; setTimeout(() => { img.src = UI.thumbUrl(id, 1000) + '&retry=1'; }, 800); } });
+      img.addEventListener('click', () => UI.lightbox(UI.thumbUrl(id, 1600)));
+      return img;
+    };
+    /* 제목은 패널 맨 위에 붙이고, 사진은 패널 폭에 맞춰 채운다. */
+    const panel = (title, ids) => h('section', { class: 'best-panel' }, h('h4', null, title),
+      ids.length ? h('div', { class: 'best-photos n' + Math.min(ids.length, 3) }, ids.map(bestImg)) : h('p', { class: 'best-nophoto' }, '사진 없음'));
+
+    const reload = () => { list.replaceChildren(UI.skeleton(4)); load(); };
+
+    function editCard(it) {
       const d = it.detail;
-      const photos = (ids) => (ids.length ? h('div', { class: 'thumbs' }, ids.map((f) => UI.thumb(f))) : h('p', { class: 'sub' }, '사진 없음'));
-      const effects = [bullet('정성적 효과', d.qual), bullet('정량적 효과', d.quant), d.amount ? bullet('효과금액', d.amount + ' 백만원') : null].filter(Boolean);
+      const f = (name, label, tag, rows) => UI.field(label, h(tag || 'input', Object.assign({ name, value: d[name] || '' }, rows ? { rows } : {})));
+      const before = PhotoPicker(Math.max(0, 3 - it.issueCount), '개선 전 사진 추가');
+      const after = PhotoPicker(Math.max(0, 3 - it.counterCount), '개선 후 사진 추가');
+      const form = h('form', { class: 'best-edit' });
+      const btn = h('button', { class: 'btn', type: 'submit' }, '저장');
+      const box = h('div');
+      fill(form,
+        h('div', { class: 'best-grid' }, f('process', '직장(공정)'), f('period', '활동기간'), f('owner', '담당자'),
+          UI.field('분류', UI.select('category', opt('C1', '분류'), d.category, '선택'))),
+        f('issue', '문제점', 'textarea', 4), f('counter', '개선내용', 'textarea', 4),
+        f('qual', '정성적 기대효과', 'textarea', 2),
+        h('div', { class: 'best-grid' }, f('quant', '정량적 기대효과'), UI.field('효과금액(백만원)', h('input', { name: 'amount', inputmode: 'decimal', value: d.amount || '' }))),
+        before.el, after.el,
+        h('div', { class: 'row-btns' }, btn, h('button', { class: 'btn ghost', type: 'button', onclick: () => draw() }, '취소')), box);
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        btn.disabled = true;
+        const patch = {};
+        new FormData(form).forEach((v, k) => { patch[k] = v; });
+        try { await Api.call('bestSet', { id: it.id, patch }); } catch (err) { UI.toast(err.message, true); btn.disabled = false; return; }
+        const finish = () => { UI.toast('저장했습니다.'); reload(); };
+        const jobs = before.files.map((file) => ({ file, kind: 'issue' })).concat(after.files.map((file) => ({ file, kind: 'counter' })));
+        if (!jobs.length) { finish(); return; }
+        try {
+          const { ticket } = await Api.call('photoTicket', { id: it.id });
+          sendPhotos(jobs, ticket, ProgressBox(box), finish);
+        } catch (err) { UI.toast(err.message, true); btn.disabled = false; }
+      };
+      return h('article', { class: 'best-card editing' }, h('header', { class: 'best-no' }, h('strong', null, '개선사항 수정')), form);
+    }
+
+    function viewCard(it, no) {
+      const d = it.detail;
+      const act = (best) => async () => {
+        try { await Api.call('bestSet', { id: it.id, best }); UI.toast(best ? '우수개선으로 등록했습니다.' : '우수개선 등록을 취소했습니다.'); reload(); }
+        catch (e) { UI.toast(e.message, true); }
+      };
       return h('article', { class: 'best-card' },
-        h('header', { class: 'best-no' }, h('span', { class: 'chip ' + (it.status === '확인' ? 'good' : '') }, it.status === '확인' ? '확인' : '확인 대기'), h('strong', null, year + '-사내-' + String(no).padStart(2, '0'))),
+        h('header', { class: 'best-no' },
+          h('span', { class: 'best-tags' }, isBest(it) ? h('span', { class: 'chip good' }, '우수개선') : h('span', { class: 'chip' }, '검토 대기'),
+            it.status === '확인' ? null : h('span', { class: 'chip warn' }, '직장 확인 전')),
+          h('strong', null, isBest(it) ? year + '-사내-' + String(no).padStart(2, '0') : it.date)),
         h('dl', { class: 'best-meta' },
-          [['팀', '사내물류팀 (' + it.dept + ')'], ['직장(공정)', d.process || '-'], ['활동기간', d.period || it.date], ['담당자', d.owner || it.author]]
+          [['팀', it.dept === '팀' ? '사내물류팀' : '사내물류팀 (' + it.dept + ')'], ['직장(공정)', d.process || '-'], ['활동기간', d.period || it.date], ['담당자', d.owner || it.author]]
             .map(([k, v]) => h('div', null, h('dt', null, k), h('dd', null, v)))),
         h('div', { class: 'best-cols' },
-          h('div', null, h('h4', null, '문제점'), h('p', { class: 'pre' }, d.issue)),
-          h('div', null, h('h4', null, '개선내용'), h('p', { class: 'pre' }, d.counter || '-'))),
-        h('div', { class: 'best-effect' }, h('h4', null, '기대효과'), effects.length ? effects : h('p', { class: 'sub' }, '-')),
+          h('div', null, h('h4', null, '문제점'), bullet(d.issue)),
+          h('div', null, h('h4', null, '개선내용'), bullet(d.counter))),
         h('div', { class: 'best-cols' },
-          h('div', null, h('h4', { class: 'center' }, '개 선 전'), photos(it.issuePhotos)),
-          h('div', null, h('h4', { class: 'center' }, '개 선 후'), photos(it.counterPhotos))));
-    };
-    const load = () => Api.call('kpiList', { year: String(year), code: 'C1' }).then((d) => {
+          h('div', { class: 'best-qual' }, h('h4', null, '정성적 기대효과'), bullet(d.qual)),
+          h('div', { class: 'best-quant' }, h('h4', null, '정량적 기대효과'), bullet(d.quant), d.amount ? h('p', { class: 'sub' }, '효과금액 ' + d.amount + ' 백만원') : null)),
+        h('div', { class: 'best-pics' }, panel('개 선 전', it.issuePhotos), panel('개 선 후', it.counterPhotos)),
+        reviewer ? h('div', { class: 'row-btns no-print best-act' },
+          h('button', { class: 'btn ghost', type: 'button', onclick: () => draw(it.id) }, '수정'),
+          isBest(it) ? h('button', { class: 'btn ghost', type: 'button', onclick: act(false) }, '우수개선 취소')
+            : h('button', { class: 'btn', type: 'button', onclick: act(true) }, '우수개선으로 등록')) : null);
+    }
+
+    let editing = '';
+    function draw(editId) {
+      if (editId !== undefined) editing = editId === true ? '' : editId;
+      else editing = '';
+      const regs = all.filter(isBest);
+      const cands = all.filter((x) => !isBest(x));
+      if (reviewer) {
+        tabsEl.replaceChildren(...[['review', '검토 대기 ' + cands.length], ['reg', '우수개선 등록 ' + regs.length]].map(([k, n]) => h('button', {
+          type: 'button', class: 'seg-btn' + (k === tab ? ' on' : ''), onclick: () => { tab = k; draw(); }
+        }, n)));
+      } else tabsEl.replaceChildren();
+      const shown = reviewer && tab === 'review' ? cands : regs;
+      const no = (it) => regs.indexOf(it) + 1;
+      list.replaceChildren(...(shown.length
+        ? shown.map((it) => (editing === it.id ? editCard(it) : viewCard(it, no(it))))
+        : [UI.empty(reviewer && tab === 'review' ? '검토할 개선사항이 없습니다.' : '등록된 우수개선이 없습니다.', 'data')]));
+    }
+
+    const load = () => Api.call('bestList', { year: String(year) }).then((d) => {
       if (!alive()) return;
-      const items = d.items.filter((x) => x.status !== '제외').sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : seq(a.id) - seq(b.id)));
-      list.replaceChildren(...(items.length ? items.map((it, i) => card(it, i + 1)) : [UI.empty('등록된 개선사항이 없습니다.', 'data')]));
+      reviewer = d.reviewer;
+      all = d.items;
+      if (!tab) tab = reviewer && all.some((x) => !isBest(x)) ? 'review' : 'reg';
+      draw();
     }, (e) => { if (alive()) list.replaceChildren(UI.error(e.message, load)); });
-    ySel.onchange = () => { year = Number(ySel.value); list.replaceChildren(UI.skeleton(4)); load(); };
-    app.replaceChildren(UI.hero('우수개선현황', '개선사항(관리자용)으로 등록한 개선 사례입니다.'),
+    ySel.onchange = () => { year = Number(ySel.value); tab = ''; reload(); };
+    app.replaceChildren(UI.hero('우수개선현황', '개선사항(관리자용)으로 등록한 사례 중 우수개선으로 선정된 건입니다.'),
       h('section', { class: 'section print-page' }, h('div', { class: 'wrap wide' },
         h('div', { class: 'toolbar no-print' }, ySel,
           canC1() && !UI.has('VIEW_EXEC') ? h('a', { class: 'btn', href: '#/kpi/write' }, '개선사항 작성') : null,
           h('button', { class: 'btn ghost pc-only', type: 'button', onclick: () => window.print() }, '인쇄')),
-        list)));
+        tabsEl, list)));
     load();
   });
 

@@ -1,6 +1,30 @@
 /* 사진을 긴 변 1280px, JPEG 품질 0.75로 줄여 Base64 문자열로 돌려준다. */
+const isHeic = (f) => /image\/hei[cf]/i.test(f.type || '') || /\.(heic|heif)$/i.test(f.name || '');
+let heicLoader = null;
+/* HEIC(아이폰 원본)는 PC 브라우저가 열지 못하므로, 필요할 때만 변환 도구를 불러와 JPEG로 바꾼다. */
+const loadHeic = () => {
+  if (window.heic2any) return Promise.resolve(window.heic2any);
+  if (!heicLoader) {
+    heicLoader = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js';
+      s.onload = () => resolve(window.heic2any);
+      s.onerror = () => { heicLoader = null; reject(new Error('HEIC 변환 도구를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.')); };
+      document.head.append(s);
+    });
+  }
+  return heicLoader;
+};
 const ImageTool = {
+  async toJpegIfHeic(file) {
+    if (!isHeic(file)) return file;
+    const convert = await loadHeic();
+    const out = await convert({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+    const blob = Array.isArray(out) ? out[0] : out;
+    return new File([blob], String(file.name || 'photo').replace(/\.(heic|heif)$/i, '') + '.jpg', { type: 'image/jpeg' });
+  },
   async compress(file) {
+    file = await ImageTool.toJpegIfHeic(file);
     const url = URL.createObjectURL(file);
     try {
       const img = await new Promise((resolve, reject) => {
@@ -23,6 +47,7 @@ const ImageTool = {
 
 /* 프로필 사진: 가운데를 정사각형으로 잘라 300px JPEG로 만든다. */
 ImageTool.square = async function (file, size = 300) {
+  file = await ImageTool.toJpegIfHeic(file);
   const url = URL.createObjectURL(file);
   try {
     const img = await new Promise((resolve, reject) => {
@@ -45,14 +70,21 @@ function PhotoPicker(max, label, preload) {
   const files = [];
   const urls = new Map();
   const row = h('div', { class: 'picker-row' });
-  const input = h('input', { type: 'file', accept: 'image/*', multiple: true, hidden: true, onchange: () => {
-    Array.from(input.files).forEach((f) => {
-      if (files.length >= max) return;
+  const input = h('input', { type: 'file', accept: 'image/*,.heic,.heif', multiple: true, hidden: true, onchange: async () => {
+    const picked = Array.from(input.files);
+    input.value = '';
+    if (picked.some(isHeic)) UI.toast('HEIC 사진을 JPEG로 바꾸는 중입니다. 잠시만 기다려 주세요.');
+    let full = false;
+    for (const f0 of picked) {
+      if (files.length >= max) { full = true; break; }
+      let f;
+      try { f = await ImageTool.toJpegIfHeic(f0); } catch (e) { UI.toast(e.message || '사진을 변환하지 못했습니다.', true); continue; }
+      if (files.length >= max) { full = true; break; }
       files.push(f);
       if (preload) preload.add(f, draw);
-    });
-    if (input.files.length && files.length >= max) UI.toast('사진은 최대 ' + max + '장까지 올릴 수 있습니다.');
-    input.value = '';
+      draw();
+    }
+    if (full) UI.toast('사진은 최대 ' + max + '장까지 올릴 수 있습니다.');
     draw();
   } });
   const STATE = { wait: '올리는 중', done: '올림', fail: '다시 올림 필요' };
