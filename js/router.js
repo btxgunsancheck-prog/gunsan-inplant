@@ -22,6 +22,7 @@ const Router = {
       return Views.login();
     }
     if (App.user && App.user.mustChange && path !== '/account/password') { Router.go('/account/password'); return undefined; }
+    if (UI.has('GUEST') && !/^\/(kpi\/team|kpi\/team\/[A-Z][A-Z0-9]*|kpi\/best|account\/password)?$/.test(path)) { Router.go('/'); return undefined; }
     const app = document.getElementById('app');
     for (const r of Router.routes) {
       const m = path.match(r.re);

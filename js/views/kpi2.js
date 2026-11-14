@@ -151,7 +151,8 @@ const KpiData = (() => {
     });
     out.push({ c: annual, cfg: { type: 'bar', data: { labels: ['전년 실적', '올해 목표', '올해 누계'], datasets: annualSets }, options: baseOpts(false) } });
 
-    if (dept === TEAM && def.team) {
+    const guest = UI.has('GUEST');
+    if (dept === TEAM && def.team && !guest) {
       const box = chartBox(def.title + ' 직별');
       const sets = DEPTS.map((d) => dataset({ t: def.team.t, label: d, color: DEPT_COLORS[d] }, MONTHS.map((mon) => {
         const a = T.val(d, def.team.key, mon);
@@ -165,9 +166,9 @@ const KpiData = (() => {
       const sets = monthlySeries(T, dept, def);
       out.push({ c: box, cfg: { type: 'bar', data: { labels, datasets: sets }, options: baseOpts(def.series.some((s) => s.y1)) } });
     }
-    const add = cumulative(T, dept, code);
+    const add = guest ? null : cumulative(T, dept, code);
     if (add) out.push(add);
-    const vend = code === 'Q2' ? vendorChart(T, dept) : null;
+    const vend = code === 'Q2' && !guest ? vendorChart(T, dept) : null;
     if (vend) out.push(vend);
     host.replaceChildren(...out.map((o) => o.c.el));
     loadChart().then(() => { out.forEach((o) => { if (o.cfg) charts.push(new window.Chart(o.c.canvas, o.cfg)); }); }).catch(() => UI.toast('차트를 불러오지 못했습니다.', true));
@@ -436,7 +437,8 @@ const KpiData = (() => {
       drawCharts(charts2, T, dept, metric.code);
       if (!listed) {
         listed = true;
-        if (LISTED.includes(metric.code)) activityList(extra, dept, metric.code, alive);
+        if (UI.has('GUEST')) { /* 외부 열람: 건별 목록과 표준서 목록은 주지 않는다 */ }
+        else if (LISTED.includes(metric.code)) activityList(extra, dept, metric.code, alive);
         else if (metric.code === 'Q1' && dept !== TEAM) standardTable(extra, dept, alive);
       }
     };
@@ -452,7 +454,8 @@ const KpiData = (() => {
   });
 
   Router.add('/kpi/team', (params, app, alive) => {
-    if (!UI.has('KPI_VIEW_ALL')) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
+    const guest = UI.has('GUEST');
+    if (!UI.has('KPI_VIEW_ALL') && !guest) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
     const body = h('div', { class: 'wrap wide' }, UI.skeleton(10));
     const draw = (d) => {
       destroyCharts();
@@ -472,7 +475,9 @@ const KpiData = (() => {
         if (UI.has('ADMIN')) closeBox.append(h('button', { class: 'btn ghost', type: 'button', onclick: () => act('kpiReopen') }, '마감 해제'));
       }
       let prev = '';
-      const rows = TEAM_ROWS.map((r) => {
+      /* 외부 열람은 팀 전체 행만 보인다. */
+      const teamRows = guest ? TEAM_ROWS.filter((r) => r.dept === TEAM) : TEAM_ROWS;
+      const rows = teamRows.map((r) => {
         const first = r.m.code !== prev;
         prev = r.m.code;
         return h('tr', { class: first ? 'group-top' : '', onclick: () => { location.hash = '#/kpi/team/' + r.m.code; } },
@@ -493,7 +498,7 @@ const KpiData = (() => {
       const chips = h('div', { class: 'month-chips', role: 'tablist', 'aria-label': '월 선택' });
       const mlist = h('div', { class: 'team-m' });
       const groups = [];
-      TEAM_ROWS.forEach((r) => {
+      teamRows.forEach((r) => {
         const g = groups[groups.length - 1];
         if (g && g.m === r.m) g.rows.push(r); else groups.push({ m: r.m, rows: [r] });
       });
@@ -528,15 +533,15 @@ const KpiData = (() => {
           h('div', { class: 'panel-grid' },
             h('div', { class: 'panel' }, UI.cardHead('chart', '월별 달성 비율 추이'), trend),
             h('div', { class: 'panel' }, UI.cardHead('list', selMon + '월 항목별 달성 비율'), tabBars(T, TEAM))),
-          deptCardsOf(selMon));
+          guest ? null : deptCardsOf(selMon));
         trendChart(trend, T, TEAM);
         T.curMon = cur;
       };
       fill(body,
-        h('div', { class: 'seg' }, [h('a', { class: 'seg-btn on', href: '#/kpi/team' }, '팀 전체')].concat(deptTabs.map((x) => h('a', { class: 'seg-btn', href: '#/kpi/' + x.charAt(2) }, x)))),
+        guest ? null : h('div', { class: 'seg' }, [h('a', { class: 'seg-btn on', href: '#/kpi/team' }, '팀 전체')].concat(deptTabs.map((x) => h('a', { class: 'seg-btn', href: '#/kpi/' + x.charAt(2) }, x)))),
         monthBar(list, selMon, (m) => { selMon = m; paintTop(); }),
         dyn,
-        h('div', { class: 'row-btns no-print' }, h('a', { class: 'btn ghost', href: '#/kpi/meeting' }, '미팅용 보기'), h('button', { class: 'btn ghost pc-only', type: 'button', onclick: () => window.print() }, '인쇄')),
+        h('div', { class: 'row-btns no-print' }, guest ? null : h('a', { class: 'btn ghost', href: '#/kpi/meeting' }, '미팅용 보기'), h('button', { class: 'btn ghost pc-only', type: 'button', onclick: () => window.print() }, '인쇄')),
         closeBox.childNodes.length ? closeBox : null,
         h('h2', { class: 'block-h pc-only' }, '지표별 월 실적'),
         h('div', { class: 'table-wrap pc-only' }, h('table', { class: 'data click' },

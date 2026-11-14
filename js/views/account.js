@@ -27,6 +27,21 @@ Views.login = function () {
     UI.field('사번', emp), UI.field('비밀번호', pw),
     h('label', { class: 'check' }, remember, h('span', null, '로그인 상태 유지')),
     msg, btn);
+  /* 게스트 입장: 로그인 없이 팀 전체 KPI와 우수개선현황만 본다(고객사·타 부서용). 서버에서 게스트 계정이 꺼져 있으면 입장되지 않는다. */
+  const guestBtn = h('button', { class: 'btn ghost wide', type: 'button', onclick: async () => {
+    msg.textContent = '';
+    guestBtn.disabled = true;
+    guestBtn.textContent = '입장 중';
+    try {
+      const data = await Api.call('guestLogin', {});
+      await App.startSession(data, false);
+    } catch (err) {
+      msg.textContent = err.message;
+      guestBtn.disabled = false;
+      guestBtn.textContent = '게스트로 둘러보기 (로그인 없이)';
+    }
+  } }, '게스트로 둘러보기 (로그인 없이)');
+  const guestBox = h('div', { class: 'guest-entry' }, guestBtn, h('p', { class: 'hint' }, '고객사·타 부서용입니다. 팀 전체 KPI와 우수개선현황만 볼 수 있습니다.'));
   /* 왼쪽(PC): 물류 그림(unDraw)과 소개, 오른쪽: 로그인 카드. 휴대폰에서는 위아래로 쌓인다. */
   app.replaceChildren(h('div', { class: 'login login-split' },
     h('section', { class: 'login-art' },
@@ -35,7 +50,7 @@ Views.login = function () {
       h('img', { src: 'assets/illust/logistics.svg', alt: '', class: 'login-illust', width: 400, height: 203, decoding: 'async' })),
     h('section', { class: 'login-card' },
       h('img', { src: 'assets/logo.png', alt: 'BTRIPLE', class: 'login-logo', width: 172, height: 32 }),
-      h('h1', null, '군산 사내물류팀'), form)));
+      h('h1', null, '군산 사내물류팀'), form, guestBox)));
 };
 
 Router.add('/account/password', (params, app) => {
