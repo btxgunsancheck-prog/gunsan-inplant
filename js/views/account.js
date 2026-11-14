@@ -41,7 +41,7 @@ Views.login = function () {
       guestBtn.textContent = '게스트로 둘러보기 (로그인 없이)';
     }
   } }, '게스트로 둘러보기 (로그인 없이)');
-  const guestBox = h('div', { class: 'guest-entry' }, guestBtn, h('p', { class: 'hint' }, '고객사·타 부서용입니다. 팀 전체 KPI와 우수개선현황만 볼 수 있습니다.'));
+  const guestBox = h('div', { class: 'guest-entry' }, guestBtn);
   /* 왼쪽(PC): 물류 그림(unDraw)과 소개, 오른쪽: 로그인 카드. 휴대폰에서는 위아래로 쌓인다. */
   app.replaceChildren(h('div', { class: 'login login-split' },
     h('section', { class: 'login-art' },
