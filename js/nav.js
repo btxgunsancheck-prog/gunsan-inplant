@@ -49,7 +49,8 @@ const Nav = (() => {
   function myKpi() {
     const d = (App.home.kpiHome || {})[App.user.dept];
     if (!d) return [];
-    return [link('달성 ' + d.G + ' · 주의 ' + d.Y + ' · 미달 ' + d.R, '#/kpi/' + App.user.dept.charAt(2))];
+    const to = /^물류[1-4]직$/.test(App.user.dept) ? '#/kpi/' + App.user.dept.charAt(2) : '#/kpi/team';
+    return [link('달성 ' + d.G + ' · 주의 ' + d.Y + ' · 미달 ' + d.R, to)];
   }
 
   const panel = () => document.getElementById('nav-panel');
