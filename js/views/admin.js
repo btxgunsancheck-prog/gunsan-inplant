@@ -130,6 +130,9 @@
         h('button', { class: 'link', type: 'button', onclick: () => done(true) }, '닫기')));
   }
 
+  /* 휴대폰에서는 관리 화면이 좁으므로 PC 이용을 안내한다. */
+  const pcNotice = () => h('p', { class: 'pc-notice m-only', role: 'note' }, '관리자 화면은 표와 입력 칸이 많아 PC에서 이용하시는 것이 편합니다.');
+
   Router.add('/admin/users', (params, app, alive) => {
     if (!UI.has('ADMIN')) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
     const body = h('div', null, UI.skeleton(8));
@@ -156,7 +159,7 @@
     const load = () => Api.call('userAdminList').then((d) => { if (!alive()) return; data = d; draw(); }, (e) => { if (alive()) body.replaceChildren(UI.error(e.message, load)); });
     search.oninput = () => data && draw();
     showAll.onchange = () => data && draw();
-    app.replaceChildren(UI.hero('사용자 관리', '줄을 누르면 수정, 비밀번호 초기화, 잠금 해제, 사용 중지를 할 수 있습니다.'),
+    app.replaceChildren(UI.hero('사용자 관리', '줄을 누르면 수정, 비밀번호 초기화, 잠금 해제, 사용 중지를 할 수 있습니다.'), pcNotice(),
       h('section', { class: 'section' }, h('div', { class: 'wrap wide' },
         h('div', { class: 'toolbar wrap-row' }, search, h('label', { class: 'check' }, showAll, h('span', null, 'QR장비점검에만 있는 사람도 보기')),
           h('button', { class: 'btn', type: 'button', onclick: () => open(null) }, '새 사용자 등록')),
@@ -214,7 +217,7 @@
               try { await Api.call('licenseDelete', { rowNo: r.rowNo }); load(); } catch (e) { UI.toast(e.message, true); }
             } }, '삭제'))))))));
     }, (e) => { if (alive()) body.replaceChildren(UI.error(e.message, load)); });
-    app.replaceChildren(UI.hero('장비면허 명부'), h('section', { class: 'section' }, body));
+    app.replaceChildren(UI.hero('장비면허 명부'), pcNotice(), h('section', { class: 'section' }, body));
     load();
   });
 
@@ -250,7 +253,7 @@
           } }, '저장')));
         }));
     }, (e) => { if (alive()) body.replaceChildren(UI.error(e.message, load)); });
-    app.replaceChildren(UI.hero('목표·평가기준'), h('section', { class: 'section' }, body));
+    app.replaceChildren(UI.hero('목표·평가기준'), pcNotice(), h('section', { class: 'section' }, body));
     load();
   });
 
@@ -384,7 +387,7 @@
     if (!UI.hasAny(['ADMIN', 'VIEW_EXEC'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
     const top = h('div');
     if (UI.has('ADMIN')) { top.append(UI.skeleton(4)); dataAdmin(top); }
-    app.replaceChildren(UI.hero('데이터 관리', UI.has('ADMIN') ? '월 마감 해제, 신년도 파일, 백업 상태, 작업 기록' : '작업 기록 열람'),
+    app.replaceChildren(UI.hero('데이터 관리', UI.has('ADMIN') ? '월 마감 해제, 신년도 파일, 백업 상태, 작업 기록' : '작업 기록 열람'), pcNotice(),
       h('section', { class: 'section' }, h('div', { class: 'wrap wide' }, top, logs())));
   });
 
@@ -405,7 +408,7 @@
       if (!alive()) return;
       const canvas = h('canvas');
       const depts = Object.keys(d.kpi);
-      fill(main,
+      fill(main, pcNotice(),
         h('div', { class: 'admin-head' }, h('div', null, h('h1', null, '관리자 대시보드'), h('p', { class: 'sub' }, '처리할 일과 운영 현황을 한눈에 확인합니다.')), h('span', { class: 'date-pill' }, UI.icon('clock'), d.today)),
         h('div', { class: 'stat-grid' },
           stat('#/kpi/team', 'todo', 'KPI 확인 대기', d.pending + '건', d.pending ? 'warn' : ''),
@@ -416,10 +419,10 @@
         h('div', { class: 'panel-grid' },
           h('div', { class: 'panel' }, UI.cardHead('chart', '직별 이번 달 KPI 달성 비율', '#/kpi/team'), h('div', { class: 'chart-area' }, canvas)),
           h('div', { class: 'panel' }, UI.cardHead('chat', '최근 건의사항', '#/suggest/all'),
-            d.recent.length ? h('table', { class: 'data click' }, h('thead', null, h('tr', null, ['분류', '제목', '등록일', '상태'].map((x) => h('th', null, x)))),
+            d.recent.length ? h('div', { class: 'table-wrap' }, h('table', { class: 'data click' }, h('thead', null, h('tr', null, ['분류', '제목', '등록일', '상태'].map((x) => h('th', null, x)))),
               h('tbody', null, d.recent.map((r) => h('tr', { onclick: () => { location.hash = '#/suggest/view/' + r.id; } },
                 h('td', null, r.category), h('td', { class: 'c-title' }, r.title), h('td', null, UI.dateOnly(r.created)),
-                h('td', null, h('span', { class: 'chip ' + ({ 검토중: 'warn', 답변완료: 'good' }[r.status] || '') }, r.status))))))
+                h('td', null, h('span', { class: 'chip ' + ({ 검토중: 'warn', 답변완료: 'good' }[r.status] || '') }, r.status)))))))
               : UI.empty('등록된 건의가 없습니다.', 'feedback', true))));
       const pct = (k) => { const t = k.G + k.Y + k.R; return t ? Math.round(k.G / t * 100) : 0; };
       const s = document.createElement('script');

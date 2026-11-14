@@ -4,6 +4,7 @@
     ['k1', '업무지식', '납입이상 적출'], ['k2', '수행능력', '이상발생·비가동'], ['k3', '협조능력', '개선 제안'],
     ['m1', '조직기여도', '동료 협조·도움'], ['m2', '성실성', '지각·조퇴·결근 없음'], ['m3', '책임감', '맡은 일 끝까지 수행'], ['k4', '적극성', '위험요소·개선 제안']
   ];
+  const nameOf = (key) => ITEMS.find((x) => x[0] === key)[1];
   const label = (key) => { const it = ITEMS.find((x) => x[0] === key); return h('span', { class: 'th2' }, it[1], h('small', null, '(' + it[2] + ')')); };
   const ROLE_NAME = { self: '본인', chief: '직장', plant: '공장', lead: '팀장' };
   const pad = (n) => String(n).padStart(2, '0');
@@ -34,9 +35,9 @@
       catch (e) { UI.toast(e.message, true); }
     };
     return h('div', null, h('h2', { class: 'block-h' }, '내 평가 결과'),
-      h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
+      h('div', { class: 'table-wrap' }, h('table', { class: 'data stack stack3' },
         h('thead', null, h('tr', null, ITEMS.map((it) => h('th', { class: 'num' }, label(it[0]))), h('th', { class: 'num' }, '가산점'), h('th', { class: 'num' }, '합계'))),
-        h('tbody', null, h('tr', null, ITEMS.map((it) => h('td', { class: 'num' }, fmt(me[it[0]]))), h('td', { class: 'num' }, fmt(me.bonus)), h('td', { class: 'num' }, h('strong', null, fmt(me.total))))))),
+        h('tbody', null, h('tr', null, ITEMS.map((it) => h('td', { class: 'num', 'data-l': it[1] }, fmt(me[it[0]]))), h('td', { class: 'num', 'data-l': '가산점' }, fmt(me.bonus)), h('td', { class: 'num total', 'data-l': '합계' }, h('strong', null, fmt(me.total))))))),
       h('p', { class: 'sub' }, '이번 분기 실적: 납입이상 ' + me.counts.q2 + '건, 위험요소 ' + me.counts.s2 + '건, 개선 제안 ' + me.counts.cp + '건, 이상발생 ' + me.counts.abnormal + '건'),
       h('h2', { class: 'block-h' }, '자기평가 (본인 10%)'),
       h('div', { class: 'toolbar wrap-row' }, UI.field(label('m1'), sel.m1), UI.field(label('m2'), sel.m2), UI.field(label('m3'), sel.m3), h('button', { class: 'btn', type: 'button', onclick: save }, '저장')));
@@ -55,13 +56,14 @@
           reload();
         } catch (e) { UI.toast(e.message, true); }
       };
-      return h('tr', null, h('td', null, t.dept), h('td', null, t.name), h('td', { class: 'num' }, t.k1), h('td', { class: 'num' }, fmt(t.k2)), h('td', { class: 'num' }, t.k3), h('td', { class: 'num' }, t.k4),
-        h('td', { class: 'num' }, s.m1), h('td', { class: 'num' }, s.m2), h('td', { class: 'num' }, s.m3), isChief ? h('td', { class: 'num' }, adj) : null,
-        h('td', null, h('button', { class: 'btn ghost', type: 'button', onclick: save }, m.m1 ? '수정' : '저장')));
+      return h('tr', null, h('td', { 'data-l': '직' }, t.dept), h('td', { class: 'who', 'data-l': '성명' }, t.name),
+        h('td', { class: 'num', 'data-l': nameOf('k1') }, t.k1), h('td', { class: 'num', 'data-l': nameOf('k2') }, fmt(t.k2)), h('td', { class: 'num', 'data-l': nameOf('k3') }, t.k3), h('td', { class: 'num', 'data-l': nameOf('k4') }, t.k4),
+        h('td', { class: 'num', 'data-l': nameOf('m1') }, s.m1), h('td', { class: 'num', 'data-l': nameOf('m2') }, s.m2), h('td', { class: 'num', 'data-l': nameOf('m3') }, s.m3), isChief ? h('td', { class: 'num', 'data-l': '수행능력 조정' }, adj) : null,
+        h('td', { class: 'act' }, h('button', { class: 'btn ghost', type: 'button', onclick: save }, m.m1 ? '수정' : '저장')));
     });
     return h('div', null, h('h2', { class: 'block-h' }, ROLE_NAME[data.rateAs] + ' 평가 입력 (' + { chief: '40%', plant: '30%', lead: '20%' }[data.rateAs] + ')'),
       h('p', { class: 'sub' }, '업무지식, 수행능력, 협조능력, 적극성은 실적으로 자동 계산된 점수입니다.'),
-      h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
+      h('div', { class: 'table-wrap' }, h('table', { class: 'data stack' },
         h('thead', null, h('tr', null, ['직', '성명'].map((x) => h('th', null, x)), ['k1', 'k2', 'k3', 'k4'].map((k) => h('th', { class: 'num' }, label(k))), ['m1', 'm2', 'm3'].map((k) => h('th', { class: 'num' }, label(k))), isChief ? h('th', { class: 'num' }, '수행능력 조정') : null, h('th', null, ''))),
         h('tbody', null, rows))));
   }
@@ -69,12 +71,12 @@
   function proposals(data, reload) {
     if (!data.proposals || !data.proposals.length) return h('div', null, h('h2', { class: 'block-h' }, '개선 제안 최종 결정'), h('p', { class: 'sub' }, '이번 분기 개선 제안이 없습니다.'));
     return h('div', null, h('h2', { class: 'block-h' }, '개선 제안 최종 결정'),
-      h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
+      h('div', { class: 'table-wrap' }, h('table', { class: 'data stack' },
         h('thead', null, h('tr', null, ['직', '제안자', '상태', '직장 판정', '최종 결정', ''].map((x) => h('th', null, x)))),
         h('tbody', null, data.proposals.map((p) => {
           const sel = UI.select('final', ['합리적', '불합리적'], p.final, '직장 판정 따름');
-          return h('tr', null, h('td', null, p.dept), h('td', null, p.name), h('td', null, p.status), h('td', null, p.judge || '-'), h('td', null, sel),
-            h('td', null, h('button', { class: 'btn ghost', type: 'button', onclick: async () => {
+          return h('tr', null, h('td', { 'data-l': '직' }, p.dept), h('td', { class: 'who', 'data-l': '제안자' }, p.name), h('td', { 'data-l': '상태' }, p.status), h('td', { 'data-l': '직장 판정' }, p.judge || '-'), h('td', { 'data-l': '최종 결정' }, sel),
+            h('td', { class: 'act' }, h('button', { class: 'btn ghost', type: 'button', onclick: async () => {
               try { await Api.call('awardProposal', { id: p.id, finalJudge: sel.value }); UI.toast('저장했습니다.'); reload(); } catch (e) { UI.toast(e.message, true); }
             } }, '저장')));
         })))));
@@ -121,11 +123,11 @@
           h('span', { class: 'chip good' }, d.half.replace('-H1', ' 상반기').replace('-H2', ' 하반기') + ' ' + r.title),
           h('strong', { class: 'winner-name' }, r.name), h('span', { class: 'sub' }, r.dept + ' · 반기 평균 ' + fmt(r.avg) + '점'),
           r.reason ? h('span', { class: 'sub' }, '선정 사유(' + (r.chief || '직장') + '): ' + r.reason) : null))) : h('p', { class: 'sub' }, '아직 수상자가 정해지지 않았습니다.'),
-        h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
+        h('div', { class: 'table-wrap' }, h('table', { class: 'data stack stack3' },
         h('thead', null, h('tr', null, ['직', '순위', '성명', d.quarters[0] + ' 합계', d.quarters[1] + ' 합계', '반기 평균', ''].map((x) => h('th', null, x)))),
-        h('tbody', null, rows.map((r) => h('tr', { class: r.winner ? 'winner' : '' }, h('td', null, r.dept), h('td', { class: 'num' }, r.rank), h('td', null, r.name),
-          h('td', { class: 'num' }, fmt(r.q1 && r.q1.total)), h('td', { class: 'num' }, fmt(r.q2 && r.q2.total)), h('td', { class: 'num' }, h('strong', null, fmt(r.avg))),
-          h('td', null, r.winner ? h('span', { class: 'chip good' }, r.title) : '')))))));
+        h('tbody', null, rows.map((r) => h('tr', { class: r.winner ? 'winner' : '' }, h('td', { 'data-l': '직' }, r.dept), h('td', { class: 'num', 'data-l': '순위' }, r.rank), h('td', { class: 'who', 'data-l': '성명' }, r.name),
+          h('td', { class: 'num', 'data-l': d.quarters[0] + ' 합계' }, fmt(r.q1 && r.q1.total)), h('td', { class: 'num', 'data-l': d.quarters[1] + ' 합계' }, fmt(r.q2 && r.q2.total)), h('td', { class: 'num', 'data-l': '반기 평균' }, h('strong', null, fmt(r.avg))),
+          h('td', { 'data-l': '', class: 'prize' }, r.winner ? h('span', { class: 'chip good' }, r.title) : '')))))));
     }, (e) => box.replaceChildren(UI.error(e.message, load)));
     sel.onchange = load;
     host.replaceChildren(h('h2', { class: 'block-h' }, '반기 수상 결과'), h('p', { class: 'sub' }, '팀장과 사업부장만 볼 수 있습니다.'), h('div', { class: 'toolbar' }, sel), box);
