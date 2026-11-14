@@ -246,7 +246,30 @@ const KpiData = (() => {
         return h('td', { class: 'num' }, a !== null && tv ? round((unitPct ? a / tv : a / tv) * 100, 1) + '%' : '-');
       })));
     });
-    return h('div', { class: 'table-wrap' }, h('table', { class: 'data' }, h('thead', null, head), h('tbody', null, rows)));
+    return h('div', { class: 'table-wrap pc-only' }, h('table', { class: 'data' }, h('thead', null, head), h('tbody', null, rows)));
+  }
+
+  /* 휴대폰: 12개월 가로 표 대신 연간 요약 + 월별 세로 표(이번 달까지) */
+  function descMobile(T, dept, metric) {
+    const months = MONTHS.filter((x) => x <= T.curMon);
+    return h('div', { class: 'm-only' }, metric.keys.map(([key, label]) => {
+      const x = T.t(dept, key);
+      const tv = x ? Number(x.target) : 0;
+      return h('div', { class: 'desc-m' },
+        label ? h('h3', { class: 'desc-m-h' }, label) : null,
+        h('div', { class: 'desc-sum' },
+          [['전년 실적', x ? show(key, Number(x.prior)) : '-'], ['올해 목표', show(key, T.annualTarget(dept, key))], ['올해 실적', show(key, T.yearVal(dept, key))]]
+            .map(([a, b]) => h('div', null, h('span', { class: 'sub' }, a), h('strong', null, b)))),
+        h('table', { class: 'data month-table' },
+          h('thead', null, h('tr', null, h('th', null, '월'), h('th', { class: 'num' }, '목표'), h('th', { class: 'num' }, '실적'), h('th', { class: 'num' }, '달성률'))),
+          h('tbody', null, months.slice().reverse().map((mon) => {
+            const a = T.val(dept, key, mon);
+            const j = T.judge(dept, key, mon);
+            return h('tr', null, h('th', null, mon + '월'), h('td', { class: 'num' }, x ? show(key, tv) : '-'),
+              h('td', { class: 'num ' + (JUDGE[j] ? JUDGE[j][1] : '') }, show(key, a)),
+              h('td', { class: 'num' }, a !== null && tv ? round(a / tv * 100, 1) + '%' : '-'));
+          }))));
+    }));
   }
 
   /* ---------- 직별 화면 ---------- */
@@ -383,8 +406,8 @@ const KpiData = (() => {
         h('a', { class: 'back no-print', href: params.team === 'team' ? '#/kpi/team' : '#/kpi/' + params.team }, dept === TEAM ? '팀 전체 현황' : dept),
         h('h1', { class: 'post-h' }, metric.code + ' ' + metric.name),
         h('p', { class: 'sub' }, dept + (x && x.desc ? ' · ' + x.desc : '')),
-        h('div', { class: 'row-btns no-print' }, h('button', { class: 'btn ghost', type: 'button', onclick: () => window.print() }, '인쇄')),
-        charts2, descTable(T, dept, metric), extra);
+        h('div', { class: 'row-btns no-print' }, h('button', { class: 'btn ghost pc-only', type: 'button', onclick: () => window.print() }, '인쇄')),
+        charts2, descTable(T, dept, metric), descMobile(T, dept, metric), extra);
       drawCharts(charts2, T, dept, metric.code);
       if (!listed) {
         listed = true;
@@ -439,12 +462,37 @@ const KpiData = (() => {
         return h('a', { class: 'sum-card good', href: '#/kpi/' + x.charAt(2) }, h('span', { class: 'sum-ico' }, UI.icon('chart')),
           h('div', null, h('p', null, x + ' ' + cur + '월'), h('strong', null, UI.num(pct, '%')), h('span', { class: 'sub' }, '달성 ' + c.G + ' · 주의 ' + c.Y + ' · 미달 ' + c.R)));
       }));
+      /* 휴대폰: 월을 골라 지표별 카드로 본다 */
+      let mon = cur;
+      const chips = h('div', { class: 'month-chips', role: 'tablist', 'aria-label': '월 선택' });
+      const mlist = h('div', { class: 'team-m' });
+      const groups = [];
+      TEAM_ROWS.forEach((r) => {
+        const g = groups[groups.length - 1];
+        if (g && g.m === r.m) g.rows.push(r); else groups.push({ m: r.m, rows: [r] });
+      });
+      const paintM = () => {
+        chips.replaceChildren(...MONTHS.filter((x) => x <= cur).map((x) => h('button', {
+          type: 'button', class: 'chip-btn' + (x === mon ? ' on' : ''), role: 'tab', 'aria-selected': String(x === mon),
+          onclick: () => { mon = x; paintM(); }
+        }, x + '월', closedSet.has(ymOf(x)) ? h('span', { class: 'closed' }, '마감') : '')));
+        mlist.replaceChildren(...groups.map((g) => h('a', { class: 'team-card', href: '#/kpi/team/' + g.m.code },
+          h('p', { class: 'team-card-h' }, g.m.code + ' ' + g.m.name, UI.icon('arrow')),
+          g.rows.map((r) => {
+            const j = T.judge(r.dept, r.key, mon);
+            return h('div', { class: 'team-row' }, h('span', null, r.label === TEAM ? '팀 전체' : r.label),
+              h('strong', { class: 'jv ' + (JUDGE[j] ? JUDGE[j][1] : '') }, show(r.key, T.val(r.dept, r.key, mon))));
+          }))));
+      };
+      paintM();
+      requestAnimationFrame(() => { chips.scrollLeft = chips.scrollWidth; });
       fill(body, deptCards,
-        h('div', { class: 'row-btns no-print' }, h('a', { class: 'btn ghost', href: '#/kpi/meeting' }, '미팅용 보기'), h('button', { class: 'btn ghost', type: 'button', onclick: () => window.print() }, '인쇄')),
+        h('div', { class: 'row-btns no-print' }, h('a', { class: 'btn ghost', href: '#/kpi/meeting' }, '미팅용 보기'), h('button', { class: 'btn ghost pc-only', type: 'button', onclick: () => window.print() }, '인쇄')),
         closeBox.childNodes.length ? closeBox : null,
-        h('div', { class: 'table-wrap' }, h('table', { class: 'data click' },
+        h('div', { class: 'table-wrap pc-only' }, h('table', { class: 'data click' },
           h('thead', null, h('tr', null, h('th', null, '지표'), h('th', null, '구분'), MONTHS.map((x) => h('th', { class: 'num' }, x + '월', closedSet.has(ymOf(x)) ? h('span', { class: 'closed' }, '마감') : '')))),
-          h('tbody', null, rows))));
+          h('tbody', null, rows))),
+        h('div', { class: 'm-only' }, chips, mlist));
     };
     app.replaceChildren(UI.hero('팀 전체 현황', new Date().getFullYear() + '년 ScoreCard'), h('section', { class: 'section' }, body));
     load(alive, draw, body);
@@ -467,14 +515,20 @@ const KpiData = (() => {
       if (range.value === '이번 달') { from.value = iso(new Date(today.getFullYear(), today.getMonth(), 1)); to.value = iso(today); }
       Api.call('kpiList', { year: from.value.slice(0, 4), from: from.value, to: to.value, code: code.value, dept: dept.value }).then((d) => {
         if (!alive()) return;
-        box.replaceChildren(h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
+        if (!d.items.length) { box.replaceChildren(UI.empty('내역이 없습니다.', 'data')); return; }
+        box.replaceChildren(h('div', { class: 'table-wrap pc-only' }, h('table', { class: 'data' },
           h('thead', null, h('tr', null, ['일자', '직', '지표', '작성자', '문제', '대책', '담당', '현황', '상태'].map((x) => h('th', null, x)))),
-          h('tbody', null, d.items.map((it) => h('tr', null, [it.date, it.dept, it.code, it.author, it.detail.issue, it.detail.counter, it.detail.owner, it.detail.progress, it.status].map((v2) => h('td', { class: 'pre' }, v2 || ''))))))));
+          h('tbody', null, d.items.map((it) => h('tr', null, [it.date, it.dept, it.code, it.author, it.detail.issue, it.detail.counter, it.detail.owner, it.detail.progress, it.status].map((v2) => h('td', { class: 'pre' }, v2 || ''))))))),
+          h('div', { class: 'm-only' }, d.items.map((it) => h('article', { class: 'item' },
+            h('p', { class: 'sub' }, it.date + ' · ' + it.dept + ' · ' + it.code + ' · ' + it.author + ' ', h('span', { class: 'tag' }, it.status)),
+            h('p', { class: 'pre' }, it.detail.issue),
+            it.detail.counter && h('p', { class: 'pre sub' }, '대책: ' + it.detail.counter),
+            (it.detail.owner || it.detail.progress) && h('p', { class: 'sub' }, [it.detail.owner && '담당 ' + it.detail.owner, it.detail.progress].filter(Boolean).join(' · '))))));
       }, (e) => { if (alive()) box.replaceChildren(UI.error(e.message, load2)); });
     };
     [range, from, to, code, dept].forEach((c) => { c.onchange = load2; });
     app.replaceChildren(UI.hero('미팅용 보기'), h('section', { class: 'section print-page' }, h('div', { class: 'wrap wide' },
-      h('div', { class: 'toolbar no-print wrap-row' }, range, from, to, code, dept, h('button', { class: 'btn ghost', type: 'button', onclick: () => window.print() }, '인쇄')), box)));
+      h('div', { class: 'toolbar no-print wrap-row' }, range, from, to, code, dept, h('button', { class: 'btn ghost pc-only', type: 'button', onclick: () => window.print() }, '인쇄')), box)));
     load2();
   });
 
