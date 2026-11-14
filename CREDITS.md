@@ -11,6 +11,7 @@
 | js/ui.js ICONS (아이콘 20개) | Tabler Icons | https://tabler.io/icons | MIT (Copyright (c) 2020-2024 Paweł Kuna) |
 | 글꼴 | Pretendard | https://github.com/orioncactus/pretendard | SIL Open Font License 1.1 |
 | 글꼴('함께' 두 글자) | Nanum Pen Script | Google Fonts | SIL Open Font License 1.1 |
+| 사진(HEIC) 변환 | heic2any (cdnjs에서 필요할 때만 불러옴) | https://github.com/alexcorvi/heic2any | MIT |
 | 차트 | Chart.js | https://www.chartjs.org | MIT |
 | 3D 창고 영상 원본 | Three.js | https://threejs.org | MIT |
 

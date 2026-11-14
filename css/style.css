@@ -824,3 +824,22 @@ table.data select:not([multiple]) { padding-right: 30px; background-position: ri
   .best-card { padding: 14px; }
 }
 @media print { .best-card { break-inside: avoid; } }
+
+/* 우수개선현황 2차: 정성·정량 분리, 사진 패널 */
+.best-tags { display: flex; gap: 6px; align-items: center; }
+.best-qual h4 { color: #b3261e; }
+.best-quant h4 { color: #1e6fd9; }
+.best-pics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 4px; }
+.best-panel { overflow: hidden; border-radius: 12px; background: #f6f8fd; border: 1px solid #e3e8f4; }
+.best-panel h4 { margin: 0; padding: 10px 12px; text-align: center; letter-spacing: 6px; font-size: 14px; color: var(--accent); background: #e8eefb; border-bottom: 1px solid #d7e0f4; }
+.best-photos { display: grid; gap: 6px; padding: 8px; }
+.best-photos.n1 { grid-template-columns: minmax(0, 1fr); }
+.best-photos.n2, .best-photos.n3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.best-photos.n3 img:first-child { grid-column: 1 / -1; }
+.best-photos img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; background: #e8edf7; cursor: zoom-in; }
+.best-nophoto { margin: 0; padding: 36px 8px; text-align: center; color: var(--text-sub); font-size: 14px; }
+.best-act { margin-top: 14px; justify-content: flex-end; }
+.best-edit { display: grid; gap: 14px; }
+.best-card.editing { border-color: var(--accent); }
+@media (max-width: 833px) { .best-pics { grid-template-columns: minmax(0, 1fr); } }
+@media print { .best-photos img { cursor: default; } }

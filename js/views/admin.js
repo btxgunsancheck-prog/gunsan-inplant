@@ -49,7 +49,7 @@
     USER: '기본(로그인, 게시판, 건의, 소속 직 KPI)', KPI_VIEW_ALL: 'KPI 전체 열람', VIEW_EXEC: '열람 전용(사업부장)', NOTICE_WRITE: '공지 작성',
     'KPI_CHECK:물류1직': '물류1직 확인(직장)', 'KPI_CHECK:물류2직': '물류2직 확인(직장)', 'KPI_CHECK:물류3직': '물류3직 확인(직장)', 'KPI_CHECK:물류4직': '물류4직 확인(직장)',
     KPI_TEAM: '팀 KPI 관리, 월 마감', KPI_MANAGER: '관리자 입력(장비면허)', UPLOAD_ABNORMAL: '이상발생 업로드', UPLOAD_INVENTORY: '순환재고 업로드',
-    SUGGEST_VIEW: '건의 전체 열람·답변', SUGGEST_READ: '건의 전체 열람(관제)', ADMIN: '관리자 메뉴 전체'
+    SUGGEST_VIEW: '건의 전체 열람·답변', SUGGEST_READ: '건의 전체 열람(관제)', BEST_REVIEW: '우수개선 검토·선정(과장, 팀장)', ADMIN: '관리자 메뉴 전체'
   };
   const stateOf = (u) => (!u.site ? '미등록' : !u.active ? '사용 중지' : u.locked ? '잠김' : u.mustChange ? '첫 로그인 전' : '사용');
   const stateClass = { 사용: 'good', '사용 중지': 'bad', 잠김: 'bad', '첫 로그인 전': 'warn', 미등록: '' };
