@@ -73,6 +73,7 @@ const KpiData = (() => {
       return val(dept, key, mon);
     };
     const curMon = Number(d.today.slice(5, 7));
+    const closed = new Set((d.closed || []).map((x) => Number(String(x).slice(5, 7))));
     const yearVal = (dept, key) => {
       const list = MONTHS.map((x) => val(dept, key, x)).filter((x) => x !== null);
       if (!list.length) return null;
@@ -85,7 +86,7 @@ const KpiData = (() => {
       if (!x) return null;
       return SUM.has(key) ? Number(x.target) * 12 : Number(x.target);
     };
-    return { m, val, judge, t, target, curMon, yearVal, annualTarget };
+    return { m, val, judge, t, target, curMon, closed, yearVal, annualTarget };
   }
   const round = (n, p) => { const f = 10 ** p; return Math.round(n * f) / f; };
   function show(key, n) {
@@ -302,8 +303,18 @@ const KpiData = (() => {
       h('div', null, h('p', null, label), h('strong', null, UI.num(total ? UI.pct(c[k], total) : null, '%')), h('span', { class: 'sub' }, c[k] + '개 지표')));
     return h('div', { class: 'sum-cards' }, card('G', 'trophy', '달성'), card('Y', 'warn', '주의'), card('R', 'clock', '미달'));
   }
+  /* 직별·팀 전체 현황은 마감이 끝난 달만 보여 준다. 선택한 월은 두 화면이 함께 쓴다. */
+  let pickedMon = null;
+  const closedList = (T) => MONTHS.filter((x) => x <= T.curMon && T.closed.has(x));
+  const pickMon = (list) => (list.includes(pickedMon) ? pickedMon : list[list.length - 1]);
+  function monthBar(list, mon, onPick) {
+    if (!list.length) return h('p', { class: 'sub center no-print' }, '마감이 끝난 달이 없습니다. 월 마감이 되면 그 달부터 현황이 표시됩니다.');
+    const sel = h('select', { 'aria-label': '조회 월' }, list.slice().reverse().map((x) => h('option', { value: String(x), selected: x === mon }, x + '월')));
+    sel.onchange = () => { pickedMon = Number(sel.value); onPick(pickedMon); };
+    return h('div', { class: 'toolbar month-pick no-print' }, h('span', { class: 'sub' }, '조회 월 (마감 완료)'), sel);
+  }
   function trendChart(host, T, dept) {
-    const months = MONTHS.filter((x) => x <= T.curMon);
+    const months = MONTHS.filter((x) => x <= T.curMon && T.closed.has(x));
     const data = months.map((mon) => { const c = judgeCount(T, dept, mon); const t = c.G + c.Y + c.R; return t ? Math.round(c.G / t * 100) : null; });
     const canvas = h('canvas');
     host.replaceChildren(h('div', { class: 'chart-area' }, canvas));
@@ -331,24 +342,37 @@ const KpiData = (() => {
       if (!d.depts.includes(dept)) { body.replaceChildren(h('p', { class: 'sub center' }, '이 직의 KPI를 볼 권한이 없습니다.')); return; }
       destroyCharts();
       const T = tools(d);
+      const list = closedList(T);
+      let mon = pickMon(list);
       const paint = () => {
         tabs.replaceChildren(...Object.keys(TABS).map((k) => h('button', { class: 'tab' + (k === tab ? ' on' : ''), type: 'button', onclick: () => { tab = k; paint(); } }, TABS[k])));
-        const list = METRICS.filter((m) => m.tab === tab && !m.teamOnly);
-        grid.replaceChildren(...(list.length ? list.map((m) => metricCard(T, dept, params.team, m)) : [h('p', { class: 'sub center' }, 'Cost 지표는 팀 전체 현황에서 확인합니다.')]));
+        const items = METRICS.filter((m) => m.tab === tab && !m.teamOnly);
+        grid.replaceChildren(...(items.length ? items.map((m) => metricCard(T, dept, params.team, m)) : [h('p', { class: 'sub center' }, 'Cost 지표는 팀 전체 현황에서 확인합니다.')]));
       };
-      paint();
       const deptTabs = d.depts.filter((x) => /^물류[1-4]직$/.test(x));
-      const trend = h('div');
+      const dyn = h('div');
+      /* 선택한 월에 맞춰 카드, 그래프, 지표별 실적을 다시 그린다. */
+      const paintAll = () => {
+        destroyCharts();
+        if (!list.length) { dyn.replaceChildren(); return; }
+        T.curMon = mon;
+        paint();
+        const trend = h('div');
+        dyn.replaceChildren(
+          summaryCards(judgeCount(T, dept, mon)),
+          h('div', { class: 'panel-grid' },
+            h('div', { class: 'panel' }, UI.cardHead('chart', '월별 달성 비율 추이'), trend),
+            h('div', { class: 'panel' }, UI.cardHead('list', mon + '월 항목별 달성 비율'), tabBars(T, dept))),
+          h('h2', { class: 'block-h' }, '지표별 실적 (' + mon + '월)'), tabs, grid);
+        trendChart(trend, T, dept);
+      };
       fill(body,
         deptTabs.length > 1 ? h('div', { class: 'seg' }, (UI.has('KPI_VIEW_ALL') ? [h('a', { class: 'seg-btn', href: '#/kpi/team' }, '팀 전체')] : []).concat(deptTabs.map((x) => h('a', { class: 'seg-btn' + (x === dept ? ' on' : ''), href: '#/kpi/' + x.charAt(2) }, x)))) : null,
-        summaryCards(judgeCount(T, dept, T.curMon)),
-        h('div', { class: 'panel-grid' },
-          h('div', { class: 'panel' }, UI.cardHead('chart', '월별 달성 비율 추이'), trend),
-          h('div', { class: 'panel' }, UI.cardHead('list', T.curMon + '월 항목별 달성 비율'), tabBars(T, dept))),
-        h('h2', { class: 'block-h' }, '지표별 실적'), tabs, grid);
-      trendChart(trend, T, dept);
+        monthBar(list, mon, (m) => { mon = m; paintAll(); }),
+        dyn);
+      paintAll();
     };
-    app.replaceChildren(UI.hero(dept + ' KPI', new Date().getMonth() + 1 + '월 실적 · 판정이 나온 지표 중 달성 비율'), h('section', { class: 'section' }, body));
+    app.replaceChildren(UI.hero(dept + ' KPI', '판정이 나온 지표 중 달성 비율'), h('section', { class: 'section' }, body));
     load(alive, draw, body);
   });
 
@@ -458,11 +482,11 @@ const KpiData = (() => {
             return h('td', { class: 'num ' + (JUDGE[j] ? JUDGE[j][1] : '') }, show(r.key, T.val(r.dept, r.key, mon)));
           }));
       });
-      const deptCards = h('div', { class: 'sum-cards four no-print' }, d.depts.filter((x) => /^물류[1-4]직$/.test(x)).map((x) => {
-        const c = judgeCount(T, x, cur);
+      const deptCardsOf = (sm) => h('div', { class: 'sum-cards four no-print' }, d.depts.filter((x) => /^물류[1-4]직$/.test(x)).map((x) => {
+        const c = judgeCount(T, x, sm);
         const pct = UI.pct(c.G, c.G + c.Y + c.R);
         return h('a', { class: 'sum-card good', href: '#/kpi/' + x.charAt(2) }, h('span', { class: 'sum-ico' }, UI.icon('chart')),
-          h('div', null, h('p', null, x + ' ' + cur + '월'), h('strong', null, UI.num(pct, '%')), h('span', { class: 'sub' }, '달성 ' + c.G + ' · 주의 ' + c.Y + ' · 미달 ' + c.R)));
+          h('div', null, h('p', null, x + ' ' + sm + '월'), h('strong', null, UI.num(pct, '%')), h('span', { class: 'sub' }, '달성 ' + c.G + ' · 주의 ' + c.Y + ' · 미달 ' + c.R)));
       }));
       /* 휴대폰: 월을 골라 지표별 카드로 본다 */
       let mon = cur;
@@ -490,14 +514,28 @@ const KpiData = (() => {
       requestAnimationFrame(() => { chips.scrollLeft = chips.scrollWidth; });
       /* 직별 화면과 같은 구성: 직 선택, 달성·주의·미달 카드, 월별 추이와 항목별 비율을 맨 위에 둔다. */
       const deptTabs = d.depts.filter((x) => /^물류[1-4]직$/.test(x));
-      const trend = h('div');
+      /* 카드와 그래프는 마감이 끝난 달만, 선택한 월 기준으로 보여 준다(아래 표는 마감 작업용이라 전체 월을 보여 준다). */
+      const list = closedList(T);
+      let selMon = pickMon(list);
+      const dyn = h('div');
+      const paintTop = () => {
+        destroyCharts();
+        if (!list.length) { dyn.replaceChildren(); return; }
+        T.curMon = selMon;
+        const trend = h('div');
+        dyn.replaceChildren(
+          summaryCards(judgeCount(T, TEAM, selMon)),
+          h('div', { class: 'panel-grid' },
+            h('div', { class: 'panel' }, UI.cardHead('chart', '월별 달성 비율 추이'), trend),
+            h('div', { class: 'panel' }, UI.cardHead('list', selMon + '월 항목별 달성 비율'), tabBars(T, TEAM))),
+          deptCardsOf(selMon));
+        trendChart(trend, T, TEAM);
+        T.curMon = cur;
+      };
       fill(body,
         h('div', { class: 'seg' }, [h('a', { class: 'seg-btn on', href: '#/kpi/team' }, '팀 전체')].concat(deptTabs.map((x) => h('a', { class: 'seg-btn', href: '#/kpi/' + x.charAt(2) }, x)))),
-        summaryCards(judgeCount(T, TEAM, cur)),
-        h('div', { class: 'panel-grid' },
-          h('div', { class: 'panel' }, UI.cardHead('chart', '월별 달성 비율 추이'), trend),
-          h('div', { class: 'panel' }, UI.cardHead('list', cur + '월 항목별 달성 비율'), tabBars(T, TEAM))),
-        deptCards,
+        monthBar(list, selMon, (m) => { selMon = m; paintTop(); }),
+        dyn,
         h('div', { class: 'row-btns no-print' }, h('a', { class: 'btn ghost', href: '#/kpi/meeting' }, '미팅용 보기'), h('button', { class: 'btn ghost pc-only', type: 'button', onclick: () => window.print() }, '인쇄')),
         closeBox.childNodes.length ? closeBox : null,
         h('h2', { class: 'block-h pc-only' }, '지표별 월 실적'),
@@ -506,7 +544,7 @@ const KpiData = (() => {
           h('tbody', null, rows))),
         h('h2', { class: 'block-h m-only' }, '지표별 월 실적'),
         h('div', { class: 'm-only' }, chips, mlist));
-      trendChart(trend, T, TEAM);
+      paintTop();
     };
     app.replaceChildren(UI.hero('팀 전체 현황', new Date().getFullYear() + '년 ScoreCard'), h('section', { class: 'section' }, body));
     load(alive, draw, body);
@@ -542,6 +580,7 @@ const KpiData = (() => {
     };
     [range, from, to, code, dept].forEach((c) => { c.onchange = load2; });
     app.replaceChildren(UI.hero('미팅용 보기'), h('section', { class: 'section print-page' }, h('div', { class: 'wrap wide' },
+      h('a', { class: 'back no-print', href: '#/kpi/team' }, '팀 전체 현황'),
       h('div', { class: 'toolbar no-print wrap-row' }, range, from, to, code, dept, h('button', { class: 'btn ghost pc-only', type: 'button', onclick: () => window.print() }, '인쇄')), box)));
     load2();
   });
