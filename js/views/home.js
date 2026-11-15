@@ -63,7 +63,7 @@ Router.add('/', (params, app) => {
   const q = (href, icon, label) => h('a', { class: 'quick', href }, h('span', { class: 'quick-ico' }, UI.icon(icon)), h('span', null, label));
   if (!UI.has('VIEW_EXEC')) quick.push(q('#/kpi/write', 'edit', '실적 작성'));
   if (!UI.has('VIEW_EXEC')) quick.push(q('#/suggest', 'chat', '건의 등록'));
-  quick.push(q('#/qr', 'qr', 'QR장비점검'), q(kpiLink, 'chart', 'KPI 현황'), q('#/award', 'trophy', '우수사원'));
+  quick.push(q('#/plan', 'calendar', '생산계획'), q('#/qr', 'qr', 'QR장비점검'), q(kpiLink, 'chart', 'KPI 현황'), q('#/award', 'trophy', '우수사원'));
 
   const top = h('section', { class: 'home-banner' },
     Home3D.element(),

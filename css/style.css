@@ -860,3 +860,49 @@ table.data select:not([multiple]) { padding-right: 30px; background-position: ri
 .user-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 16px; margin-bottom: 16px; }
 .user-fields .field input, .user-fields .field select { width: 100%; height: auto; flex: none; }
 @media (max-width: 833px) { .user-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* ---------- 생산계획 달력 ---------- */
+.plan-up { display: grid; gap: 10px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: #fafbfe; }
+.plan-up .block-h { margin: 0; }
+.plan-month { display: flex; align-items: center; gap: 10px; }
+.plan-month select { width: auto; min-width: 150px; }
+.plan-panel { margin: 6px 0 4px; padding: 16px 16px 12px; background: #fff; border: 1px solid #e6e9f2; border-radius: 14px; }
+.pc-title { margin-bottom: 12px; color: #172a66; font-size: 16px; }
+.pc-title .sub { margin-left: 8px; font-size: 12px; }
+.pc-week { display: grid; grid-template-columns: 72px repeat(7, minmax(0, 1fr)); gap: 6px; margin-bottom: 6px; align-items: start; }
+.pc-dow div { padding: 4px 0; text-align: center; font-size: 13px; font-weight: 600; color: #7a8499; }
+.pc-dow .sun { color: #d92b2b; }
+.pc-dow .sat { color: #1f5fd1; }
+.pc-day, .pc-side { display: grid; grid-template-rows: repeat(6, 24px); padding: 6px 9px; border: 1px solid #e3e7ef; border-radius: 10px; background: #fff; min-width: 0; }
+.pc-side { background: #f7f9fd; }
+.pc-day.idle { background: #fafbfd; }
+.pc-day.blank { border-color: transparent; background: transparent; }
+.pc-dn { display: flex; align-items: center; justify-content: space-between; gap: 4px; font-size: 12px; font-weight: 700; color: #9aa3b5; white-space: nowrap; }
+.pc-side .pc-dn { color: #7a8499; }
+.pc-r { display: flex; align-items: center; font-size: 14px; font-weight: 700; color: #151a2c; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pc-side .pc-r { font-size: 12px; font-weight: 700; color: #4a5470; }
+.pc-r.zero { color: #c2c8d6; font-weight: 500; }
+.pc-r .u { font-size: 12px; margin-left: 1px; }
+.pc-t { border-top: 1px solid #edf0f6; }
+.pc-chip { padding: 1px 6px; border-radius: 6px; background: #fff1de; color: #b45f06; font-size: 10px; font-weight: 700; line-height: 1.5; }
+.pc-chip.hol { background: #fde8e8; color: #c0392b; }
+.pc-dn .short { display: none; }
+.plan-totals { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 0 0 16px; }
+.plan-total { padding: 12px 14px; border-radius: 14px; background: #f3f6fd; }
+.plan-total.all { background: #e8eefb; }
+.plan-total strong { display: block; font-size: 22px; margin-top: 2px; color: var(--accent); }
+.plan-title { font-size: 20px; margin: 4px 0 8px; }
+.plan-post { margin: 20px 0; }
+@media (max-width: 833px) {
+  .plan-panel { padding: 12px 8px 8px; }
+  .pc-week { grid-template-columns: 30px repeat(7, minmax(0, 1fr)); gap: 3px; margin-bottom: 3px; }
+  .pc-day, .pc-side { grid-template-rows: repeat(6, 22px); padding: 3px 3px; border-radius: 7px; }
+  .pc-dn, .pc-r { font-size: 11px; }
+  .pc-side .pc-r { font-size: 10px; }
+  .pc-r .u, .pc-chip { display: none; }
+  .pc-dn .full { display: none; }
+  .pc-dn .short { display: inline; }
+  .pc-dow div { font-size: 11px; }
+  .plan-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media print { .pc-day, .pc-side { break-inside: avoid; } }
