@@ -77,3 +77,39 @@ Router.add('/account/password', (params, app) => {
       }
     } }, UI.field(forced ? '현재 비밀번호(사번)' : '현재 비밀번호', cur), UI.field('새 비밀번호', next), UI.field('새 비밀번호 확인', next2), msg, btn)));
 });
+
+/* 휴대폰 알림 켜기·끄기 */
+Router.add('/account/push', (params, app, alive) => {
+  const msg = h('p', { class: 'form-error', role: 'alert' });
+  const box = h('div', { class: 'narrow' });
+  const draw = () => {
+    if (!alive()) return;
+    const st = Push.status();
+    const sayOn = st === 'granted';
+    const parts = [];
+    if (st === 'off') parts.push(h('p', { class: 'sub' }, '휴대폰 알림은 아직 준비 중이거나 이 계정에서는 쓸 수 없습니다.'));
+    else if (st === 'install') parts.push(h('p', { class: 'work-note' }, '아이폰은 홈 화면에 추가한 앱에서만 알림을 받을 수 있습니다. 사파리 하단의 공유 버튼을 누르고 "홈 화면에 추가"를 한 뒤, 홈 화면의 앱으로 다시 들어와 이 화면에서 알림을 켜 주세요. (iOS 16.4 이상)'));
+    else if (st === 'unsupported') parts.push(h('p', { class: 'sub' }, '이 브라우저는 알림을 지원하지 않습니다. 크롬이나 홈 화면에 추가한 앱을 이용해 주세요.'));
+    else if (st === 'denied') parts.push(h('p', { class: 'work-note' }, '알림이 차단되어 있습니다. 휴대폰 설정에서 이 앱(또는 브라우저)의 알림을 허용한 뒤 다시 들어와 주세요.'));
+    else {
+      parts.push(h('p', { class: 'sub' }, '알림이 ' + (sayOn ? '켜져 있습니다.' : '꺼져 있습니다.') + ' 새 공지사항, 건의사항, 우수사원 할 일이 생기면 휴대폰으로 알려 드립니다.'));
+      const btn = h('button', { class: 'btn' + (sayOn ? ' ghost' : ''), type: 'button', onclick: async () => {
+        msg.textContent = '';
+        btn.disabled = true;
+        try {
+          if (sayOn) { await Push.disable(); UI.toast('알림을 껐습니다. (이 기기)'); } else { await Push.enable(); UI.toast('알림을 켰습니다.'); }
+        } catch (e) { msg.textContent = e.message; }
+        btn.disabled = false;
+        draw();
+      } }, sayOn ? '이 기기 알림 끄기' : '알림 켜기');
+      parts.push(btn);
+      if (sayOn) parts.push(h('button', { class: 'btn ghost', type: 'button', onclick: async () => {
+        msg.textContent = '';
+        try { await Api.call('pushTest', {}); UI.toast('시험 알림을 보냈습니다. 잠시 후 휴대폰을 확인해 주세요.'); } catch (e) { msg.textContent = e.message; }
+      } }, '시험 알림 보내기'));
+    }
+    box.replaceChildren(...parts, msg);
+  };
+  app.replaceChildren(UI.hero('휴대폰 알림', '공지, 건의, 우수사원 할 일을 휴대폰으로 받습니다.'), h('div', { class: 'section' }, box));
+  draw();
+});
