@@ -10,8 +10,16 @@
   const pad = (n) => String(n).padStart(2, '0');
   const now = new Date();
   const curQ = now.getFullYear() + '-Q' + (Math.floor(now.getMonth() / 3) + 1);
-  const quarters = () => { const out = []; for (let q = Math.floor(now.getMonth() / 3) + 1; q >= 1; q--) out.push(now.getFullYear() + '-Q' + q); return out; };
-  const halves = () => { const y = now.getFullYear(); return now.getMonth() >= 6 ? [y + '-H2', y + '-H1'] : [y + '-H1']; };
+  const quarters = () => {
+    const out = [];
+    for (let q = Math.floor(now.getMonth() / 3) + 1; q >= 1; q--) out.push(now.getFullYear() + '-Q' + q);
+    out.push((now.getFullYear() - 1) + '-Q4');
+    return out;
+  };
+  const halves = () => {
+    const y = now.getFullYear();
+    return now.getMonth() >= 6 ? [y + '-H2', y + '-H1', (y - 1) + '-H2'] : [y + '-H1', (y - 1) + '-H2'];
+  };
   const fmt = (v) => (v === null || v === undefined ? '-' : String(Math.round(v * 100) / 100));
   const scoreSel = (name, value) => h('select', { name, 'aria-label': name }, h('option', { value: '' }, '-'), [5, 4, 3, 2, 1].map((n) => h('option', { value: String(n), selected: String(value) === String(n) }, String(n))));
 
@@ -28,7 +36,7 @@
         h('li', { class: 'bonus' }, '가산점: 개선 제안 1건당 +0.5점(분기 최대 +2점), 위험요소 적출이 목표(월 2건)를 넘은 1건당 +0.5점(분기 최대 +2점). 실적이 적은 협조능력과 적극성을 북돋우기 위한 점수입니다.')));
   }
 
-  function myResult(me, selfRating, quarter, reload) {
+  function myResult(me, selfRating, quarter, reload, period) {
     const sel = { m1: scoreSel('m1', selfRating && selfRating.m1), m2: scoreSel('m2', selfRating && selfRating.m2), m3: scoreSel('m3', selfRating && selfRating.m3) };
     const save = async () => {
       try { await Api.call('awardRate', { quarter, empNo: App.user.empNo, as: 'self', m1: sel.m1.value, m2: sel.m2.value, m3: sel.m3.value }); UI.toast('자기평가를 저장했습니다.'); reload(); }
@@ -40,6 +48,7 @@
         h('tbody', null, h('tr', null, ITEMS.map((it) => h('td', { class: 'num', 'data-l': it[1] }, fmt(me[it[0]]))), h('td', { class: 'num', 'data-l': '가산점' }, fmt(me.bonus)), h('td', { class: 'num total', 'data-l': '합계' }, h('strong', null, fmt(me.total))))))),
       h('p', { class: 'sub' }, '이번 분기 실적: 납입이상 ' + me.counts.q2 + '건, 위험요소 ' + me.counts.s2 + '건, 개선 제안 ' + me.counts.cp + '건, 이상발생 ' + me.counts.abnormal + '건'),
       h('h2', { class: 'block-h' }, '자기평가 (본인 10%)'),
+      period && period.auto ? h('p', { class: 'sub' }, '본인평가 기간: ' + period.start.slice(5).replace('-', '/') + '~' + period.end.slice(5).replace('-', '/') + ' (기한 내에 하지 않으면 일괄 1점 처리됩니다)') : null,
       h('div', { class: 'self-rate' }, UI.field(label('m1'), sel.m1), UI.field(label('m2'), sel.m2), UI.field(label('m3'), sel.m3), h('button', { class: 'btn', type: 'button', onclick: save }, '저장')));
   }
 
@@ -83,8 +92,8 @@
   }
 
 
-  function pickBox() {
-    const sel = UI.select('half', halves(), halves()[0]);
+  function pickBox(first) {
+    const sel = UI.select('half', halves(), first || halves()[0]);
     const box = h('div', null, UI.skeleton(3));
     const load = () => Api.call('awardPickInfo', { half: sel.value }).then((d) => {
       box.replaceChildren(...d.depts.map((x) => {
@@ -95,7 +104,7 @@
           ' ' + c.rank + '위 ' + c.name + ' (' + d.quarters[0] + ' ' + fmt(c.q1) + ' / ' + d.quarters[1] + ' ' + fmt(c.q2) + ' / 평균 ' + fmt(c.avg) + ')'));
         const save = async () => {
           if (!chosen.empNo) { UI.toast('후보를 골라 주세요.', true); return; }
-          try { await Api.call('awardPick', { half: d.half, dept: x.dept, empNo: chosen.empNo, reason: reason.value }); UI.toast('우수사원을 저장했습니다.'); load(); }
+          try { await Api.call('awardPick', { half: d.half, dept: x.dept, empNo: chosen.empNo, reason: reason.value }); UI.toast('우수사원을 저장했습니다.'); App.refreshInit(); load(); }
           catch (e) { UI.toast(e.message, true); }
         };
         return h('div', { class: 'pick-box' }, h('h3', { class: 'block-h' }, x.dept),
@@ -109,15 +118,21 @@
     return h('div', null, h('h2', { class: 'block-h' }, '우수사원 선정 (직장)'), h('div', { class: 'toolbar' }, sel), box);
   }
 
-  function results(host) {
-    const sel = UI.select('half', halves(), halves()[0]);
+  function results(host, first) {
+    const sel = UI.select('half', halves(), first || halves()[0]);
     const box = h('div', null, UI.skeleton(4));
     const load = () => Api.call('awardResults', { half: sel.value }).then((d) => {
       const note = d.pending && d.pending.length ? h('p', { class: 'sub' }, '우수사원 미선정 직: ' + d.pending.join(', ')) : null;
       const rows = d.rows.slice().sort((a, b) => (a.dept < b.dept ? -1 : a.dept > b.dept ? 1 : a.rank - b.rank));
       const winners = rows.filter((r) => r.winner);
+      const review = d.canReview ? h('div', { class: 'toolbar' },
+        h('span', { class: 'sub' }, d.reviewed ? '관리자 협의: 완료' : '관리자 협의: 대기'),
+        h('button', { class: 'btn ' + (d.reviewed ? 'ghost' : ''), type: 'button', onclick: async () => {
+          try { await Api.call('awardReview', { half: d.half, done: !d.reviewed }); UI.toast(d.reviewed ? '협의 완료를 취소했습니다.' : '관리자 협의를 완료로 표시했습니다.'); App.refreshInit(); load(); }
+          catch (e) { UI.toast(e.message, true); }
+        } }, d.reviewed ? '협의 완료 취소' : '협의 완료')) : null;
       box.replaceChildren(
-        note,
+        note, review,
         winners.length ? h('div', { class: 'winner-grid' }, winners.map((r) => h('div', { class: 'winner-card' },
           r.photo ? h('img', { class: 'winner-photo', src: 'data:image/jpeg;base64,' + r.photo, alt: '' }) : h('span', { class: 'winner-photo letter' }, r.name.charAt(0)),
           h('span', { class: 'chip good' }, d.half.replace('-H1', ' 상반기').replace('-H2', ' 하반기') + ' ' + r.title),
@@ -134,25 +149,31 @@
     load();
   }
 
-  Router.add('/award', (params, app, alive) => {
-    let quarter = curQ;
+  const view = (params, app, alive) => {
+    const arg = params.q || '';
+    const isHalf = /^\d{4}-H[12]$/.test(arg);
+    let quarter = /^\d{4}-Q[1-4]$/.test(arg) ? arg : curQ;
     const body = h('div', { class: 'wrap' }, UI.skeleton(6));
+    if (!quarters().includes(quarter)) quarter = curQ;
     const qSel = UI.select('quarter', quarters(), quarter);
     const resultBox = h('div');
+    const reload = () => { App.refreshInit(); load(); };
     const load = () => Api.call('awardInfo', { quarter }).then((d) => {
       if (!alive()) return;
       fill(body,
         h('div', { class: 'toolbar center-tools' }, qSel), rules(),
-        d.me && myResult(d.me, d.selfRating, quarter, load),
-        d.targets && d.targets.length > 0 && rateTable(d, load),
+        d.me && myResult(d.me, d.selfRating, quarter, reload, d.period),
+        d.targets && d.targets.length > 0 && rateTable(d, reload),
         d.role.lead && proposals(d, load),
-        d.role.chiefDepts && d.role.chiefDepts.length > 0 && pickBox(),
+        d.role.chiefDepts && d.role.chiefDepts.length > 0 && pickBox(isHalf ? arg : ''),
         d.role.results && resultBox,
         !d.me && !d.targets && !d.role.results && h('p', { class: 'sub center' }, '우수사원 평가 대상이 아닙니다.'));
-      if (d.role.results && !resultBox.childNodes.length) results(resultBox);
+      if (d.role.results && !resultBox.childNodes.length) results(resultBox, isHalf ? arg : '');
     }, (e) => { if (alive()) body.replaceChildren(UI.error(e.message, load)); });
     qSel.onchange = () => { quarter = qSel.value; load(); };
     app.replaceChildren(UI.hero('우수사원', 'KPI 참여도를 반영한 분기 평가와 반기 수상'), h('section', { class: 'section' }, body));
     load();
-  });
+  };
+  Router.add('/award', view);
+  Router.add('/award/:q', view);
 })();
