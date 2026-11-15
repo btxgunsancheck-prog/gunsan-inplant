@@ -1,8 +1,8 @@
 /* 공지사항과 업무 게시판. */
 (() => {
   const NAMES = { notice: '공지사항', work: '업무 게시판', plan: '생산계획' };
-  /* 생산계획은 업무게시판과 분리된 게시판이고, 전용 권한(PLAN_UPLOAD)이 있는 사람만 올린다. */
-  const canWrite = (board) => !UI.has('VIEW_EXEC') && (board === 'work' || (board === 'plan' ? UI.has('PLAN_UPLOAD') : UI.has('NOTICE_WRITE')));
+  /* 업무 게시판은 관리자 직급만 글을 쓰고(직원 의견은 건의사항), 생산계획은 전용 권한(PLAN_UPLOAD)이 있는 사람만 올린다. */
+  const canWrite = (board) => !UI.has('VIEW_EXEC') && (board === 'work' ? UI.isManager() : board === 'plan' ? UI.has('PLAN_UPLOAD') : UI.has('NOTICE_WRITE'));
 
   function listView(board, app, alive) {
     let page = 1;
@@ -42,6 +42,7 @@
         h('form', { class: 'toolbar', onsubmit: (e) => { e.preventDefault(); q = search.value.trim(); page = 1; load(); } }, search,
           h('button', { class: 'btn ghost', type: 'submit' }, '검색'),
           canWrite(board) && h('a', { class: 'btn desktop-only', href: '#/board/' + board + '/new' }, '글쓰기'))),
+      board === 'work' && !canWrite('work') && !UI.has('VIEW_EXEC') ? h('div', { class: 'wrap' }, h('p', { class: 'sub work-note' }, '업무 게시판 글쓰기는 관리자만 할 수 있습니다. 개선 의견은 건의사항에 남겨 주세요.')) : null,
       body),
       canWrite(board) && h('a', { class: 'fab', href: '#/board/' + board + '/new' }, '작성'));
     load();

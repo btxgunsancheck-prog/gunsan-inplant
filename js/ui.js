@@ -143,6 +143,8 @@ const UI = {
   },
   has(perm) { return ((App.user && App.user.perms) || []).includes(perm); },
   hasAny(perms) { return perms.some(UI.has); },
+  /* 관리자 직급(팀장, 과장, 주임, 공장, 직장, 반장). 업무 게시판 글쓰기와 개선사항 작성이 직급으로 자동 적용된다. 서버도 같은 기준으로 막는다. */
+  isManager() { return ['팀장', '과장', '주임', '공장', '직장', '반장'].includes(String((App.user && App.user.rank) || '').trim()); },
   icon(name, cls) {
     const t = document.createElement('template');
     t.innerHTML = '<svg class="ico' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
