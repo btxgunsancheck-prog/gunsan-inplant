@@ -43,7 +43,7 @@ const Nav = (() => {
     if (UI.hasAny(['ADMIN', 'VIEW_EXEC'])) admin.push(link('데이터 관리', '#/admin/data'));
     const list = [
       { key: 'board', label: '게시판', first: [link('공지사항', '#/board/notice'), link('업무 게시판', '#/board/work'), link('생산계획', '#/plan')],
-        groups: [{ title: '바로가기', links: UI.has('VIEW_EXEC') ? [] : [link('글쓰기', '#/board/work/new')] }, { title: '최신 공지', links: notices }] },
+        groups: [{ title: '바로가기', links: UI.has('VIEW_EXEC') ? [] : [link('글쓰기', '#/board/work/new')].concat(UI.has('PLAN_UPLOAD') ? [link('생산계획 올리기', '#/board/plan/new')] : []) }, { title: '최신 공지', links: notices }] },
       { key: 'kpi', label: 'KPI', first: kpiFirst, groups: [{ title: '바로가기', links: quick }, { title: '이번 달 내 직', links: myKpi() }] },
       { key: 'suggest', label: '건의사항', first: suggest, groups: [] },
       { key: 'award', label: '우수사원', first: [link('우수사원 평가', '#/award')], groups: [] }
