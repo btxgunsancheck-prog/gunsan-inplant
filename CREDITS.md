@@ -12,6 +12,7 @@
 | 글꼴 | Pretendard | https://github.com/orioncactus/pretendard | SIL Open Font License 1.1 |
 | 글꼴('함께' 두 글자) | Nanum Pen Script | Google Fonts | SIL Open Font License 1.1 |
 | 사진(HEIC) 변환 | heic2any (cdnjs에서 필요할 때만 불러옴) | https://github.com/alexcorvi/heic2any | MIT |
+| 생산계획 엑셀 읽기 | SheetJS(xlsx 0.18.5, cdnjs에서 필요할 때만 불러옴) | https://sheetjs.com | Apache-2.0 |
 | 차트 | Chart.js | https://www.chartjs.org | MIT |
 | 3D 창고 영상 원본 | Three.js | https://threejs.org | MIT |
 

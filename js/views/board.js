@@ -71,6 +71,8 @@
           h('a', { class: 'btn ghost', href: '#/board/' + board + '/' + id + '/edit' }, '수정'),
           h('button', { class: 'btn ghost', type: 'button', onclick: remove }, '삭제')),
         h('div', { class: 'post-body' }, p.body),
+        p.plan ? h('div', { class: 'plan-post' }, Plan.calendar(p.plan),
+          h('p', { class: 'sub' }, '원본 ' + p.plan.file + (p.plan.dist ? ' · 배포 ' + p.plan.dist : ''))) : null,
         p.photos.length ? h('div', { class: 'thumbs' }, p.photos.map((f) => UI.thumb(f))) : null,
         h('h2', { class: 'comment-h' }, '댓글 ' + p.comments.length),
         h('ul', { class: 'comments' }, p.comments.map((c) => h('li', null,
@@ -103,13 +105,68 @@
       h('button', { type: 'button', class: 'picker-x', 'aria-label': '사진 빼기', onclick: () => { removed.push(x); drawKeep(); } }, '×'))));
     drawKeep();
     const btn = h('button', { class: 'btn wide', type: 'submit' }, cur ? '수정' : '등록');
+
+    /* 생산계획 올리기(전용 권한). 엑셀은 이 화면에서 읽어 집계하고, 서버에는 집계 결과만 보낸다. */
+    const planOn = board === 'work' && !id && UI.has('PLAN_UPLOAD');
+    let parsed = null;
+    let planSum = null;
+    let fileName = '';
+    let autoTitle = '';
+    let autoBody = '';
+    const planBox = h('div', { class: 'plan-up' });
+    if (planOn) {
+      const today = (App.home.today || '').slice(0, 7) || new Date().toISOString().slice(0, 7);
+      const shift = (n) => { const [y, m] = today.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 + n, 1)); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0'); };
+      const mSel = h('select', { 'aria-label': '대상월' }, h('option', { value: '' }, '대상월 선택'),
+        [-1, 0, 1, 2].map((n) => h('option', { value: shift(n) }, shift(n).slice(0, 4) + '년 ' + Number(shift(n).slice(5)) + '월')));
+      const fileIn = h('input', { type: 'file', accept: '.xlsx,.xlsm', 'aria-label': '생산계획표 엑셀' });
+      const status = h('p', { class: 'sub' }, '생산계획표(xlsx)를 올리고 대상월을 고르면 달력으로 집계합니다. 일반 글이면 이 칸은 비워 두세요.');
+      const preview = h('div', { class: 'plan-preview' });
+      const refresh = () => {
+        planSum = null;
+        preview.replaceChildren();
+        if (!parsed || !mSel.value) return;
+        const sum = Plan.summarize(parsed, mSel.value);
+        if (!sum.total) { status.textContent = '선택한 달에 해당하는 계획이 없습니다. 대상월을 다시 확인해 주세요.'; return; }
+        planSum = sum;
+        const mon = Number(mSel.value.slice(5)) + '월';
+        status.textContent = mon + ' 합계 ' + sum.total + '대 (' + Plan.LINES.map((l, i) => l.label + ' ' + sum.totals[i]).join(', ') + '). 확정발주 ' + sum.kinds['확정발주'] + '대, 예시오더 ' + sum.kinds['예시오더'] + '대.';
+        const t = mon + ' 생산계획';
+        if (!title.value || title.value === autoTitle) { title.value = t; autoTitle = t; }
+        const b = mSel.value.slice(0, 4) + '년 ' + mon + ' 생산계획' + (sum.dist ? ' (배포 ' + sum.dist + ')' : '') + '\n' +
+          Plan.LINES.map((l, i) => l.label + ' ' + sum.totals[i] + '대').join(' / ') + ' / 합계 ' + sum.total + '대\n원본: ' + fileName;
+        if (!body.value || body.value === autoBody) { body.value = b; autoBody = b; }
+        preview.append(Plan.calendar(sum));
+      };
+      fileIn.onchange = async () => {
+        const f = fileIn.files[0];
+        parsed = null;
+        planSum = null;
+        preview.replaceChildren();
+        if (!f) return;
+        fileName = f.name;
+        try {
+          status.textContent = '파일을 읽는 중입니다. 크기에 따라 몇 초 걸립니다.';
+          const [XLSX, data] = await Promise.all([Plan.loadLib(), f.arrayBuffer()]);
+          await new Promise((r) => setTimeout(r, 60));
+          parsed = Plan.parse(XLSX, data);
+          if (parsed.errors.length) { status.textContent = '생산계획표 형식을 확인해 주세요. ' + parsed.errors.join(' '); parsed = null; return; }
+          status.textContent = '읽었습니다.' + (parsed.dist ? ' 배포일자 ' + parsed.dist + '.' : '') + ' 대상월을 골라 주세요.';
+          refresh();
+        } catch (e) { status.textContent = e.message || '파일을 읽지 못했습니다.'; parsed = null; }
+      };
+      mSel.onchange = refresh;
+      planBox.append(h('h2', { class: 'block-h' }, '생산계획 올리기 (선택)'), fileIn, h('div', { class: 'plan-month' }, h('span', { class: 'sub' }, '대상월'), mSel), status, preview);
+    }
     const form = h('form', { class: 'narrow write-form', onsubmit: async (e) => {
       e.preventDefault();
+      if (planOn && parsed && !planSum) { UI.toast('대상월을 선택해 주세요.', true); return; }
       btn.disabled = true;
       let postId = id;
       let ticket = '';
       try {
-        const res = await Api.call('boardSave', { id: id || null, board, title: title.value, body: body.value, pinned: pinned.checked, removePhotos: removed });
+        const res = await Api.call('boardSave', Object.assign({ id: id || null, board, title: title.value, body: body.value, pinned: pinned.checked, removePhotos: removed },
+          planSum ? { plan: { ym: planSum.ym, days: planSum.days, dist: planSum.dist, file: fileName } } : {}));
         postId = res.id;
         ticket = res.ticket;
       } catch (err) { UI.toast(err.message, true); btn.disabled = false; return; }
@@ -119,7 +176,7 @@
     } },
       UI.field('제목', title), UI.field('내용', body),
       board === 'notice' && UI.has('NOTICE_WRITE') && h('label', { class: 'check' }, pinned, h('span', null, '상단 고정')),
-      existing.length ? keep : null, picker.el, h('div', { class: 'submit-bar' }, btn));
+      planOn ? planBox : null, existing.length ? keep : null, picker.el, h('div', { class: 'submit-bar' }, btn));
     const progress = ProgressBox(form);
     app.replaceChildren(UI.hero(cur ? '글 수정' : NAMES[board] + ' 글쓰기'), h('section', { class: 'section' }, form));
   }
