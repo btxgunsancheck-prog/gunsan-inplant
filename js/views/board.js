@@ -1,7 +1,8 @@
 /* 공지사항과 업무 게시판. */
 (() => {
-  const NAMES = { notice: '공지사항', work: '업무 게시판' };
-  const canWrite = (board) => !UI.has('VIEW_EXEC') && (board === 'work' || UI.has('NOTICE_WRITE'));
+  const NAMES = { notice: '공지사항', work: '업무 게시판', plan: '생산계획' };
+  /* 생산계획은 업무게시판과 분리된 게시판이고, 전용 권한(PLAN_UPLOAD)이 있는 사람만 올린다. */
+  const canWrite = (board) => !UI.has('VIEW_EXEC') && (board === 'work' || (board === 'plan' ? UI.has('PLAN_UPLOAD') : UI.has('NOTICE_WRITE')));
 
   function listView(board, app, alive) {
     let page = 1;
@@ -64,7 +65,7 @@
         try { await Api.call('commentAdd', { postId: id, body: input.value }); load(); } catch (err) { UI.toast(err.message, true); }
       } }, input, h('button', { class: 'btn', type: 'submit' }, '등록'));
       app.replaceChildren(h('article', { class: 'section' }, h('div', { class: 'wrap' },
-        h('a', { class: 'back', href: '#/board/' + board }, NAMES[board]),
+        h('a', { class: 'back', href: board === 'plan' ? '#/plan' : '#/board/' + board }, NAMES[board]),
         h('h1', { class: 'post-h' }, p.title),
         h('p', { class: 'sub' }, p.author + ' · ' + p.created + (p.updated ? ' (수정됨)' : '')),
         p.canEdit && h('div', { class: 'row-btns' },
@@ -107,7 +108,7 @@
     const btn = h('button', { class: 'btn wide', type: 'submit' }, cur ? '수정' : '등록');
 
     /* 생산계획 올리기(전용 권한). 엑셀은 이 화면에서 읽어 집계하고, 서버에는 집계 결과만 보낸다. */
-    const planOn = board === 'work' && !id && UI.has('PLAN_UPLOAD');
+    const planOn = board === 'plan' && !id && UI.has('PLAN_UPLOAD');
     let parsed = null;
     let planSum = null;
     let fileName = '';
@@ -122,7 +123,7 @@
       const fileIn = h('input', { type: 'file', accept: '.xlsx,.xlsm', 'aria-label': '생산계획표 엑셀', hidden: true });
       const fileName2 = h('span', { class: 'sub plan-file' }, '선택된 파일 없음');
       const pick = h('button', { class: 'btn ghost', type: 'button', onclick: () => fileIn.click() }, UI.icon('calendar'), h('span', null, '생산계획표(엑셀) 선택'));
-      const status = h('p', { class: 'sub' }, '생산계획표(xlsx)를 올리고 대상월을 고르면 달력으로 집계합니다. 일반 글이면 이 칸은 비워 두세요.');
+      const status = h('p', { class: 'sub' }, '생산계획표(xlsx)를 올리고 대상월을 고르면 달력으로 집계합니다.');
       const preview = h('div', { class: 'plan-preview' });
       const refresh = () => {
         planSum = null;
@@ -159,11 +160,11 @@
         } catch (e) { status.textContent = e.message || '파일을 읽지 못했습니다.'; parsed = null; }
       };
       mSel.onchange = refresh;
-      planBox.append(h('h2', { class: 'block-h' }, '생산계획 올리기 (선택)'), h('div', { class: 'plan-pick' }, pick, fileName2, fileIn), h('div', { class: 'plan-month' }, h('span', { class: 'sub' }, '대상월'), mSel), status, preview);
+      planBox.append(h('h2', { class: 'block-h' }, '생산계획표 올리기'), h('div', { class: 'plan-pick' }, pick, fileName2, fileIn), h('div', { class: 'plan-month' }, h('span', { class: 'sub' }, '대상월'), mSel), status, preview);
     }
     const form = h('form', { class: 'narrow write-form', onsubmit: async (e) => {
       e.preventDefault();
-      if (planOn && parsed && !planSum) { UI.toast('대상월을 선택해 주세요.', true); return; }
+      if (planOn && !planSum) { UI.toast(parsed ? '대상월을 선택해 주세요.' : '생산계획표(엑셀) 파일을 먼저 선택해 주세요.', true); return; }
       btn.disabled = true;
       let postId = id;
       let ticket = '';
@@ -179,13 +180,14 @@
     } },
       planOn ? planBox : null, UI.field('제목', title), UI.field('내용', body),
       board === 'notice' && UI.has('NOTICE_WRITE') && h('label', { class: 'check' }, pinned, h('span', null, '상단 고정')),
-      existing.length ? keep : null, picker.el, h('div', { class: 'submit-bar' }, btn));
+      existing.length ? keep : null, board === 'plan' ? null : picker.el, h('div', { class: 'submit-bar' }, btn));
     const progress = ProgressBox(form);
-    app.replaceChildren(UI.hero(cur ? '글 수정' : NAMES[board] + ' 글쓰기'), h('section', { class: 'section' }, form));
+    app.replaceChildren(UI.hero(cur ? '글 수정' : board === 'plan' ? '생산계획 올리기' : NAMES[board] + ' 글쓰기'), h('section', { class: 'section' }, form));
   }
 
-  ['notice', 'work'].forEach((board) => {
-    Router.add('/board/' + board, (p, app, alive) => listView(board, app, alive));
+  ['notice', 'work', 'plan'].forEach((board) => {
+    /* 생산계획은 목록 대신 생산계획 화면(달력)을 쓴다. */
+    Router.add('/board/' + board, (p, app, alive) => (board === 'plan' ? Router.go('/plan') : listView(board, app, alive)));
     Router.add('/board/' + board + '/new', (p, app, alive) => {
       if (!canWrite(board)) { app.replaceChildren(UI.placeholder('글을 쓸 권한이 없습니다')); return; }
       formView(board, null, app, alive);
