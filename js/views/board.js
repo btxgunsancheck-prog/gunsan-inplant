@@ -119,7 +119,9 @@
       const shift = (n) => { const [y, m] = today.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 + n, 1)); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0'); };
       const mSel = h('select', { 'aria-label': '대상월' }, h('option', { value: '' }, '대상월 선택'),
         [-1, 0, 1, 2].map((n) => h('option', { value: shift(n) }, shift(n).slice(0, 4) + '년 ' + Number(shift(n).slice(5)) + '월')));
-      const fileIn = h('input', { type: 'file', accept: '.xlsx,.xlsm', 'aria-label': '생산계획표 엑셀' });
+      const fileIn = h('input', { type: 'file', accept: '.xlsx,.xlsm', 'aria-label': '생산계획표 엑셀', hidden: true });
+      const fileName2 = h('span', { class: 'sub plan-file' }, '선택된 파일 없음');
+      const pick = h('button', { class: 'btn ghost', type: 'button', onclick: () => fileIn.click() }, UI.icon('calendar'), h('span', null, '생산계획표(엑셀) 선택'));
       const status = h('p', { class: 'sub' }, '생산계획표(xlsx)를 올리고 대상월을 고르면 달력으로 집계합니다. 일반 글이면 이 칸은 비워 두세요.');
       const preview = h('div', { class: 'plan-preview' });
       const refresh = () => {
@@ -143,6 +145,7 @@
         parsed = null;
         planSum = null;
         preview.replaceChildren();
+        fileName2.textContent = f ? f.name : '선택된 파일 없음';
         if (!f) return;
         fileName = f.name;
         try {
@@ -156,7 +159,7 @@
         } catch (e) { status.textContent = e.message || '파일을 읽지 못했습니다.'; parsed = null; }
       };
       mSel.onchange = refresh;
-      planBox.append(h('h2', { class: 'block-h' }, '생산계획 올리기 (선택)'), fileIn, h('div', { class: 'plan-month' }, h('span', { class: 'sub' }, '대상월'), mSel), status, preview);
+      planBox.append(h('h2', { class: 'block-h' }, '생산계획 올리기 (선택)'), h('div', { class: 'plan-pick' }, pick, fileName2, fileIn), h('div', { class: 'plan-month' }, h('span', { class: 'sub' }, '대상월'), mSel), status, preview);
     }
     const form = h('form', { class: 'narrow write-form', onsubmit: async (e) => {
       e.preventDefault();
@@ -174,9 +177,9 @@
       const jobs = picker.files.map((file) => ({ file }));
       if (jobs.length) sendPhotos(jobs, ticket, progress, finish); else finish();
     } },
-      UI.field('제목', title), UI.field('내용', body),
+      planOn ? planBox : null, UI.field('제목', title), UI.field('내용', body),
       board === 'notice' && UI.has('NOTICE_WRITE') && h('label', { class: 'check' }, pinned, h('span', null, '상단 고정')),
-      planOn ? planBox : null, existing.length ? keep : null, picker.el, h('div', { class: 'submit-bar' }, btn));
+      existing.length ? keep : null, picker.el, h('div', { class: 'submit-bar' }, btn));
     const progress = ProgressBox(form);
     app.replaceChildren(UI.hero(cur ? '글 수정' : NAMES[board] + ' 글쓰기'), h('section', { class: 'section' }, form));
   }
