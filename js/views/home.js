@@ -82,8 +82,17 @@ Router.add('/', (params, app) => {
         h('p', { class: 'sub' }, '개선 활동 중 우수 사례로 선정된 건을 확인할 수 있습니다.'))));
     return;
   }
-  app.replaceChildren(
+  /* 알림을 아직 켜지 않은 직원에게 켜라고 안내한다(이미 켠 기기는 조용히 다시 등록). */
+  const ps = Push.status();
+  if (ps === 'granted') Push.sync();
+  const pushBanner = ps === 'default' || ps === 'install'
+    ? h('a', { class: 'push-banner', href: '#/account/push' },
+      h('strong', null, '휴대폰 알림을 켜 주세요'),
+      h('span', null, ps === 'install' ? '홈 화면에 추가하면 공지와 우수사원 할 일을 알림으로 받을 수 있습니다.' : '새 공지와 우수사원 할 일을 놓치지 않도록 알림을 켜 주세요.'))
+    : null;
+  app.replaceChildren(...[
     top,
+    pushBanner,
     h('section', { class: 'home-grid' },
       h('div', { class: 'tile t-kpi' }, UI.cardHead('chart', home.kpiMonth ? '마감월(' + Number(home.kpiMonth.slice(5, 7)) + '월) KPI' : '마감월 KPI', kpiLink),
         depts.length ? [
@@ -95,5 +104,5 @@ Router.add('/', (params, app) => {
       h('div', { class: 'tile t-work' }, UI.cardHead('board', '업무 게시판', '#/board/work'), list(home.works, '#/board/work/', '등록된 글이 없습니다.')),
       h('div', { class: 'tile span3 t-quick' }, UI.cardHead('list', '주요 업무 바로가기'), h('div', { class: 'quick-grid' }, quick)),
       h('div', { class: 'tile team-tile' }, UI.cardHead('people', '우리 팀 현황'),
-        h('p', { class: 'big-rate' }, h('strong', null, (home.teamCount || '-') + '명'), h('span', { class: 'sub' }, '사이트 사용 중인 직원')))));
+        h('p', { class: 'big-rate' }, h('strong', null, (home.teamCount || '-') + '명'), h('span', { class: 'sub' }, '사이트 사용 중인 직원'))))].filter(Boolean));
 });
