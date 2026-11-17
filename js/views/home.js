@@ -103,6 +103,9 @@ Router.add('/', (params, app) => {
       h('div', { class: 'tile t-todo' }, UI.cardHead('todo', '내 할 일'), tasks.length ? h('div', { class: 'task-list' }, tasks) : UI.empty('지금 처리할 일이 없습니다.', 'done', true)),
       h('div', { class: 'tile t-work' }, UI.cardHead('board', '업무 게시판', '#/board/work'), list(home.works, '#/board/work/', '등록된 글이 없습니다.')),
       h('div', { class: 'tile span3 t-quick' }, UI.cardHead('list', '주요 업무 바로가기'), h('div', { class: 'quick-grid' }, quick)),
-      h('div', { class: 'tile team-tile' }, UI.cardHead('people', '우리 팀 현황'),
-        h('p', { class: 'big-rate' }, h('strong', null, (home.teamCount || '-') + '명'), h('span', { class: 'sub' }, '사이트 사용 중인 직원'))))].filter(Boolean));
+      h('div', { class: 'tile team-tile team-video' }, UI.cardHead('play', '우리 팀 소개 영상'),
+        h('button', { class: 'tv-thumb', type: 'button', 'aria-label': '우리 팀 소개 영상 재생', onclick: () => UI.videoModal('assets/video/team-intro.mp4', 'assets/video/team-intro-poster.jpg', '우리 팀 소개 영상') },
+          h('img', { src: 'assets/video/team-intro-poster.jpg', alt: '', loading: 'lazy', decoding: 'async' }),
+          h('span', { class: 'tv-play' }, UI.icon('play'))),
+        h('p', { class: 'sub' }, '약 2분 · 눌러서 재생')))].filter(Boolean));
 });
