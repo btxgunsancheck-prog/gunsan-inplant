@@ -66,6 +66,7 @@ const ICONS = {
   check: '<path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0"/><path d="m9 12l2 2l4-4"/>',
   clock: '<path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0-18 0"/><path d="M12 7v5l3 3"/>',
   arrow: '<path d="m9 6l6 6l-6 6"/>',
+  play: '<path d="M8 5v14l11-7z"/>',
   lock: '<path d="M5 13a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0-2 0m-3-5V7a4 4 0 1 1 8 0v4"/>',
   home: '<path d="M5 12H3l9-9l9 9h-2M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/><path d="M9 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6"/>',
   list: '<path d="M9 6h11M9 12h11M9 18h11M5 6v.01M5 12v.01M5 18v.01"/>'
@@ -117,6 +118,18 @@ const UI = {
     const box = h('div', { class: 'lightbox', onclick: close, role: 'dialog', 'aria-label': '사진 크게 보기' },
       h('img', { src, alt: '확대 사진' }));
     document.body.append(box);
+  },
+  /* 영상 보기: 눌렀을 때만 영상을 불러온다. 닫기 버튼, 바깥 누르기, Esc로 닫는다. */
+  videoModal(src, poster, label) {
+    const video = h('video', { src, poster, controls: true, autoplay: true, playsinline: true, preload: 'metadata', 'aria-label': label || '영상' });
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    const close = () => { video.pause(); video.removeAttribute('src'); video.load(); box.remove(); document.removeEventListener('keydown', onKey); document.body.classList.remove('no-scroll'); };
+    const box = h('div', { class: 'vmodal', role: 'dialog', 'aria-modal': 'true', 'aria-label': label || '영상', onclick: (e) => { if (e.target === box) close(); } },
+      h('button', { class: 'vmodal-x', type: 'button', 'aria-label': '닫기', onclick: close }, '×'), video);
+    document.addEventListener('keydown', onKey);
+    document.body.classList.add('no-scroll');
+    document.body.append(box);
+    const p = video.play(); if (p && p.catch) p.catch(() => { /* 자동 재생이 막히면 재생 버튼으로 시작 */ });
   },
   pager(page, size, total, go) {
     const pages = Math.ceil(total / size);
