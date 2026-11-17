@@ -4,11 +4,10 @@
   const CODES = [
     ['S1', '사고발생'], ['S2', '위험요소 적출'], ['Q2', '납입이상 적출'], ['CP', '개선 제안'], ['C1', '개선사항(관리자용)'], ['Q3', '팔레트 개선/보수']
   ];
-  const nameOf = (code) => CODES.find((c) => c[0] === code)[1];
-  /* 개선사항(우수개선현황)은 관리자 직급만 작성한다. 서버에서도 같은 기준으로 막는다. */
-  const MANAGER_RANKS = ['팀장', '과장', '주임', '공장', '직장', '반장'];
-  const canC1 = () => MANAGER_RANKS.includes(String((App.user && App.user.rank) || '').trim());
-  const writeCodes = () => CODES.filter(([c]) => c !== 'Q3' && (c !== 'C1' || canC1()));
+  const nameOf = (code) => (CODES.find((c) => c[0] === code) || [code, code])[1];
+  /* 실적 작성 탭(2026-11-17): 사고발생은 관리자 직급만, 개선사항은 실적 업로드(관제)로, 팔레트는 팔레트 실적 메뉴로 옮겼다. 서버도 같은 기준으로 막는다. */
+  const canS1 = () => UI.isManager() || UI.has('KPI_MANAGER');
+  const writeCodes = () => CODES.filter(([c]) => c !== 'Q3' && c !== 'C1' && (c !== 'S1' || canS1()));
   const DEPTS = ['물류1직', '물류2직', '물류3직', '물류4직'];
   const opt = (code, key) => ((App.home.options || {})[code] || {})[key] || [];
   const LABELS = {
@@ -40,8 +39,8 @@
   Router.add('/kpi/write', (params, app) => {
     if (UI.has('VIEW_EXEC')) { app.replaceChildren(UI.placeholder('열람 전용 계정은 작성할 수 없습니다')); return; }
     const saved = Store.draftGet('kpi') || {};
-    let code = saved.code || 'S1';
-    if (!writeCodes().some(([c]) => c === code)) code = 'S1';
+    let code = saved.code || writeCodes()[0][0];
+    if (!writeCodes().some(([c]) => c === code)) code = writeCodes()[0][0];
     let values = saved.values || {};
     let issuePicker, counterPicker, pre, issuePre, counterPre;
     const body = h('div');
@@ -65,9 +64,8 @@
       pre = PhotoPreload(() => Api.call('photoDraft', { code: drawCode, date: form.elements.date ? form.elements.date.value : '' }).then((r) => r.ticket));
       issuePre = pre.kind('issue');
       counterPre = pre.kind('counter');
-      const isBest = code === 'C1';
-      issuePicker = PhotoPicker(3, isBest ? '개선 전 사진' : '문제 사진', issuePre);
-      counterPicker = PhotoPicker(3, isBest ? '개선 후 사진' : '대책 사진', counterPre);
+      issuePicker = PhotoPicker(3, '문제 사진', issuePre);
+      counterPicker = PhotoPicker(3, '대책 사진', counterPre);
       const val = (n) => values[n] || '';
       const today = App.home.today;
       const submit = h('button', { class: 'btn wide', type: 'submit' }, '저장');
@@ -79,35 +77,7 @@
           : UI.field('소속 직', h('input', { value: App.user.dept, disabled: true })),
         UI.field('작성자', h('input', { value: App.user.name, disabled: true }))
       ];
-      if (isBest) {
-        /* 우수개선현황 카드와 같은 구성: 팀, 직장(공정), 활동기간, 담당자 / 문제점, 개선내용 / 기대효과 / 개선 전·후 사진 */
-        const from = h('input', { type: 'date', name: 'periodFrom', value: val('periodFrom'), 'aria-label': '활동 시작일' });
-        const to = h('input', { type: 'date', name: 'periodTo', value: val('periodTo'), 'aria-label': '활동 종료일' });
-        const period = h('input', { type: 'hidden', name: 'period', value: val('period') });
-        const sync = () => {
-          const f = from.value.replace(/-/g, '.');
-          const t = to.value.replace(/-/g, '.');
-          period.value = f ? (t && t !== f ? f + '~' + t : f) : '';
-        };
-        [from, to].forEach((x) => { x.addEventListener('input', sync); x.addEventListener('change', sync); });
-        fill(form, ...head,
-          h('div', { class: 'best-link' }, h('a', { class: 'btn ghost', href: '#/kpi/best' }, '우수개선현황 보기')),
-          h('div', { class: 'best-grid' },
-            UI.field('팀', h('input', { value: '사내물류팀', disabled: true })),
-            UI.field('직장(공정)', h('input', { name: 'process', value: val('process') })),
-            h('div', { class: 'field' }, h('span', { class: 'field-label' }, '활동기간'), h('div', { class: 'period-row' }, from, h('span', null, '~'), to), period),
-            UI.field('담당자', h('input', { name: 'owner', value: val('owner'), placeholder: '예: 홍길동, 김철수' }))),
-          UI.field('문제점', h('textarea', { name: 'issue', rows: 4, required: true, value: val('issue') })),
-          UI.field('개선내용', h('textarea', { name: 'counter', rows: 4, required: true, value: val('counter') })),
-          h('h3', { class: 'block-h best-h' }, '기대효과'),
-          UI.field('정성적 효과', h('textarea', { name: 'qual', rows: 2, value: val('qual') })),
-          h('div', { class: 'best-grid' },
-            UI.field('정량적 효과', h('input', { name: 'quant', value: val('quant'), placeholder: '예: 업체 제작 의뢰 비용 절감 (약 100만원)' })),
-            UI.field('효과금액(백만원)', h('input', { name: 'amount', inputmode: 'decimal', value: val('amount') })),
-            UI.field('분류', UI.select('category', opt('C1', '분류'), val('category'), '선택'))),
-          issuePicker.el, counterPicker.el,
-          h('div', { class: 'submit-bar' }, submit), progress);
-      } else fill(form,
+      fill(form,
         ...head,
         extras(code, values),
         UI.field('공정(작업장)', h('input', { name: 'process', value: val('process') })),
@@ -127,13 +97,6 @@
         h('div', { class: 'submit-bar' }, submit), progress);
       form.onsubmit = async (e) => {
         e.preventDefault();
-        if (isBest) {
-          const f = form.elements.periodFrom.value;
-          const t = form.elements.periodTo.value;
-          if (t && !f) { UI.toast('활동 시작일을 입력해 주세요.', true); return; }
-          if (f && t && t < f) { UI.toast('활동 종료일이 시작일보다 빠릅니다.', true); return; }
-          if (!form.elements.counter.value.trim()) { UI.toast('개선내용을 입력해 주세요.', true); return; }
-        }
         submit.disabled = true;
         let photos = null;
         let left = [];
@@ -165,8 +128,88 @@
     app.replaceChildren(UI.hero('실적 작성', '문제와 사진만 입력해도 저장됩니다.'), h('section', { class: 'section' }, h('div', { class: 'wrap' }, body)));
   });
 
+  /* 개선사항(C1) 등록 양식: 실적 업로드(관제) 화면의 '개선사항' 탭에서 쓴다(2026-11-17 실적 작성에서 옮김).
+     우수개선현황 카드와 같은 구성: 팀, 직장(공정), 활동기간, 담당자 / 문제점, 개선내용 / 기대효과 / 개선 전·후 사진.
+     직별 항목이 아니라 사내물류팀(팀 단위)으로 저장되고 바로 팀 전체 현황에 반영된다. */
+  window.KpiBestForm = function () {
+    let values = Store.draftGet('best') || {};
+    const form = h('form', { class: 'narrow write-form' });
+    const collect = () => { const out = {}; new FormData(form).forEach((v, k) => { out[k] = v; }); return out; };
+    function draw() {
+      const pre = PhotoPreload(() => Api.call('photoDraft', { code: 'C1', date: form.elements.date ? form.elements.date.value : '' }).then((r) => r.ticket));
+      const issuePre = pre.kind('issue');
+      const counterPre = pre.kind('counter');
+      const issuePicker = PhotoPicker(3, '개선 전 사진', issuePre);
+      const counterPicker = PhotoPicker(3, '개선 후 사진', counterPre);
+      const val = (n) => values[n] || '';
+      const submit = h('button', { class: 'btn wide', type: 'submit' }, '등록');
+      const progress = h('div');
+      const from = h('input', { type: 'date', name: 'periodFrom', value: val('periodFrom'), 'aria-label': '활동 시작일' });
+      const to = h('input', { type: 'date', name: 'periodTo', value: val('periodTo'), 'aria-label': '활동 종료일' });
+      const period = h('input', { type: 'hidden', name: 'period', value: val('period') });
+      const sync = () => {
+        const f = from.value.replace(/-/g, '.');
+        const t = to.value.replace(/-/g, '.');
+        period.value = f ? (t && t !== f ? f + '~' + t : f) : '';
+      };
+      [from, to].forEach((x) => { x.addEventListener('input', sync); x.addEventListener('change', sync); });
+      fill(form,
+        UI.field('일자', h('input', { name: 'date', type: 'date', required: true, max: App.home.today, value: val('date') || App.home.today })),
+        UI.field('작성자', h('input', { value: App.user.name, disabled: true })),
+        h('div', { class: 'best-link' }, h('a', { class: 'btn ghost', href: '#/kpi/best' }, '우수개선현황 보기')),
+        h('div', { class: 'best-grid' },
+          UI.field('팀', h('input', { value: '사내물류팀', disabled: true })),
+          UI.field('직장(공정)', h('input', { name: 'process', value: val('process') })),
+          h('div', { class: 'field' }, h('span', { class: 'field-label' }, '활동기간'), h('div', { class: 'period-row' }, from, h('span', null, '~'), to), period),
+          UI.field('담당자', h('input', { name: 'owner', value: val('owner'), placeholder: '예: 홍길동, 김철수' }))),
+        UI.field('문제점', h('textarea', { name: 'issue', rows: 4, required: true, value: val('issue') })),
+        UI.field('개선내용', h('textarea', { name: 'counter', rows: 4, required: true, value: val('counter') })),
+        h('h3', { class: 'block-h best-h' }, '기대효과'),
+        UI.field('정성적 효과', h('textarea', { name: 'qual', rows: 2, value: val('qual') })),
+        h('div', { class: 'best-grid' },
+          UI.field('정량적 효과', h('input', { name: 'quant', value: val('quant'), placeholder: '예: 업체 제작 의뢰 비용 절감 (약 100만원)' })),
+          UI.field('효과금액(백만원)', h('input', { name: 'amount', inputmode: 'decimal', value: val('amount') })),
+          UI.field('분류', UI.select('category', opt('C1', '분류'), val('category'), '선택'))),
+        issuePicker.el, counterPicker.el,
+        h('div', { class: 'submit-bar' }, submit), progress);
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const f = form.elements.periodFrom.value;
+        const t = form.elements.periodTo.value;
+        if (t && !f) { UI.toast('활동 시작일을 입력해 주세요.', true); return; }
+        if (f && t && t < f) { UI.toast('활동 종료일이 시작일보다 빠릅니다.', true); return; }
+        if (!form.elements.counter.value.trim()) { UI.toast('개선내용을 입력해 주세요.', true); return; }
+        submit.disabled = true;
+        let photos = null;
+        let left = [];
+        if (issuePicker.files.length || counterPicker.files.length) {
+          submit.textContent = '사진 올리는 중';
+          const a = await issuePre.collect(issuePicker.files);
+          const b = await counterPre.collect(counterPicker.files);
+          issuePicker.draw(); counterPicker.draw();
+          const done = a.done.concat(b.done);
+          left = a.failed.map((file) => ({ file, kind: 'issue' })).concat(b.failed.map((file) => ({ file, kind: 'counter' })));
+          if (done.length) photos = { ticket: await pre.ticket(), files: done };
+        }
+        submit.textContent = '저장 중';
+        let ticket;
+        try {
+          ticket = (await Api.call('kpiSave', Object.assign(collect(), { code: 'C1' }, photos ? { photos } : {}))).ticket;
+        } catch (err) { UI.toast(err.message, true); submit.disabled = false; submit.textContent = '등록'; return; }
+        Store.draftClear('best');
+        const finish = () => { UI.toast('등록했습니다. 팀 전체 현황에 반영됩니다.'); values = {}; draw(); };
+        if (left.length) sendPhotos(left, ticket, ProgressBox(progress), finish); else finish();
+      };
+    }
+    const save = () => Store.draftSet('best', collect());
+    form.addEventListener('input', save);
+    form.addEventListener('change', save);
+    draw();
+    return form;
+  };
+
   /* 우수개선현황: 엑셀 시트와 같은 카드 모양(번호, 팀, 직장(공정), 활동기간, 담당자, 문제점, 개선내용, 기대효과, 개선 전·후 사진).
-     개선사항(관리자용)으로 등록된 건 중 검토자(과장, 팀장)가 '우수개선으로 등록'한 건만 현황에 올라간다. */
+     개선사항으로 등록된 건 중 검토자(과장, 팀장)가 '우수개선으로 등록'한 건만 현황에 올라간다. */
   Router.add('/kpi/best', (params, app, alive) => {
     const thisYear = new Date().getFullYear();
     let year = thisYear;
@@ -278,10 +321,10 @@
       draw();
     }, (e) => { if (alive()) list.replaceChildren(UI.error(e.message, load)); });
     ySel.onchange = () => { year = Number(ySel.value); tab = ''; reload(); };
-    app.replaceChildren(UI.hero('우수개선현황', '개선사항(관리자용)으로 등록한 사례 중 우수개선으로 선정된 건입니다.'),
+    app.replaceChildren(UI.hero('우수개선현황', '개선사항으로 등록한 사례 중 우수개선으로 선정된 건입니다.'),
       h('section', { class: 'section print-page' }, h('div', { class: 'wrap wide' },
         h('div', { class: 'toolbar no-print' }, ySel,
-          canC1() && !UI.has('VIEW_EXEC') ? h('a', { class: 'btn', href: '#/kpi/write' }, '개선사항 작성') : null,
+          UI.canWriteBest() ? h('a', { class: 'btn', href: '#/kpi/upload?tab=best' }, '개선사항 등록') : null,
           h('button', { class: 'btn ghost pc-only', type: 'button', onclick: () => window.print() }, '인쇄')),
         tabsEl, list)));
     load();
