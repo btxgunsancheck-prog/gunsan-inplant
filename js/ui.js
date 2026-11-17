@@ -69,7 +69,11 @@ const ICONS = {
   play: '<path d="M8 5v14l11-7z"/>',
   lock: '<path d="M5 13a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/><path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0-2 0m-3-5V7a4 4 0 1 1 8 0v4"/>',
   home: '<path d="M5 12H3l9-9l9 9h-2M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/><path d="M9 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6"/>',
-  list: '<path d="M9 6h11M9 12h11M9 18h11M5 6v.01M5 12v.01M5 18v.01"/>'
+  list: '<path d="M9 6h11M9 12h11M9 18h11M5 6v.01M5 12v.01M5 18v.01"/>',
+  folder: '<path d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2"/>',
+  box: '<path d="m12 3l8 4.5v9L12 21l-8-4.5v-9zm0 9l8-4.5M12 12v9m0-9L4 7.5"/>',
+  download: '<path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 11l5 5l5-5m-5-9v14"/>',
+  file: '<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2M9 13l6 4m-6 0l6-4"/>'
 };
 
 const UI = {
@@ -158,6 +162,32 @@ const UI = {
   hasAny(perms) { return perms.some(UI.has); },
   /* 관리자 직급(팀장, 과장, 주임, 공장, 직장, 반장). 업무 게시판 글쓰기와 개선사항 작성이 직급으로 자동 적용된다. 서버도 같은 기준으로 막는다. */
   isManager() { return ['팀장', '과장', '주임', '공장', '직장', '반장'].includes(String((App.user && App.user.rank) || '').trim()); },
+  /* 실적 업로드 권한자(관제) */
+  isUploader() { return UI.hasAny(['UPLOAD_ABNORMAL', 'UPLOAD_INVENTORY', 'ADMIN']); },
+  /* 개선사항(C1) 등록: 관제와 관리자 직급(2026-11-17). 서버도 같은 기준. */
+  canWriteBest() { return !UI.has('VIEW_EXEC') && (UI.isManager() || UI.isUploader()); },
+  /* 직장(확인 권한)이 있는 직 */
+  checkDepts() { return ((App.user && App.user.perms) || []).filter((p) => p.startsWith('KPI_CHECK:')).map((p) => p.slice(10)); },
+  /* 서버에서 받은 파일(Base64)을 내려받는다. 큰 파일도 되도록 Blob 주소를 쓴다. */
+  saveFile(base64, name, type) {
+    const bin = atob(base64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const url = URL.createObjectURL(new Blob([bytes], { type: type || 'application/octet-stream' }));
+    const a = h('a', { href: url, download: name });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  },
+  /* 파일을 Base64로 읽는다(큰 파일은 나눠서 바꾼다). */
+  async fileBase64(file) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 32768) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768));
+    return btoa(bin);
+  },
+  size(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB'; },
   icon(name, cls) {
     const t = document.createElement('template');
     t.innerHTML = '<svg class="ico' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';

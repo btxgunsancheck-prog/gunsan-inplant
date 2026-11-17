@@ -1,4 +1,4 @@
-/* 직장 월 입력(P1, P3, Q1), 실적 업로드. */
+/* 월 입력(직장): P1 다기능 습숙도, P2 장비면허, P3 교육이행, Q1 표준서. 실적 업로드(관제): 이상발생·비가동, 순환재고, 개선사항. */
 (() => {
   const SHEETJS = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
   let sheetLib = null;
@@ -15,38 +15,6 @@
     return out;
   };
   const inputDepts = () => (UI.has('KPI_MANAGER') ? KpiData.DEPTS : KpiData.DEPTS.filter((x) => UI.has('KPI_CHECK:' + x)));
-
-  function listEditor(label, rows, namePlaceholder) {
-    const box = h('div', { class: 'list-edit' });
-    const draw = () => {
-      box.replaceChildren(...rows.map((r, i) => h('div', { class: 'list-row' },
-        h('input', { value: r.name, placeholder: namePlaceholder, 'aria-label': namePlaceholder, oninput: (e) => { r.name = e.target.value; } }),
-        h('input', { value: r.count, inputmode: 'numeric', 'aria-label': '수', oninput: (e) => { r.count = e.target.value; } }),
-        h('button', { class: 'picker-x', type: 'button', 'aria-label': '행 빼기', onclick: () => { rows.splice(i, 1); draw(); } }, '×'))));
-    };
-    draw();
-    return h('div', { class: 'field' }, h('span', { class: 'field-label' }, label), box,
-      h('button', { class: 'btn ghost', type: 'button', onclick: () => { rows.push({ name: '', count: '' }); draw(); } }, '행 추가'));
-  }
-
-  function p1Form(body, ym, dept, data, alive) {
-    const src = data.detail || data.prev || {};
-    const processes = (src.processes || []).map((x) => ({ name: x.name, count: x.count }));
-    if (!processes.length) processes.push({ name: '', count: '' });
-    const known = (src.people || []).map((x) => ({ name: x.name, count: x.count }));
-    const people = known.length ? known : data.roster.map((name) => ({ name, count: '' }));
-    const btn = h('button', { class: 'btn wide', type: 'button', disabled: data.closed, onclick: async () => {
-      btn.disabled = true;
-      try {
-        await Api.call('kpiMonthlySave', { ym, dept, code: 'P1', detail: { processes: processes.filter((x) => x.name), people: people.filter((x) => x.name) } });
-        UI.toast('저장했습니다.');
-      } catch (e) { UI.toast(e.message, true); }
-      btn.disabled = false;
-    } }, '저장');
-    body.replaceChildren(h('div', { class: 'narrow' },
-      data.closed && h('p', { class: 'sub' }, '마감된 월이라 수정할 수 없습니다.'),
-      listEditor('공정별 습숙 인원', processes, '공정'), listEditor('인원별 습숙 공정수', people, '성명'), btn));
-  }
 
   function p3Form(body, ym, dept, data) {
     const rows = ((data.detail && data.detail.rows) || []).map((r) => Object.assign({}, r));
@@ -81,7 +49,19 @@
     body.replaceChildren(wrap);
   }
 
+  /* 표준서(Q1): 작업표준서 엑셀(TIS)을 올리면 공정 목록을 읽어 제/개정을 반영하고 파일은 자료실에 둔다. 아래 목록에서 한 줄씩 고칠 수도 있다. */
   function q1Form(body, dept, alive) {
+    const list = h('div');
+    const reload = () => { list.replaceChildren(UI.skeleton(3)); q1List(list, dept, alive); };
+    body.replaceChildren(
+      h('h2', { class: 'block-h' }, '작업표준서(TIS) 올리기'),
+      h('p', { class: 'sub' }, '직의 작업표준서 엑셀 파일을 올리면 TIS 시트(공정) 수만큼 표준서 실적이 잡히고, 파일은 자료실에서 누구나 내려받을 수 있습니다.'),
+      window.TisUpload({ depts: [dept], dept, onDone: reload }),
+      h('h2', { class: 'block-h' }, dept + ' 표준서 목록'), list);
+    reload();
+  }
+
+  function q1List(body, dept, alive) {
     const load = () => {
       Api.call('standardList', { dept }).then((d) => {
         if (!alive()) return;
@@ -96,7 +76,9 @@
           catch (e) { UI.toast(e.message, true); }
         };
         fill(body,
-          d.canEdit && h('div', { class: 'toolbar wrap-row' }, no, proc, title, kind, date, h('button', { class: 'btn', type: 'button', onclick: save }, '추가')),
+          d.canEdit && h('details', { class: 'config' }, h('summary', null, '한 줄씩 직접 추가'),
+            h('div', { class: 'toolbar wrap-row' }, no, proc, title, kind, date, h('button', { class: 'btn', type: 'button', onclick: save }, '추가'))),
+          h('p', { class: 'sub' }, '제정 ' + d.rows.filter((r) => r.v[4] !== '개정').length + '건, 개정 기록 ' + d.rows.filter((r) => r.v[4] === '개정').length + '건'),
           h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
             h('thead', null, h('tr', null, ['번호', '공정', '제목', '구분', '일자', ''].map((x) => h('th', null, x)))),
             h('tbody', null, d.rows.map((r) => h('tr', null, [0, 2, 3, 4, 5].map((i) => h('td', null, r.v[i])),
@@ -111,25 +93,29 @@
   Router.add('/kpi/monthly', (params, app, alive) => {
     const depts = inputDepts();
     if (!depts.length || UI.has('VIEW_EXEC')) { app.replaceChildren(UI.placeholder('입력 권한이 없습니다')); return; }
-    let code = 'P1';
+    const names = { P1: '다기능 습숙도', P2: '장비면허', P3: '교육이행', Q1: '표준서' };
+    const q = new URLSearchParams(Router.path().split('?')[1] || '');
+    let code = names[q.get('tab')] ? q.get('tab') : 'P1';
     const deptSel = UI.select('dept', depts, depts[0]);
     const ymSel = UI.select('ym', ymOptions(), thisYm());
     const tabs = h('div', { class: 'tabs center-tabs' });
     const body = h('div');
-    const names = { P1: '다기능 습숙도', P3: '교육이행', Q1: '표준서' };
     const paint = () => {
       tabs.replaceChildren(...Object.keys(names).map((c) => h('button', { type: 'button', class: 'tab' + (c === code ? ' on' : ''), onclick: () => { code = c; paint(); } }, names[c])));
       body.replaceChildren(UI.skeleton(4));
-      ymSel.parentElement && (ymSel.disabled = code === 'Q1');
+      /* 장비면허·표준서는 월과 상관없는 명부라 월 선택을 막는다. 장비면허는 소속을 표 안에서 고른다. */
+      ymSel.disabled = code === 'Q1' || code === 'P2';
+      deptSel.disabled = code === 'P2';
       if (code === 'Q1') { q1Form(body, deptSel.value, alive); return; }
+      if (code === 'P2') { window.LicenseBox(body, alive); return; }
       Api.call('kpiMonthlyGet', { ym: ymSel.value, dept: deptSel.value, code }).then((d) => {
         if (!alive()) return;
-        (code === 'P1' ? p1Form : p3Form)(body, ymSel.value, deptSel.value, d, alive);
+        if (code === 'P1') window.P1Grid(body, ymSel.value, deptSel.value, d, alive); else p3Form(body, ymSel.value, deptSel.value, d, alive);
       }, (e) => { if (alive()) body.replaceChildren(UI.error(e.message, paint)); });
     };
     deptSel.onchange = paint; ymSel.onchange = paint;
-    app.replaceChildren(UI.hero('월 입력', '직장 입력형 지표'), h('section', { class: 'section' }, h('div', { class: 'wrap' },
-      h('div', { class: 'toolbar center-tools' }, deptSel, ymSel), tabs, body)));
+    app.replaceChildren(UI.hero('월 입력(직장)', '직장 입력형 지표: 다기능 습숙도, 장비면허, 교육이행, 표준서'), h('section', { class: 'section' }, h('div', { class: 'wrap wide' },
+      h('div', { class: 'toolbar center-tools no-print' }, deptSel, ymSel), h('div', { class: 'no-print' }, tabs), body)));
     paint();
   });
 
@@ -364,25 +350,35 @@
   }
 
   Router.add('/kpi/upload', (params, app, alive) => {
-    if (!UI.hasAny(['UPLOAD_ABNORMAL', 'UPLOAD_INVENTORY', 'ADMIN', 'VIEW_EXEC'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
+    if (!UI.hasAny(['UPLOAD_ABNORMAL', 'UPLOAD_INVENTORY', 'ADMIN', 'VIEW_EXEC']) && !UI.canWriteBest()) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
     const body = h('div', { class: 'wrap' }, UI.skeleton(6));
-    let tab = '';
+    const q = new URLSearchParams(Router.path().split('?')[1] || '');
+    let tab = q.get('tab') || '';
+    let bestForm = null;
     const load = () => {
       Api.call('uploadInfo', {}).then((info) => {
         if (!alive()) return;
         const names = {};
         if (info.tabs.abnormal) names.abnormal = '이상발생·비가동(일별)';
         if (info.tabs.inventory) names.inventory = '순환재고(월별)';
-        tab = tab || Object.keys(names)[0] || '';
+        /* 개선사항(C1): 관제와 관리자 직급이 등록한다(2026-11-17 실적 작성에서 옮김). */
+        if (info.tabs.best) names.best = '개선사항';
+        if (!names[tab]) tab = Object.keys(names)[0] || '';
         const content = h('div');
+        const uploader = info.tabs.abnormal || info.tabs.inventory || UI.has('VIEW_EXEC');
         fill(body,
           Object.keys(names).length > 1 && h('div', { class: 'tabs center-tabs' }, Object.keys(names).map((k) => h('button', { class: 'tab' + (k === tab ? ' on' : ''), type: 'button', onclick: () => { tab = k; load(); } }, names[k]))),
-          content, historyTable(info));
+          content, tab !== 'best' && uploader ? historyTable(info) : null);
         if (tab === 'abnormal') abnormalTab(content, info, load);
         else if (tab === 'inventory') inventoryTab(content, info, load);
+        else if (tab === 'best') {
+          bestForm = bestForm || window.KpiBestForm();
+          fill(content, h('h2', { class: 'block-h' }, '개선사항 등록'),
+            h('p', { class: 'sub' }, '사내물류팀 단위로 저장되어 팀 전체 현황(C1 개선사항)에 바로 반영됩니다. 과장·팀장이 검토해 우수개선현황에 올립니다.'), bestForm);
+        } else if (!Object.keys(names).length) content.append(h('p', { class: 'sub center' }, '업로드 이력만 볼 수 있습니다.'));
       }, (e) => { if (alive()) body.replaceChildren(UI.error(e.message, load)); });
     };
-    app.replaceChildren(UI.hero('실적 업로드'), h('section', { class: 'section' }, body));
+    app.replaceChildren(UI.hero('실적 업로드(관제)'), h('section', { class: 'section' }, body));
     load();
   });
 })();

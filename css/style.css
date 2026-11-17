@@ -951,3 +951,91 @@ table.data select:not([multiple]) { padding-right: 30px; background-position: ri
 .vmodal video { width: 100%; max-width: 1280px; max-height: 100%; background: #000; border-radius: 10px; }
 .vmodal-x { position: absolute; top: 10px; right: 14px; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.18); color: #fff; font-size: 28px; line-height: 1; cursor: pointer; }
 @media print { .team-video, .vmodal { display: none !important; } }
+
+/* 상단 메뉴가 8개로 늘어 좁은 PC 화면에서는 간격과 글자를 줄여 한 줄에 맞춘다(2026-11-17) */
+@media (min-width: 834px) and (max-width: 1199px) { .nav-links { gap: 2px; } .nav-item { padding: 0 9px; font-size: 14px; } }
+@media (min-width: 834px) and (max-width: 979px) { .nav-item { padding: 0 6px; font-size: 13px; letter-spacing: -0.2px; } }
+
+/* 다기능 습숙표(P1): 엑셀 Flexibility Chart와 같은 공정 × 인원 표 */
+.p1-title { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 8px 0 12px; }
+.p1-title h2 { font-size: 20px; }
+.p1-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.p1-summary > div { display: flex; flex-direction: column; padding: 12px 14px; border-radius: 12px; background: var(--bg-alt); }
+.p1-summary strong { font-size: 17px; }
+.p1-wrap { max-height: 70vh; }
+.p1-table { border-collapse: separate; border-spacing: 0; font-size: 13px; }
+.p1-table th, .p1-table td { padding: 4px 6px; white-space: nowrap; }
+.p1-table thead th { position: sticky; top: 0; z-index: 2; background: #f3f6fd; vertical-align: bottom; }
+.p1-table .p1-proc, .p1-table .p1-corner, .p1-table .p1-foot th { position: sticky; left: 0; z-index: 1; background: #fff; text-align: left; }
+.p1-table .p1-corner { z-index: 3; background: #f3f6fd; font-size: 12px; color: var(--text-sub); }
+.p1-person { min-width: 72px; text-align: center; }
+/* 전역 입력칸 규칙(폭 100%, 높이 44px)보다 우선하도록 !important를 쓴다 */
+.p1-table input.p1-name { width: 64px !important; min-height: 32px !important; height: 32px; padding: 2px 4px !important; font-size: 13px !important; border-radius: 8px !important; }
+.p1-person input.p1-name { text-align: center; }
+.p1-proc input.p1-name { width: 150px !important; }
+.p1-table th .picker-x { position: static; width: 22px; height: 22px; margin-left: 2px; font-size: 14px; line-height: 1; vertical-align: middle; }
+.p1-cell { text-align: center; padding: 3px; }
+.p1-btn { border: 1px solid #c9d1e3; background: #fff; border-radius: 6px; padding: 2px; cursor: pointer; line-height: 0; }
+.p1-btn:disabled { cursor: default; }
+.p1-btn.lv4 { border-color: var(--good); }
+.p1-mark { display: inline-grid; grid-template-columns: 22px 22px; grid-template-rows: 18px 18px; grid-auto-flow: row; }
+.p1-mark i { display: flex; align-items: center; justify-content: center; font-style: normal; font-size: 10px; color: #b8c0d4; border: 0.5px solid #e3e7f0; }
+.p1-mark i.on { background: #8fd18f; color: #134d13; }
+.p1-btn.lv4 .p1-mark i.on { background: #4caf50; color: #fff; }
+.p1-foot th, .p1-foot td { background: #fafbfd; border-top: 1px solid var(--line); }
+.p1-table .p1-foot td, .p1-table .p1-foot td.num { text-align: center; }
+.p1-legend { margin-top: 14px; }
+.p1-legend dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 10px 0 0; align-items: center; font-size: 14px; }
+.p1-legend dt { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.p1-legend dd { margin: 0; color: var(--text-sub); }
+.p1-legend .p1-mark { grid-template-columns: 14px 14px; grid-template-rows: 12px 12px; }
+.p1-legend .p1-mark i { font-size: 8px; }
+@media (max-width: 833px) {
+  .p1-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .p1-proc input.p1-name { width: 110px !important; }
+}
+@media print {
+  .p1-wrap { max-height: none; }
+  .p1-table { font-size: 9px; }
+  .p1-table input.p1-name { border: 0; padding: 0 !important; min-height: 0 !important; height: auto; font-size: 9px !important; }
+  .p1-table th .picker-x { display: none; }
+  .p1-mark { grid-template-columns: 12px 12px; grid-template-rows: 10px 10px; }
+  .p1-mark i { font-size: 7px; }
+  .p1-mark i.on { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .p1-summary > div { padding: 4px 8px; }
+  .p1-legend .sub { display: none; }
+}
+
+/* 장비면허 사진 칸 */
+.lic-photos { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.picker-x.mini { position: static; width: 20px; height: 20px; font-size: 13px; line-height: 1; }
+.btn.mini { min-height: 30px; padding: 2px 10px; font-size: 13px; }
+
+/* 자료실 */
+.lib-up { margin-bottom: 20px; }
+.lib-list { display: flex; flex-direction: column; gap: 10px; }
+.lib-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid #dfe4f0; border-radius: 14px; background: #fff; }
+.lib-ico { flex: none; width: 44px; height: 44px; border-radius: 12px; background: #eaf5ec; color: var(--good); display: flex; align-items: center; justify-content: center; }
+.lib-ico .ico { width: 24px; height: 24px; }
+.lib-main { flex: 1; min-width: 0; }
+.lib-title { font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lib-title .chip { margin: 0; }
+.lib-name { overflow-wrap: anywhere; }
+.lib-item .btn .ico { width: 18px; height: 18px; margin-right: 4px; vertical-align: -3px; }
+@media (max-width: 833px) { .lib-item { flex-wrap: wrap; } .lib-item .row-btns { width: 100%; } }
+
+/* 팔레트 실적 */
+.pal-sum { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+.pal-stat { display: flex; flex-direction: column; padding: 12px 14px; border-radius: 12px; background: var(--bg-alt); }
+.pal-stat strong { font-size: 20px; }
+.pal-list { display: flex; flex-direction: column; gap: 14px; }
+.pal-card { padding: 16px 18px; border: 1px solid #dfe4f0; border-radius: 16px; background: #fff; display: flex; flex-direction: column; gap: 10px; }
+.pal-card.out { opacity: 0.6; }
+.pal-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pal-head .chip { margin: 0; }
+.pal-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.pal-cols h4 { margin: 0 0 4px; font-size: 14px; color: var(--accent); }
+.pal-cols .thumbs { margin-top: 8px; }
+@media (max-width: 833px) { .pal-sum { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pal-cols { grid-template-columns: minmax(0, 1fr); } }
+@media print { .pal-card { break-inside: avoid; } }
+.tis-up .toolbar { align-items: center; }

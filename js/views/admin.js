@@ -48,8 +48,8 @@
   const PERM_NAME = {
     USER: '기본(로그인, 게시판, 건의, 소속 직 KPI)', KPI_VIEW_ALL: 'KPI 전체 열람', VIEW_EXEC: '열람 전용(사업부장)', NOTICE_WRITE: '공지 작성',
     'KPI_CHECK:물류1직': '물류1직 확인(직장)', 'KPI_CHECK:물류2직': '물류2직 확인(직장)', 'KPI_CHECK:물류3직': '물류3직 확인(직장)', 'KPI_CHECK:물류4직': '물류4직 확인(직장)',
-    KPI_TEAM: '팀 KPI 관리, 월 마감', KPI_MANAGER: '관리자 입력(장비면허)', UPLOAD_ABNORMAL: '이상발생 업로드', UPLOAD_INVENTORY: '순환재고 업로드',
-    SUGGEST_VIEW: '건의 전체 열람·답변', SUGGEST_READ: '건의 전체 열람(관제)', BEST_REVIEW: '우수개선 검토·선정(과장, 팀장)', PLAN_UPLOAD: '생산계획 등록(업무게시판에 생산계획표 올리기)', GUEST: '외부 열람(고객사·타 부서, 팀 전체 KPI와 우수개선만)', ADMIN: '관리자 메뉴 전체'
+    KPI_TEAM: '팀 KPI 관리, 월 마감', KPI_MANAGER: 'KPI 관리자(장비면허 전체, 표준서·습숙도 전 직)', UPLOAD_ABNORMAL: '이상발생 업로드', UPLOAD_INVENTORY: '순환재고 업로드',
+    SUGGEST_VIEW: '건의 전체 열람·답변', SUGGEST_READ: '건의 전체 열람(관제)', BEST_REVIEW: '우수개선 검토·선정(과장, 팀장)', PLAN_UPLOAD: '생산계획 등록(업무게시판에 생산계획표 올리기)', PALLET_WRITE: '팔레트 실적 등록(전담 작업자)', GUEST: '외부 열람(고객사·타 부서, 팀 전체 KPI와 우수개선만)', ADMIN: '관리자 메뉴 전체'
   };
   const stateOf = (u) => (!u.site ? '미등록' : !u.active ? '사용 중지' : u.locked ? '잠김' : u.mustChange ? '첫 로그인 전' : '사용');
   const stateClass = { 사용: 'good', '사용 중지': 'bad', 잠김: 'bad', '첫 로그인 전': 'warn', 미등록: '' };
@@ -196,29 +196,14 @@
         UI.field('CSV 파일', input), info, btn));
   }
 
+  /* 장비면허 명부는 월 입력(직장) > 장비면허로 옮겼다(2026-11-17). 열람 전용 계정은 여기서 같은 표를 본다. */
+  window.LicenseImportBox = licenseImportBox;
   Router.add('/admin/license', (params, app, alive) => {
     if (!UI.hasAny(['KPI_MANAGER', 'VIEW_EXEC'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
-    const body = h('div', { class: 'wrap' }, UI.skeleton(6));
-    const depts = ['물류1직', '물류2직', '물류3직', '물류4직', '팀'];
-    const load = () => Api.call('licenseList').then((d) => {
-      if (!alive()) return;
-      const f = { name: h('input', { placeholder: '성명', 'aria-label': '성명' }), dept: UI.select('dept', depts, depts[0]), kind: UI.select('kind', ['지게차', '건설기계'], '지게차'), expires: h('input', { type: 'date', 'aria-label': '유효기간' }), note: h('input', { placeholder: '비고', 'aria-label': '비고' }) };
-      const add = async () => {
-        try { await Api.call('licenseSave', { name: f.name.value, dept: f.dept.value, kind: f.kind.value, expires: f.expires.value, note: f.note.value }); UI.toast('저장했습니다.'); load(); }
-        catch (e) { UI.toast(e.message, true); }
-      };
-      fill(body,
-        d.canEdit && licenseImportBox(load, d.rows),
-        d.canEdit && h('div', { class: 'toolbar wrap-row' }, f.name, f.dept, f.kind, f.expires, f.note, h('button', { class: 'btn', type: 'button', onclick: add }, '추가')),
-        h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
-          h('thead', null, h('tr', null, ['성명', '소속', '면허종류', '유효기간', '비고', ''].map((x) => h('th', null, x)))),
-          h('tbody', null, d.rows.map((r) => h('tr', null, [0, 1, 2, 3, 4].map((i) => h('td', null, r.v[i])),
-            h('td', null, d.canEdit && h('button', { class: 'link', type: 'button', onclick: async () => {
-              try { await Api.call('licenseDelete', { rowNo: r.rowNo }); load(); } catch (e) { UI.toast(e.message, true); }
-            } }, '삭제'))))))));
-    }, (e) => { if (alive()) body.replaceChildren(UI.error(e.message, load)); });
+    if (!UI.has('VIEW_EXEC')) { Router.go('/kpi/monthly?tab=P2'); return; }
+    const body = h('div', { class: 'wrap wide' });
     app.replaceChildren(UI.hero('장비면허 명부'), pcNotice(), h('section', { class: 'section' }, body));
-    load();
+    window.LicenseBox(body, alive);
   });
 
   Router.add('/admin/targets', (params, app, alive) => {
@@ -394,7 +379,7 @@
   /* ---------- 관리자 대시보드 ---------- */
   const SIDE = [['#/admin', 'home', '대시보드', () => true], ['#/admin/users', 'people', '사용자 관리', () => UI.has('ADMIN')],
     ['#/kpi/team', 'chart', 'KPI 팀 현황', () => UI.has('KPI_VIEW_ALL')], ['#/suggest/all', 'chat', '건의사항 관리', () => UI.hasAny(['SUGGEST_VIEW', 'SUGGEST_READ'])],
-    ['#/award', 'trophy', '우수사원 관리', () => true], ['#/admin/license', 'lock', '장비면허 명부', () => UI.hasAny(['KPI_MANAGER', 'VIEW_EXEC'])],
+    ['#/award', 'trophy', '우수사원 관리', () => true], ['#/kpi/monthly?tab=P2', 'lock', '장비면허 명부', () => UI.has('KPI_MANAGER') && !UI.has('VIEW_EXEC')], ['#/admin/license', 'lock', '장비면허 명부', () => UI.has('VIEW_EXEC')],
     ['#/admin/targets', 'list', '목표·평가기준', () => UI.hasAny(['ADMIN', 'KPI_TEAM', 'VIEW_EXEC'])], ['#/admin/data', 'gear', '데이터 관리', () => UI.hasAny(['ADMIN', 'VIEW_EXEC'])]];
 
   Router.add('/admin', (params, app, alive) => {

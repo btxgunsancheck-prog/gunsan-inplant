@@ -4,7 +4,7 @@ const KpiData = (() => {
   const DEPTS = ['물류1직', '물류2직', '물류3직', '물류4직'];
   const TEAM = '팀';
   const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-  const SUM = new Set(['S1', 'S1_사고', 'S1_아차', 'S2', 'Q2', 'Q3_개선', 'Q3_보수', 'D1', 'D2', 'C1_팔레트', 'C1_Lay-out', 'C1_운영']);
+  const SUM = new Set(['S1', 'S1_사고', 'S1_아차', 'S2', 'Q2', 'Q3_신규', 'Q3_개선', 'Q3_보수', 'D1', 'D2', 'C1_팔레트', 'C1_Lay-out', 'C1_운영']);
   const PCT = new Set(['P1', 'P3', 'C2_품목', 'C2_금액']);
   const JUDGE = { G: ['달성', 'good'], Y: ['주의', 'warn'], R: ['미달', 'bad'] };
   const COLORS = ['#0B2282', '#E0651E', '#0F9D8A', '#9A5BC4'];
@@ -20,7 +20,8 @@ const KpiData = (() => {
     { tab: 'P', code: 'P3', name: '교육이행 실적', keys: [['P3', '']] },
     { tab: 'Q', code: 'Q1', name: '표준서 제/개정', keys: [['Q1', '']] },
     { tab: 'Q', code: 'Q2', name: '납입이상 적출', keys: [['Q2', '']] },
-    { tab: 'Q', code: 'Q3', name: '팔레트 개선/보수', keys: [['Q3_개선', '개선'], ['Q3_보수', '보수']] },
+    /* 팔레트(2026-11-17): 팔레트 실적 메뉴에서 등록하고 팀 전체 현황에만 나온다. */
+    { tab: 'Q', code: 'Q3', name: '팔레트 개선/보수', teamOnly: true, keys: [['Q3_신규', '신규제작'], ['Q3_개선', '개선(개조)'], ['Q3_보수', '보수']] },
     { tab: 'D', code: 'D1', name: '이상발생', keys: [['D1', '']] },
     { tab: 'D', code: 'D2', name: '비가동', keys: [['D2', '']] },
     { tab: 'C', code: 'C1', name: '개선사항', teamOnly: true, keys: [['C1_팔레트', '팔레트'], ['C1_Lay-out', 'Lay-out'], ['C1_운영', '운영']] },
@@ -38,7 +39,7 @@ const KpiData = (() => {
     P3: { title: '[ 직무교육현황 ]', annual: ['P3'], series: [rate('P3', '달성률'), tg('P3', '목표', null, y1)], team: { key: 'P3', t: 'bar', pct: true } },
     Q1: { title: '[ 표준서 제 / 개정 현황 ]', annual: ['Q1'], series: [rate('Q1', '달성률'), tg('Q1', '목표', null, y1), v('Q1', '제정', y1), v('Q1_개정', '개정', y1)], team: { key: 'Q1', t: 'bar' } },
     Q2: { title: '[ 납입이상적출 현황 ]', annual: ['Q2'], series: [v('Q2', '실적')] },
-    Q3: { title: '[ 파레트 개선 / 보수 현황 ]', annual: ['Q3_개선', 'Q3_보수'], series: [v('Q3_개선', '개선'), v('Q3_보수', '보수')] },
+    Q3: { title: '[ 파레트 개선 / 보수 현황 ]', annual: ['Q3_신규', 'Q3_개선', 'Q3_보수'], series: [v('Q3_신규', '신규제작', { t: 'bar' }), v('Q3_개선', '개선(개조)', { t: 'bar' }), v('Q3_보수', '보수', { t: 'bar' })] },
     D1: { title: '[ 이상발생 / 비가동 현황 ]', annual: ['D1', 'D2'], series: [rate('D1', '달성률 이상발생'), tg('D1', '목표 이상발생', null, y1), tg('D2', '목표 비가동', null, y1), v('D1', '실적 이상발생', y1), v('D2', '실적 비가동', y1)], team: { key: 'D1', t: 'bar', sumLine: 'D1' } },
     C1: { title: '[ 개선 현황 ]', annual: ['C1_팔레트', 'C1_Lay-out', 'C1_운영'], annualTitle: '[ 개선 비용절감액 ] (단위: 백만원)', series: [v('C1n_팔레트', '팔레트(건)'), v('C1n_Lay-out', 'Lay-out(건)'), v('C1n_운영', '운영(건)')] },
     C2: { title: '[ 순환재고 일치율 ]', annual: ['C2_품목', 'C2_금액'], series: [v('C2_품목', '일치율 품목', { t: 'bar' }), v('C2_금액', '일치율 금액', { t: 'bar' }), tg('C2_품목', '목표 품목'), tg('C2_금액', '목표 금액'), v('C3_재고보정', '재고보정(백만원)', y1), v('C3_클레임', '클레임(백만원)', y1)] }
@@ -147,7 +148,8 @@ const KpiData = (() => {
     const annual = chartBox(def.annualTitle || def.title + ' 연간 비교');
     const annualSets = def.annual.map((key, i) => {
       const x = T.t(dept, key);
-      return dataset({ t: 'bar', label: key.split('_')[1] || '실적' }, [x ? Number(x.prior) : null, T.annualTarget(dept, key), T.yearVal(dept, key)], i);
+      const named = METRICS.reduce((o, m) => o || m.keys.find((k) => k[0] === key && k[1]), null);
+      return dataset({ t: 'bar', label: named ? named[1] : key.split('_')[1] || '실적' }, [x ? Number(x.prior) : null, T.annualTarget(dept, key), T.yearVal(dept, key)], i);
     });
     out.push({ c: annual, cfg: { type: 'bar', data: { labels: ['전년 실적', '올해 목표', '올해 누계'], datasets: annualSets }, options: baseOpts(false) } });
 
@@ -178,6 +180,7 @@ const KpiData = (() => {
     const prefix = { S2: 'S2|p|', Q2: 'Q2|p|', Q3: 'Q3|p|', C1: 'C1|p|', D1: 'D|p|', D2: 'D|p|', P1: 'P1p|' }[code];
     if (!prefix) return null;
     const isTeam = dept === TEAM;
+    if (code === 'Q3' && isTeam) return palletCumulative(T);
     const totals = {};
     const kinds = new Set();
     (isTeam ? DEPTS : [dept]).forEach((d) => {
@@ -228,6 +231,23 @@ const KpiData = (() => {
     return { c: box, cfg };
   }
   const sumOf = (o) => Object.values(o).reduce((a, b) => a + b, 0);
+  /* 팔레트 누적: 분류(투입대차 등)별로 신규제작·개선(개조)·보수 건수를 쌓아 보여 준다. */
+  function palletCumulative(T) {
+    const want = TEAM + '|Q3|c|';
+    const totals = {};
+    const kinds = ['신규제작', '개선(개조)', '보수'];
+    Object.keys(T.m).filter((id) => id.startsWith(want)).forEach((id) => {
+      const [cat, kind] = id.slice(want.length).split('|');
+      const row = (totals[cat] = totals[cat] || {});
+      row[kind] = (row[kind] || 0) + Object.values(T.m[id]).reduce((s, c) => s + c.v, 0);
+    });
+    const names = Object.keys(totals).sort((a, b) => sumOf(totals[b]) - sumOf(totals[a])).slice(0, 15);
+    if (!names.length) return null;
+    const box = chartBox(new Date().getFullYear() + ' 누적 팔레트 실적 (분류별)');
+    const opts = baseOpts(false);
+    opts.scales.x.stacked = true; opts.scales.y.stacked = true;
+    return { c: box, cfg: { type: 'bar', data: { labels: names, datasets: kinds.map((k, i) => dataset({ t: 'bar', label: k }, names.map((n) => totals[n][k] || 0), i)) }, options: opts } };
+  }
 
   function descTable(T, dept, metric) {
     const head = h('tr', null, h('th', null, '구분'), h('th', null, '항목'), h('th', { class: 'num' }, '전년'), h('th', { class: 'num' }, '올해목표'), MONTHS.map((x) => h('th', { class: 'num' }, x + '월')));
@@ -379,7 +399,7 @@ const KpiData = (() => {
 
   /* ---------- 지표 상세 ---------- */
   const STATUS = ['등록', '확인', '제외'];
-  const LISTED = ['S1', 'S2', 'Q2', 'Q3', 'C1'];
+  const LISTED = ['S1', 'S2', 'Q2', 'C1'];
 
   function activityList(host, dept, code, alive) {
     const month = h('select', { 'aria-label': '월 선택' }, h('option', { value: '' }, '전체 월'), MONTHS.map((x) => h('option', { value: String(x).padStart(2, '0') }, x + '월')));
@@ -432,7 +452,8 @@ const KpiData = (() => {
         h('h1', { class: 'post-h' }, metric.code + ' ' + metric.name),
         h('p', { class: 'sub' }, dept + (x && x.desc ? ' · ' + x.desc : '')),
         h('div', { class: 'row-btns no-print' }, h('button', { class: 'btn ghost pc-only', type: 'button', onclick: () => window.print() }, '인쇄'),
-          metric.code === 'C1' ? h('a', { class: 'btn ghost', href: '#/kpi/best' }, '우수개선현황') : null),
+          metric.code === 'C1' ? h('a', { class: 'btn ghost', href: '#/kpi/best' }, '우수개선현황') : null,
+          metric.code === 'Q3' && !UI.has('GUEST') ? h('a', { class: 'btn ghost', href: '#/pallet' }, '팔레트 실적 목록') : null),
         charts2, descTable(T, dept, metric), descMobile(T, dept, metric), extra);
       drawCharts(charts2, T, dept, metric.code);
       if (!listed) {

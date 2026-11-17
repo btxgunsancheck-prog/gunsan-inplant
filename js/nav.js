@@ -28,9 +28,10 @@ const Nav = (() => {
     const quick = [];
     if (!UI.has('VIEW_EXEC')) quick.push(link('실적 작성', '#/kpi/write'));
     if (u.perms.some((p) => p.startsWith('KPI_CHECK:'))) quick.push(link('확인 대기', '#/kpi/pending'));
-    if (!UI.has('VIEW_EXEC') && UI.has('KPI_MANAGER') || u.perms.some((p) => p.startsWith('KPI_CHECK:'))) quick.push(link('월 입력', '#/kpi/monthly'));
+    if (!UI.has('VIEW_EXEC') && (UI.has('KPI_MANAGER') || u.perms.some((p) => p.startsWith('KPI_CHECK:')))) quick.push(link('월 입력(직장)', '#/kpi/monthly'));
     if (viewAll) quick.push(link('미팅용 보기', '#/kpi/meeting'));
-    if (UI.hasAny(['UPLOAD_ABNORMAL', 'UPLOAD_INVENTORY', 'ADMIN'])) quick.push(link('실적 업로드', '#/kpi/upload'));
+    /* 관리자 직급은 실적 업로드(관제)에서 개선사항만 등록한다 */
+    if (UI.isUploader() || UI.canWriteBest()) quick.push(link('실적 업로드(관제)', '#/kpi/upload'));
     if (UI.hasAny(['UPLOAD_ABNORMAL', 'UPLOAD_INVENTORY', 'ADMIN', 'VIEW_EXEC'])) quick.push(link('업로드 이력', '#/kpi/upload'));
     const suggest = [link('건의하기', '#/suggest')];
     if (!UI.has('VIEW_EXEC')) suggest.push(link('내 건의', '#/suggest/mine'));
@@ -38,7 +39,8 @@ const Nav = (() => {
     const admin = [];
     if (UI.hasAny(['ADMIN', 'VIEW_EXEC', 'KPI_TEAM'])) admin.push(link('대시보드', '#/admin'));
     if (UI.has('ADMIN')) admin.push(link('사용자 관리', '#/admin/users'));
-    if (UI.hasAny(['KPI_MANAGER', 'VIEW_EXEC'])) admin.push(link('장비면허 명부', '#/admin/license'));
+    /* 장비면허 입력은 월 입력(직장)으로 옮겼다. 열람 전용 계정만 여기서 본다. */
+    if (UI.has('VIEW_EXEC')) admin.push(link('장비면허 명부', '#/admin/license'));
     if (UI.hasAny(['ADMIN', 'KPI_TEAM', 'VIEW_EXEC'])) admin.push(link('목표·평가기준', '#/admin/targets'));
     if (UI.hasAny(['ADMIN', 'VIEW_EXEC'])) admin.push(link('데이터 관리', '#/admin/data'));
     /* 게시판 바로가기: 업무 게시판 글쓰기는 관리자 직급만, 생산계획 올리기는 전용 권한자만 */
@@ -50,9 +52,12 @@ const Nav = (() => {
         groups: [{ title: '바로가기', links: boardQuick }, { title: '최신 공지', links: notices }] },
       { key: 'kpi', label: 'KPI', first: kpiFirst, groups: [{ title: '바로가기', links: quick }, { title: '이번 달 내 직', links: myKpi() }] },
       { key: 'suggest', label: '건의사항', first: suggest, groups: [] },
-      { key: 'award', label: '우수사원', first: [link('우수사원 평가', '#/award')], groups: [] }
+      { key: 'award', label: '우수사원', first: [link('우수사원 평가', '#/award')], groups: [] },
+      { key: 'library', label: '자료실', first: [link('작업표준서', '#/library')], groups: [] }
     ];
     list.push({ key: 'qr', label: 'QR장비점검', first: [link('장비 점검', '#/qr')], groups: [] });
+    list.push({ key: 'pallet', label: '팔레트 실적', first: [link('팔레트 실적', '#/pallet')],
+      groups: [{ title: '바로가기', links: !UI.has('VIEW_EXEC') && UI.hasAny(['PALLET_WRITE', 'ADMIN']) ? [link('실적 등록', '#/pallet/new')] : [] }] });
     if (admin.length) list.push({ key: 'admin', label: '관리자', first: admin, groups: [] });
     return list;
   }
