@@ -6,6 +6,7 @@ const Push = (() => {
   const supported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
   const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const standalone = () => (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  const isMobile = () => isIos() || /android/i.test(navigator.userAgent);
   const device = () => (isIos() ? 'iPhone' : /android/i.test(navigator.userAgent) ? 'Android' : 'PC').slice(0, 40);
   let messaging = null;
   let reg = null;
@@ -70,5 +71,5 @@ const Push = (() => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.link) location.hash = e.data.link; });
   }
-  return { status, enable, disable, sync, isIos };
+  return { status, enable, disable, sync, isIos, isMobile };
 })();
