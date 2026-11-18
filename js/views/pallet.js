@@ -86,12 +86,19 @@
       if (id && (!it || !it.canEdit)) { body.replaceChildren(UI.empty('고칠 수 있는 건을 찾지 못했습니다.', 'notfound')); return; }
       const v = it || Store.draftGet('pallet') || {};
       let kind = v.kind && KINDS.includes(v.kind) ? v.kind : '';
-      const kindSeg = h('div', { class: 'seg small', role: 'radiogroup', 'aria-label': '구분' });
-      const drawKind = () => kindSeg.replaceChildren(...KINDS.map((k) => h('button', { type: 'button', class: 'seg-btn' + (k === kind ? ' on' : ''), role: 'radio', 'aria-checked': String(k === kind), onclick: () => { kind = k; drawKind(); saveDraft(); } }, k)));
-      drawKind();
+      const kindSeg = h('div', { class: 'tabs', role: 'tablist', 'aria-label': '구분' });
+      const catBox = h('div');
+      const catVal = () => (catBox.querySelector('[name=category]') || {}).value || val('category');
+      const drawCat = (reset) => {
+        const cur = reset ? '' : catVal();
+        const list = (d.options && d.options[kind]) || [];
+        const opts = list.includes(cur) || !cur ? list : list.concat([cur]);
+        catBox.replaceChildren(UI.field('분류', opts.length ? UI.select('category', opts, cur, '선택') : h('input', { name: 'category', value: cur })));
+      };
+      const drawKind = (reset) => { drawCat(reset); kindSeg.replaceChildren(...KINDS.map((k) => h('button', { type: 'button', class: 'tab' + (k === kind ? ' on' : ''), role: 'tab', 'aria-selected': String(k === kind), onclick: () => { if (k === kind) return; kind = k; drawKind(true); saveDraft(); } }, k))); };
       const val = (k) => v[k] || '';
+      drawKind();
       const form = h('form', { class: 'narrow write-form' });
-      const cats = (d.options || []).slice();
       const keepBefore = it ? it.beforePhotos.slice() : [], keepAfter = it ? it.afterPhotos.slice() : [];
       const before = PhotoPicker(Math.max(0, 3 - keepBefore.length), '개선 전 사진');
       const after = PhotoPicker(Math.max(0, 3 - keepAfter.length), '개선 후 사진');
@@ -109,7 +116,7 @@
         h('div', { class: 'best-grid' },
           UI.field('공정', h('input', { name: 'process', value: val('process'), placeholder: '예: 23A60' })),
           UI.field('품목', h('input', { name: 'product', value: val('product'), placeholder: '예: 타이어' })),
-          UI.field('분류', cats.length ? UI.select('category', cats, val('category'), '선택') : h('input', { name: 'category', value: val('category') }))),
+          catBox),
         UI.field('개선 전 내용', h('textarea', { name: 'before', rows: 3, required: true, value: val('before'), placeholder: '예: 굴착기 엔진 투입대차 바퀴 불량' })),
         kept(keepBefore, 'before'), before.el,
         UI.field('개선 후 내용', h('textarea', { name: 'after', rows: 3, value: val('after'), placeholder: '예: 불량 바퀴 교체 완료' })),
