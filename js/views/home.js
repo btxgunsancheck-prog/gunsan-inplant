@@ -85,7 +85,7 @@ Router.add('/', (params, app) => {
   /* 알림을 아직 켜지 않은 직원에게 켜라고 안내한다(이미 켠 기기는 조용히 다시 등록). */
   const ps = Push.status();
   if (ps === 'granted') Push.sync();
-  const pushBanner = ps === 'default' || ps === 'install'
+  const pushBanner = Push.isMobile() && (ps === 'default' || ps === 'install')
     ? h('a', { class: 'push-banner', href: '#/account/push' },
       h('strong', null, '휴대폰 알림을 켜 주세요'),
       h('span', null, ps === 'install' ? '홈 화면에 추가하면 공지와 우수사원 할 일을 알림으로 받을 수 있습니다.' : '새 공지와 우수사원 할 일을 놓치지 않도록 알림을 켜 주세요.'))
