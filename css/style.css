@@ -1064,10 +1064,13 @@ table.data select:not([multiple]) { padding-right: 30px; background-position: ri
 .la-group::after { content: ""; position: absolute; inset: 0;
   background: linear-gradient(90deg, rgba(9, 32, 110, 0) 55%, rgba(9, 32, 110, 0.4) 70%, rgba(9, 32, 110, 0.72) 85%, rgba(9, 32, 110, 0.88) 100%); }
 .la-line { position: absolute; inset: 0; background: #eaf3ff;
-  clip-path: polygon(0 calc(49.6% - 1.5px), var(--kx) calc(63.1% - 1.5px), 100% calc(81.2% - 1.5px), 100% calc(81.2% + 1.5px), var(--kx) calc(63.1% + 1.5px), 0 calc(49.6% + 1.5px)); }
+  clip-path: polygon(0 calc(49.6% - 2.9px), var(--kx) calc(63.1% - 2.9px), 100% calc(81.2% - 2.9px), 100% calc(81.2% + 2.9px), var(--kx) calc(63.1% + 2.9px), 0 calc(49.6% + 2.9px)); }
+/* 아래 남색 띠: 시안처럼 왼쪽 사선 부분('안전한 현장' 위, x 0~17.9%)에만 얇은 하늘색 선 */
+.la-glow-bar { filter: drop-shadow(0 0 1.5px rgba(150, 195, 255, 0.9)); }
+.la-line-bar { background: #8fb8f5; clip-path: polygon(0 calc(85% - 1px), 17.9% calc(90.3% - 1px), 17.9% calc(90.3% + 1px), 0 calc(85% + 1px)); }
 .la-line-glow { position: absolute; inset: 0; pointer-events: none; filter: drop-shadow(0 0 2px rgba(150, 195, 255, 1)) drop-shadow(0 0 6px rgba(80, 140, 255, 0.85)) drop-shadow(0 0 12px rgba(60, 120, 255, 0.5)); }
 /* 아래 남색 띠(시안 실측): 왼쪽은 세모(800px에서 300px 지점 850px까지 사선), '더 나은 내일'까지는 같은 높이의 막대(850~856px), 그 뒤로 오른쪽 아래로 사선(1078px 지점 915px). 번짐 없음 */
-.la-bar { position: absolute; inset: 0; background: #002470; clip-path: polygon(0 85%, 24.9% 90.3%, 63.1% 91%, 70.6% 92.9%, 78.9% 94.8%, 89.5% 97.2%, 100% 99.7%, 100% 100%, 0 100%); }
+.la-bar { position: absolute; inset: 0; background: #002470; clip-path: polygon(0 85%, 17.9% 90.3%, 63.1% 91%, 70.6% 92.9%, 78.9% 94.8%, 89.5% 97.2%, 100% 99.7%, 100% 100%, 0 100%); }
 .la-brand { position: absolute; left: calc(var(--u) * 4.8); top: calc(var(--u) * 3.9); display: flex; flex-direction: column; gap: calc(var(--u) * 0.6); z-index: 2; }
 .la-brand img { width: calc(var(--u) * 15.6); height: auto; padding-bottom: calc(var(--u) * 0.45); border-bottom: max(2px, calc(var(--u) * 0.16)) solid var(--orange); }
 .la-brand span { color: #fff; font-size: calc(var(--u) * 1.85); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
@@ -1103,6 +1106,6 @@ table.data select:not([multiple]) { padding-right: 30px; background-position: ri
 .login-v2 .form-error:empty { display: none; }
 .lc-divider { position: relative; width: 70%; height: 1px; margin: calc(var(--u) * 1.4) 0 0; background: #d9dfeb; }
 .lc-divider i { position: absolute; left: 50%; top: -2px; width: 12px; height: 5px; border-radius: 3px; background: #c9d0de; transform: translateX(-50%); }
-.login-v2 .guest-entry { margin: calc(var(--u) * 1.4) 0 0; padding: 0; border: 0; width: 70%; }
+.login-v2 .guest-entry { margin: calc(var(--u) * 2.75) 0 0; padding: 0; border: 0; width: 70%; }
 .login-v2 .guest-entry .btn { height: calc(var(--u) * 3.6); min-height: 0; border: 2px solid var(--navy); color: var(--navy); background: #fff; font-size: calc(var(--u) * 1.2); font-weight: 700; }
 .login-v2 .guest-entry .btn:hover { background: #f1f5fd; }
