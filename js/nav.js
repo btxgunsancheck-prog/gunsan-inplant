@@ -205,7 +205,8 @@ const Nav = (() => {
     }
     bar.replaceChildren(
       tab('home', '#/', 'home', '홈'),
-      exec ? tab('notice', '#/board/notice', 'megaphone', '공지') : tab('write', '#/kpi/write', 'edit', '작성'),
+      exec ? tab('notice', '#/board/notice', 'megaphone', '공지')
+        : UI.hasAny(['PALLET_WRITE', 'ADMIN']) ? tab('pallet', '#/pallet/new', 'box', '팔레트 실적작성') : tab('pallet', '#/pallet', 'box', '팔레트 실적'),
       tab('qr', '#/qr', 'qr', 'QR점검'),
       tab('kpi', kpiHref(), 'chart', 'KPI'),
       h('button', { class: 'tab-item', type: 'button', 'aria-label': '전체 메뉴', onclick: () => setMobile(document.getElementById('mobile-menu').hidden) }, UI.icon('list'), h('span', null, '전체')));
@@ -216,7 +217,7 @@ const Nav = (() => {
     const bar = document.getElementById('tabbar');
     if (!bar || bar.hidden) return;
     const p = Router.path().split('?')[0];
-    const key = p === '/' ? 'home' : p.startsWith('/kpi/best') ? 'best' : p.startsWith('/kpi/write') ? 'write' : p.startsWith('/board/notice') ? 'notice' : p === '/qr' ? 'qr' : p.startsWith('/kpi') ? 'kpi' : '';
+    const key = p === '/' ? 'home' : p.startsWith('/kpi/best') ? 'best' : p.startsWith('/kpi/write') ? 'write' : p.startsWith('/pallet') ? 'pallet' : p.startsWith('/board/notice') ? 'notice' : p === '/qr' ? 'qr' : p.startsWith('/kpi') ? 'kpi' : '';
     bar.querySelectorAll('[data-tab]').forEach((a) => a.classList.toggle('on', a.dataset.tab === key));
   }
 

@@ -106,6 +106,5 @@ Router.add('/', (params, app) => {
       h('div', { class: 'tile team-tile team-video' }, UI.cardHead('play', '우리 팀 소개 영상'),
         h('button', { class: 'tv-thumb', type: 'button', 'aria-label': '우리 팀 소개 영상 재생', onclick: () => UI.videoModal('assets/video/team-intro.mp4', 'assets/video/team-intro-poster.jpg', '우리 팀 소개 영상') },
           h('img', { src: 'assets/video/team-intro-poster.jpg', alt: '', loading: 'lazy', decoding: 'async' }),
-          h('span', { class: 'tv-play' }, UI.icon('play'))),
-        h('p', { class: 'sub' }, '약 2분 · 눌러서 재생')))].filter(Boolean));
+          h('span', { class: 'tv-play' }, UI.icon('play')))))].filter(Boolean));
 });
