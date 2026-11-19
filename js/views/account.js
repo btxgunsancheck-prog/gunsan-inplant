@@ -72,9 +72,9 @@ Views.login = function () {
   }
   app.replaceChildren(h('div', { class: 'login login-split login-v2' },
     h('section', { class: 'login-art' },
-      h('div', { class: 'la-photo la-field' }), h('div', { class: 'la-photo la-gbg la-group' }),
+      h('div', { class: 'la-photo la-field' }), h('div', { class: 'la-photo la-group' }),
       h('div', { class: 'la-line-glow' }, h('div', { class: 'la-line' })),
-      h('div', { class: 'la-bar' }), h('div', { class: 'la-photo la-gbg la-banner' }),
+      h('div', { class: 'la-bar' }),
       h('div', { class: 'la-brand' }, h('img', { src: 'assets/login/logo-white.png', alt: 'BTRIPLE', width: 483, height: 90 }), h('span', null, '군산 사내물류팀')),
       h('h2', { class: 'la-head' }, '오늘의 현장을', h('br'), h('span', { class: 'la-hand' }, '함께'), ' 만들어갑니다.',
         h('img', { class: 'la-hamkke', src: 'assets/login/hamkke.png', alt: '', width: 176, height: 80 }),
@@ -84,8 +84,7 @@ Views.login = function () {
       svg('<defs><linearGradient id="lcg" x1="1" y1="0" x2="0.35" y2="0.55"><stop offset="0" stop-color="#c9ddfd"/><stop offset="0.16" stop-color="#e7effd"/><stop offset="0.45" stop-color="#f4f7fe"/><stop offset="1" stop-color="#f9fafe"/></linearGradient></defs>'
         + '<path d="M281 0 C 200 50, 120 110, 70 175 S 4 280, 0 340 L0 1000 L1000 1000 L1000 0 Z" fill="url(#lcg)"/>'
         + '<path d="M600 0 L700 0 L1000 210 L1000 320 Z" fill="#ffffff" opacity=".35"/>'
-        + '<path d="M281 0 C 200 50, 120 110, 70 175 S 4 280, 0 340 L0 1000" fill="none" stroke="#ffffff" stroke-width="2" vector-effect="non-scaling-stroke"/>'
-        + '<defs><linearGradient id="lcw" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e3eeff" stop-opacity=".12"/><stop offset=".45" stop-color="#eaf2ff" stop-opacity=".55"/><stop offset="1" stop-color="#f2f6fe" stop-opacity=".95"/></linearGradient></defs><path d="M127 0 L281 0 C 200 50, 120 110, 70 175 L30 255 Z" fill="url(#lcw)"/>', 'lc-shape', '0 0 1000 1000', ' preserveAspectRatio="none"'),
+        + '<path d="M281 0 C 200 50, 120 110, 70 175 S 4 280, 0 340 L0 1000" fill="none" stroke="#ffffff" stroke-width="2" vector-effect="non-scaling-stroke"/>', 'lc-shape', '0 0 1000 1000', ' preserveAspectRatio="none"'),
       svg('<path d="M1080 941 L1080 922 L1150 890 L1600 823 L1672 752 L1672 941 Z" fill="#c9dcfc"/><path d="M1135 941 L1672 810 L1672 941 Z" fill="#82aaf3"/>'
         + '<path d="M1212 941 L1672 846 L1672 941 Z" fill="#0745b0"/><path d="M1310 941 L1672 848 L1672 941 Z" fill="#002574"/>'
         + '<path d="M1450 941 L1672 853 L1672 868 L1478 941 Z" fill="#fc7700"/>', 'lc-deco lc-bottom', '1080 740 592 201', ' preserveAspectRatio="none"'),

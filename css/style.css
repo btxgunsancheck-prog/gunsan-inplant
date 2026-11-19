@@ -1057,18 +1057,17 @@ table.data select:not([multiple]) { padding-right: 30px; background-position: ri
   -webkit-mask-composite: source-in;
   mask-image: linear-gradient(90deg, #000 0, #000 calc(var(--u) * 17), rgba(0, 0, 0, 0.55) calc(var(--u) * 24), transparent calc(var(--u) * 33)), linear-gradient(180deg, #000 0, #000 30%, rgba(0, 0, 0, 0.72) 45%, rgba(0, 0, 0, 0.72) 100%);
   mask-composite: intersect; }
-/* 단체 사진: 경계선은 직선 두 개(왼쪽 49.6%에서 완만하게, 앞줄 흰 옷 남자 머리 위에서 꺾여 가파르게), 오른쪽으로 갈수록 남색이 진해진다 */
-.la-gbg { background: linear-gradient(90deg, rgba(9, 30, 100, 0) 58%, rgba(9, 30, 100, 0.55) 74%, rgba(9, 30, 100, 0.92) 92%),
-    url(../assets/login/group.jpg) no-repeat calc(var(--u) * -3.85) var(--gtop) / var(--gw) auto, linear-gradient(90deg, #15172a, #0f1e52); }
-.la-group { clip-path: polygon(0 49.6%, var(--kx) 63.1%, 100% 81.2%, 100% 100%, 0 100%); }
-/* 현수막은 아래 남색 띠 위로 올라와 보이게 한 겹 더 놓는다(시안과 같음) */
-.la-banner { z-index: 1; clip-path: polygon(calc(var(--u) * -3.85 + var(--gw) * 0.18) calc(var(--gtop) + var(--gw) * 0.2617), calc(var(--u) * -3.85 + var(--gw) * 0.91) calc(var(--gtop) + var(--gw) * 0.2617),
-  calc(var(--u) * -3.85 + var(--gw) * 0.91) calc(var(--gtop) + var(--gw) * 0.3993), calc(var(--u) * -3.85 + var(--gw) * 0.18) calc(var(--gtop) + var(--gw) * 0.3993)); }
+/* 단체 사진: 경계선은 직선 두 개(왼쪽 49.6%에서 완만하게, 앞줄 흰 옷 남자 머리 위에서 꺾여 가파르게).
+   group.jpg는 원본 사진 오른쪽 끝 빈 좌석 45px를 거울 반복해 400px 늘린 그림(폭 2000px = --gw의 1.25배)이다. 위에 파란 번짐을 오른쪽으로 갈수록 진하게 덮는다. */
+.la-group { background: url(../assets/login/group.jpg) no-repeat calc(var(--u) * -3.85) var(--gtop) / calc(var(--gw) * 1.25) auto, #15172a;
+  clip-path: polygon(0 49.6%, var(--kx) 63.1%, 100% 81.2%, 100% 100%, 0 100%); }
+.la-group::after { content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(9, 32, 110, 0) 55%, rgba(9, 32, 110, 0.4) 70%, rgba(9, 32, 110, 0.72) 85%, rgba(9, 32, 110, 0.88) 100%); }
 .la-line { position: absolute; inset: 0; background: #eaf3ff;
   clip-path: polygon(0 calc(49.6% - 1.5px), var(--kx) calc(63.1% - 1.5px), 100% calc(81.2% - 1.5px), 100% calc(81.2% + 1.5px), var(--kx) calc(63.1% + 1.5px), 0 calc(49.6% + 1.5px)); }
 .la-line-glow { position: absolute; inset: 0; pointer-events: none; filter: drop-shadow(0 0 2px rgba(150, 195, 255, 1)) drop-shadow(0 0 6px rgba(80, 140, 255, 0.85)) drop-shadow(0 0 12px rgba(60, 120, 255, 0.5)); }
-/* 아래 남색 띠: 왼쪽이 두껍고 오른쪽으로 갈수록 얇아지는 모양(시안 실측: 왼쪽 800px, 105px 지점 817px, 850px 지점 874px, 1078px 지점 915px), 번짐 없음 */
-.la-bar { position: absolute; inset: 0; background: #002470; clip-path: polygon(0 85%, 8.7% 86.8%, 70.6% 92.9%, 78.9% 94.8%, 89.5% 97.2%, 100% 99.7%, 100% 100%, 0 100%); }
+/* 아래 남색 띠(시안 실측): 왼쪽은 세모(800px에서 300px 지점 850px까지 사선), '더 나은 내일'까지는 같은 높이의 막대(850~856px), 그 뒤로 오른쪽 아래로 사선(1078px 지점 915px). 번짐 없음 */
+.la-bar { position: absolute; inset: 0; background: #002470; clip-path: polygon(0 85%, 24.9% 90.3%, 63.1% 91%, 70.6% 92.9%, 78.9% 94.8%, 89.5% 97.2%, 100% 99.7%, 100% 100%, 0 100%); }
 .la-brand { position: absolute; left: calc(var(--u) * 4.8); top: calc(var(--u) * 3.9); display: flex; flex-direction: column; gap: calc(var(--u) * 0.6); z-index: 2; }
 .la-brand img { width: calc(var(--u) * 15.6); height: auto; padding-bottom: calc(var(--u) * 0.45); border-bottom: max(2px, calc(var(--u) * 0.16)) solid var(--orange); }
 .la-brand span { color: #fff; font-size: calc(var(--u) * 1.85); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
