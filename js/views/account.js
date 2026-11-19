@@ -83,7 +83,8 @@ Views.login = function () {
     h('section', { class: 'login-card' },
       svg('<defs><linearGradient id="lcg" x1="1" y1="0" x2="0.35" y2="0.55"><stop offset="0" stop-color="#bcd3fb"/><stop offset="0.2" stop-color="#e2ecfd"/><stop offset="0.45" stop-color="#f4f7fe"/><stop offset="1" stop-color="#f9fafe"/></linearGradient></defs>'
         + '<path d="M148 0 C 110 90, 30 200, 0 300 L0 1000 L1000 1000 L1000 0 Z" fill="url(#lcg)"/>'
-        + '<path d="M560 0 L690 0 L1000 250 L1000 370 Z" fill="#ffffff" opacity=".45"/><path d="M780 0 L840 0 L1000 120 L1000 165 Z" fill="#ffffff" opacity=".3"/>'
+        + '<defs><linearGradient id="lcb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9c6fb" stop-opacity=".75"/><stop offset="1" stop-color="#cfe0fd" stop-opacity="0"/></linearGradient></defs>'
+        + '<path d="M774 0 L835 0 L655 165 L600 150 Z" fill="#ffffff" opacity=".4"/><path d="M860 0 L1000 0 L1000 40 L885 145 L735 120 Z" fill="url(#lcb)"/>'
         + '<path d="M148 0 C 110 90, 30 200, 0 300 L0 1000" fill="none" stroke="#ffffff" stroke-width="2" vector-effect="non-scaling-stroke"/>', 'lc-shape', '0 0 1000 1000', ' preserveAspectRatio="none"'),
       /* 하단 사선 장식: 시안(1672x941) 오른쪽 아래를 열마다 색을 재서 그린 층(연하늘, 하늘, 파랑, 남색, 주황). 화면이 넓어도 비율 고정, 왼쪽 끝까지 이어짐 */
       svg('<path d="M600 941 L600 900 L985 900 L1150 924 L1195 925 L1300 909 L1592 833 L1672 748 L1672 941 Z" fill="#c3d7fa"/><path d="M1185 941 L1195 925 L1300 909 L1592 833 L1672 812 L1672 941 Z" fill="#a6c3f7"/><path d="M1118 941 L1170 929 L1228 941 Z" fill="#7ca8f2"/><path d="M1528 941 L1528 884 L1592 833 L1672 809 L1672 941 Z" fill="#7ca8f2"/><path d="M1222 941 L1450 896 L1672 860 L1672 941 Z" fill="#1550bb"/><path d="M1305 941 L1672 846 L1672 941 Z" fill="#012675"/><path d="M1440 941 L1672 856 L1672 873 L1465 941 Z" fill="#fc7a00"/>', 'lc-deco lc-bottom', '600 740 1072 201', ' preserveAspectRatio="xMaxYMax meet"'),
