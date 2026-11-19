@@ -1083,12 +1083,12 @@ table.data select:not([multiple]) { padding-right: 30px; background-position: ri
 .la-values li { display: flex; align-items: center; gap: calc(var(--u) * 1.1); color: #fff; font-size: calc(var(--u) * 1.3); font-weight: 600; letter-spacing: -0.02em; padding: 0 calc(var(--u) * 2.7); border-left: 1px solid rgba(255, 255, 255, 0.45); line-height: 1; }
 .la-values li:first-child { padding-left: 0; border-left: 0; }
 .la-ico svg { width: calc(var(--u) * 2.75); height: calc(var(--u) * 2.75); display: block; }
-.login-v2 .login-card { position: absolute; top: 0; bottom: 0; right: 0; left: 64.6%; width: auto; max-width: none; padding: 0; background: transparent; border-radius: 0; box-shadow: none; display: block; z-index: 3; }
+.login-v2 .login-card { position: absolute; top: 0; bottom: 0; right: 0; left: 58.9%; width: auto; max-width: none; padding: 0; background: transparent; border-radius: 0; box-shadow: none; display: block; z-index: 3; }
 .lc-shape, .lc-deco { position: absolute; left: 0; right: 0; pointer-events: none; }
 .lc-shape { top: 0; bottom: 0; filter: drop-shadow(-2px 0 6px rgba(255, 255, 255, 0.55)); }
 .lc-bottom { bottom: 0; height: 21.36%; }
 .lc-shape svg, .lc-deco svg { width: 100%; height: 100%; display: block; }
-.lc-body { position: absolute; left: 13.8%; width: 80%; top: calc(var(--u) * 8.97); display: flex; flex-direction: column; align-items: center; }
+.lc-body { position: absolute; right: calc(var(--u) * 4.9); width: calc(var(--u) * 28.35); top: calc(var(--u) * 8.97); display: flex; flex-direction: column; align-items: center; }
 .login-v2 .login-logo { width: calc(var(--u) * 18.9); height: auto; transform: translateX(calc(var(--u) * 0.6)); }
 .login-v2 .login-card h1 { transform: translateX(calc(var(--u) * 0.6)); }
 .login-v2 .login-card h1 { margin: calc(var(--u) * 1.38) 0 calc(var(--u) * 2.15); color: #172a66; font-size: calc(var(--u) * 3.07); font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; }
