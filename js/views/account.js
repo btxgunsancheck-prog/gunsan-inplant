@@ -73,8 +73,8 @@ Views.login = function () {
   app.replaceChildren(h('div', { class: 'login login-split login-v2' },
     h('section', { class: 'login-art' },
       h('div', { class: 'la-photo la-field' }), h('div', { class: 'la-photo la-group' }),
-      h('div', { class: 'la-line-glow' }, h('div', { class: 'la-line' })),
       h('div', { class: 'la-bar' }),
+      h('div', { class: 'la-line-glow' }, h('div', { class: 'la-line' })), h('div', { class: 'la-line-glow la-glow-bar' }, h('div', { class: 'la-line la-line-bar' })),
       h('div', { class: 'la-brand' }, h('img', { src: 'assets/login/logo-white.png', alt: 'BTRIPLE', width: 483, height: 90 }), h('span', null, '군산 사내물류팀')),
       h('h2', { class: 'la-head' }, '오늘의 현장을', h('br'), h('span', { class: 'la-hand' }, '함께'), ' 만들어갑니다.',
         h('img', { class: 'la-hamkke', src: 'assets/login/hamkke.png', alt: '', width: 176, height: 80 }),
@@ -85,12 +85,10 @@ Views.login = function () {
         + '<path d="M281 0 C 200 50, 120 110, 70 175 S 4 280, 0 340 L0 1000 L1000 1000 L1000 0 Z" fill="url(#lcg)"/>'
         + '<path d="M600 0 L700 0 L1000 210 L1000 320 Z" fill="#ffffff" opacity=".35"/>'
         + '<path d="M281 0 C 200 50, 120 110, 70 175 S 4 280, 0 340 L0 1000" fill="none" stroke="#ffffff" stroke-width="2" vector-effect="non-scaling-stroke"/>', 'lc-shape', '0 0 1000 1000', ' preserveAspectRatio="none"'),
-      svg('<path d="M1080 941 L1080 922 L1150 890 L1600 823 L1672 752 L1672 941 Z" fill="#c9dcfc"/><path d="M1135 941 L1672 810 L1672 941 Z" fill="#82aaf3"/>'
-        + '<path d="M1212 941 L1672 846 L1672 941 Z" fill="#0745b0"/><path d="M1310 941 L1672 848 L1672 941 Z" fill="#002574"/>'
-        + '<path d="M1450 941 L1672 853 L1672 868 L1478 941 Z" fill="#fc7700"/>', 'lc-deco lc-bottom', '1080 740 592 201', ' preserveAspectRatio="none"'),
+      svg('<path d="M985 914 L1080 914 L1134 922 L1206 921 L1254 910 L1350 904 L1398 889 L1470 869 L1566 840 L1638 784 L1662 758 L1672 748 L1672 941 Z" fill="#c9dcfc"/><path d="M1134 941 L1134 939 L1206 923 L1254 911 L1350 904 L1398 899 L1422 883 L1470 869 L1566 841 L1638 818 L1672 809 L1672 941 Z" fill="#82aaf3"/><path d="M1230 941 L1230 935 L1254 929 L1278 923 L1302 917 L1326 911 L1374 900 L1398 899 L1446 897 L1470 894 L1566 871 L1638 853 L1672 846 L1672 941 Z" fill="#0745b0"/><path d="M1302 941 L1302 941 L1326 933 L1350 926 L1374 920 L1398 913 L1422 907 L1446 900 L1470 894 L1566 871 L1638 854 L1672 846 L1672 941 Z" fill="#002574"/><path d="M1472 941 L1518 912 L1566 894 L1614 876 L1662 858 L1672 855 L1672 872 L1662 871 L1638 878 L1614 885 L1566 899 L1518 914 L1494 925 Z" fill="#fc7700"/>', 'lc-deco lc-bottom', '985 740 687 201', ' preserveAspectRatio="none"'),
       h('div', { class: 'lc-body' },
         h('img', { src: 'assets/logo.png', alt: 'BTRIPLE', class: 'login-logo', width: 483, height: 90 }),
-        h('h1', null, '군산 사내물류팀'), form, h('div', { class: 'lc-divider', 'aria-hidden': 'true' }, h('i')), guestBox))));
+        h('h1', null, '군산 사내물류팀'), form, guestBox))));
 };
 
 Router.add('/account/password', (params, app) => {
