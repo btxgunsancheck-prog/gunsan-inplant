@@ -1092,7 +1092,7 @@ table.data select:not([multiple]) { padding-right: 30px; background-position: ri
 .lc-shape { top: 0; bottom: 0; filter: drop-shadow(-2px 0 6px rgba(255, 255, 255, 0.55)); }
 .lc-bottom { left: auto; right: 0; bottom: 0; width: calc(var(--u) * 64.11); height: calc(var(--u) * 12.02); }
 .lc-shape svg, .lc-deco svg { width: 100%; height: 100%; display: block; }
-.lc-body { position: absolute; right: calc(var(--u) * 4.9); width: calc(var(--u) * 28.35); top: calc(var(--u) * 8.97); display: flex; flex-direction: column; align-items: center; }
+.lc-body { position: absolute; right: calc(var(--u) * 7.3); width: calc(var(--u) * 28.35); top: calc(var(--u) * 8.97); display: flex; flex-direction: column; align-items: center; }
 .login-v2 .login-logo { width: calc(var(--u) * 18.9); height: auto; transform: translateX(calc(var(--u) * 0.6)); }
 .login-v2 .login-card h1 { transform: translateX(calc(var(--u) * 0.6)); }
 .login-v2 .login-card h1 { margin: calc(var(--u) * 1.38) 0 calc(var(--u) * 2.15); color: #172a66; font-size: calc(var(--u) * 3.07); font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; }
