@@ -10,7 +10,7 @@
 | assets/illust/logistics.svg | Logistics (로그인 화면) | unDraw | unDraw License |
 | js/ui.js ICONS (아이콘 20개) | Tabler Icons | https://tabler.io/icons | MIT (Copyright (c) 2020-2024 Paweł Kuna) |
 | js/views/account.js 로그인 아이콘 3개 | Tabler Icons(shield-check), Phosphor Icons(users-three, Iconify 경유), '더 나은 내일'은 Tabler 선 모양으로 막대+상승 화살표 조합 | https://tabler.io/icons, https://phosphoricons.com | MIT |
-| assets/login/field.jpg, group.jpg | 팀 자체 촬영 사진(현장, 단체영화관람) | 군산 사내물류팀 | 팀 소유 |
+| assets/login/field.jpg, group.jpg, group-m.jpg | 팀 자체 촬영 사진(현장, 단체영화관람) | 군산 사내물류팀 | 팀 소유 |
 | 글꼴 | Pretendard | https://github.com/orioncactus/pretendard | SIL Open Font License 1.1 |
 | 글꼴('함께' 두 글자) | Nanum Pen Script | Google Fonts | SIL Open Font License 1.1 |
 | 사진(HEIC) 변환 | heic2any (cdnjs에서 필요할 때만 불러옴) | https://github.com/alexcorvi/heic2any | MIT |
