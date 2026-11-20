@@ -12,8 +12,8 @@ Views.login = function () {
   document.getElementById('tabbar').hidden = true;
   const app = document.getElementById('app');
   const msg = h('p', { class: 'form-error', role: 'alert' });
-  const emp = h('input', { name: 'empNo', placeholder: pc ? '사번을 입력하세요' : null, autocomplete: 'username', autocapitalize: 'characters', spellcheck: 'false', required: true });
-  const pw = h('input', { name: 'password', type: 'password', placeholder: pc ? '비밀번호를 입력하세요' : null, autocomplete: 'current-password', required: true });
+  const emp = h('input', { name: 'empNo', placeholder: '사번을 입력하세요', autocomplete: 'username', autocapitalize: 'characters', spellcheck: 'false', required: true });
+  const pw = h('input', { name: 'password', type: 'password', placeholder: '비밀번호를 입력하세요', autocomplete: 'current-password', required: true });
   const remember = h('input', { type: 'checkbox', name: 'remember' });
   const btn = h('button', { class: 'btn wide', type: 'submit' }, '로그인');
   const form = h('form', { class: 'login-form', onsubmit: async (e) => {
@@ -59,15 +59,27 @@ Views.login = function () {
     [ico('<path d="M4 21v-4"/><path d="M9 21v-7"/><path d="M14 21v-9"/><path d="M19 21v-12"/><path d="M3 12l6 -5l4 3l7 -7"/><path d="M16 3h4v4"/>'), '더 나은 내일']
   ];
   if (!pc) {
-    /* 휴대폰: 이전 화면(물류 그림과 소개 위, 로그인 카드 아래) */
-    app.replaceChildren(h('div', { class: 'login login-split' },
-      h('section', { class: 'login-art' },
-        h('p', { class: 'login-tag', lang: 'en' }, 'Together for a Better Tomorrow'),
-        h('h2', null, '오늘의 현장을 ', h('em', { class: 'hand' }, '함께'), ' 기록합니다.'),
-        h('img', { src: 'assets/illust/logistics.svg', alt: '', class: 'login-illust', width: 400, height: 203, decoding: 'async' })),
-      h('section', { class: 'login-card' },
-        h('img', { src: 'assets/logo.png', alt: 'BTRIPLE', class: 'login-logo', width: 172, height: 32 }),
-        h('h1', null, '군산 사내물류팀'), form, guestBox)));
+    /* 2026-11-20 휴대폰 로그인(사용자 시안 941x1672를 실측해 맞춤): 위 단체 사진과 남색·주황 곡선, 로고, 문구, 로그인, 아래 현장 사진, 남색 띠의 가치 3개.
+       --m은 시안 1px 크기(화면 폭 / 941). 화면이 시안보다 길면 아래 현장 사진이 늘어난다. 단체 사진은 사용자가 쓰기로 결정한 사진(2026-11-19)을 휴대폰용으로 자른 것. */
+    app.replaceChildren(h('div', { class: 'login login-split login-m' },
+      h('div', { class: 'lm-stage' },
+        h('div', { class: 'lm-field' }),
+        h('div', { class: 'lm-top' }, svg('<defs><linearGradient id="lmb" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1a45b0" stop-opacity="0"/><stop offset=".45" stop-color="#1a45b0" stop-opacity=".55"/><stop offset="1" stop-color="#173f9f" stop-opacity=".92"/></linearGradient>'
+          + '<linearGradient id="lmf" x1="0" y1="0" x2="0" y2="560" gradientUnits="userSpaceOnUse"><stop offset=".912" stop-color="#f5f8fe"/><stop offset="1" stop-color="#f5f8fe" stop-opacity="0"/></linearGradient><linearGradient id="lmw" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d6e3fa" stop-opacity="0"/><stop offset="1" stop-color="#c9daf8"/></linearGradient></defs>'
+          + '<path d="M600 404 C 700 398, 820 384, 941 368 L941 466 C 830 432, 720 410, 600 404 Z" fill="url(#lmb)"/>'
+          + '<path d="M835 374 L880 368 L790 452 L752 440 Z" fill="#ffffff" opacity=".14"/>'
+          + '<path d="M0 334 C 150 368, 330 392, 470 400 L 610 402 L 470 401 C 330 410, 150 450, 0 500 Z" fill="#0b2c7d"/>'
+          + '<path d="M0 500 C 150 450, 330 410, 470 400 Q 560 395, 640 403 L 611 404 C 360 412, 150 460, 0 526 Z" fill="#f98003"/>'
+          + '<path d="M0 526 C 150 460, 360 412, 611 404 C 720 410, 830 432, 941 466 L941 560 L0 560 Z" fill="url(#lmf)"/>'
+          + '<path d="M690 414 C 800 428, 880 446, 941 466 L941 540 C 880 500, 790 448, 690 414 Z" fill="url(#lmw)" opacity=".75"/>', 'lm-curve', '0 0 941 560', ' preserveAspectRatio="none"')),
+        h('img', { src: 'assets/logo.png', alt: 'BTRIPLE', class: 'lm-logo', width: 483, height: 90 }),
+        h('h1', { class: 'lm-team' }, '군산 사내물류팀'),
+        h('h2', { class: 'lm-head' }, h('span', { class: 'lm-l1' }, '오늘의 현장을'),
+          h('img', { class: 'lm-hamkke', src: 'assets/login/hamkke.png', alt: '함께', width: 176, height: 80 }),
+          h('span', { class: 'lm-l2' }, ' 만들어갑니다.'),
+          svg('<path d="M17.6 55.8 L20.3 55.1 L24.0 54.1 L28.3 52.9 L33.2 51.6 L38.2 50.3 L43.4 49.0 L48.7 47.8 L54.5 46.4 L60.6 45.1 L66.8 43.7 L73.0 42.4 L79.1 41.1 L85.0 40.0 L90.9 38.8 L96.9 37.8 L102.9 36.7 L108.8 35.7 L114.8 34.7 L120.8 33.7 L126.7 32.8 L132.7 31.8 L138.7 30.9 L144.6 30.1 L150.6 29.3 L156.5 28.5 L162.5 27.8 L168.4 27.1 L174.4 26.4 L180.4 25.8 L186.3 25.3 L192.3 24.8 L198.2 24.3 L204.2 23.9 L210.2 23.5 L216.2 23.1 L222.2 22.8 L228.1 22.5 L234.1 22.2 L240.1 21.9 L246.1 21.7 L252.1 21.5 L258.1 21.2 L264.1 21.0 L270.1 20.8 L276.1 20.6 L282.0 20.4 L288.0 20.3 L294.0 20.2 L300.0 20.1 L305.9 20.2 L311.9 20.2 L317.9 20.3 L323.9 20.4 L329.9 20.6 L336.0 20.7 L342.3 20.9 L348.7 21.2 L354.8 21.4 L360.6 21.6 L365.9 21.9 L370.6 22.1 L374.7 22.3 L378.5 22.5 L382.1 22.8 L385.9 23.0 L389.9 23.4 L394.5 23.8 L399.7 24.3 L404.9 24.8 L409.8 25.4 L414.0 25.8 L417.0 26.0 L417.0 26.0 L414.0 25.4 L409.9 24.7 L405.1 23.9 L399.9 23.1 L394.7 22.3 L390.1 21.6 L386.1 21.1 L382.3 20.7 L378.7 20.3 L374.9 19.9 L370.7 19.5 L366.1 19.1 L360.8 18.7 L355.0 18.2 L348.8 17.7 L342.5 17.3 L336.2 16.8 L330.1 16.4 L324.1 16.1 L318.1 15.8 L312.1 15.5 L306.1 15.2 L300.0 15.0 L294.0 14.8 L288.0 14.7 L282.0 14.7 L275.9 14.7 L269.9 14.7 L263.9 14.7 L257.9 14.8 L251.9 14.8 L245.9 14.8 L239.9 14.9 L233.9 15.0 L227.9 15.1 L221.8 15.2 L215.8 15.4 L209.8 15.6 L203.8 15.8 L197.8 16.1 L191.7 16.4 L185.7 16.7 L179.6 17.1 L173.6 17.6 L167.6 18.0 L161.5 18.6 L155.5 19.1 L149.4 19.7 L143.4 20.4 L137.3 21.1 L131.3 21.9 L125.3 22.6 L119.2 23.5 L113.2 24.3 L107.2 25.1 L101.1 26.0 L95.1 26.9 L89.1 27.9 L83.0 28.8 L76.9 29.9 L70.8 31.0 L64.5 32.2 L58.2 33.4 L52.0 34.6 L46.1 35.8 L40.6 37.0 L35.3 38.1 L30.1 39.4 L25.2 40.5 L20.8 41.6 L17.1 42.5 L14.4 43.2 L13.5 43.5 L11.4 44.9 L10.0 47.0 L9.5 49.5 L10.0 52.0 L11.4 54.1 L13.5 55.5 Z" fill="#f66e14"/>', 'lm-swoosh', '0 0 430 65')),
+        h('div', { class: 'lm-body' }, form, guestBox)),
+      h('ul', { class: 'lm-values' }, values.map(([i, t]) => h('li', null, i, h('span', null, t.slice(0, t.lastIndexOf(' ')), h('br'), t.slice(t.lastIndexOf(' ') + 1)))))));
     return;
   }
   app.replaceChildren(h('div', { class: 'login login-split login-v2' },

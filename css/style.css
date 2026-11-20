@@ -1117,3 +1117,47 @@ table.data select:not([multiple]) { padding-right: 30px; background-position: ri
 
 .lc-corner { position: absolute; left: 0; bottom: 0; width: 41.5%; height: 7.3%; pointer-events: none; }
 .lc-corner svg { width: 100%; height: 100%; display: block; }
+
+/* 휴대폰 로그인(2026-11-20, 사용자 시안 941x1672 실측): --m은 시안 1px. 폭 600px보다 넓으면(태블릿) 가운데 600px 기둥으로 보인다.
+   시안 좌표: 단체 사진 0~520, 남색·주황 곡선 334~526, 로고 461, 문구 556~802, 사번 804, 입력칸 845/993(높이 75), 체크 1088, 로그인 1154(80), 게스트 1262(68), 현장 사진 1240~1541, 남색 띠 1541~1672. */
+.login-m { --m: calc(min(100vw, 600px) / 941); --navy: #0b2a6e; --ink: #08184a;
+  display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0; padding: 0; min-height: 100vh; min-height: 100dvh; text-align: left; overflow-x: hidden; background: #e9eef8; }
+.login-m > * { width: calc(var(--m) * 941); margin: 0 auto; }
+.lm-stage { position: relative; flex: 1 0 auto; display: flex; flex-direction: column; min-height: calc(var(--m) * 1541); overflow: hidden; background: #f5f8fe; }
+.lm-top { position: absolute; left: 0; top: 0; width: 100%; height: calc(var(--m) * 560); }
+.lm-top::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: calc(var(--m) * 511); background: url(../assets/login/group-m.jpg) no-repeat 0 calc(var(--m) * -15) / 100% auto, #1b1720; }
+.lm-curve, .lm-curve svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.lm-field { position: relative; z-index: 0; order: 2; flex: 1 0 calc(var(--m) * 301); margin-top: calc(var(--m) * -90); background: url(../assets/login/field.jpg) no-repeat 50% 40% / cover; }
+.lm-field::before { content: ""; position: absolute; left: 0; right: 0; top: -2px; height: calc(var(--m) * 150 + 2px); background: linear-gradient(180deg, #f5f8fe 0%, rgba(245, 248, 254, 0.85) 35%, rgba(245, 248, 254, 0) 100%); }
+.lm-logo { position: absolute; left: calc(var(--m) * 270); top: calc(var(--m) * 458); width: calc(var(--m) * 414); height: auto; }
+.login-m .lm-team { position: absolute; left: 0; right: 0; top: calc(var(--m) * 548); margin: 0; text-align: center; color: var(--ink); font-size: calc(var(--m) * 54.5); font-weight: 800; letter-spacing: 0.01em; line-height: 1.2; }
+.login-m .lm-head { position: absolute; left: 0; right: 0; top: 0; margin: 0; color: var(--ink); font-size: calc(var(--m) * 54); font-weight: 700; letter-spacing: 0.01em; line-height: 1.2; white-space: nowrap; }
+.lm-l1 { position: absolute; left: 0; right: 0; top: calc(var(--m) * 636); text-align: center; letter-spacing: 0.045em; }
+.lm-l2 { position: absolute; left: calc(var(--m) * 410); top: calc(var(--m) * 698); }
+.lm-hamkke { position: absolute; left: calc(var(--m) * 228); top: calc(var(--m) * 696); width: calc(var(--m) * 174); height: auto; }
+.lm-swoosh { position: absolute; left: calc(var(--m) * 270); top: calc(var(--m) * 757); width: calc(var(--m) * 336); height: calc(var(--m) * 53); pointer-events: none; }
+.lm-swoosh svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.lm-body { position: relative; z-index: 1; order: 1; margin: calc(var(--m) * 798) 0 0 calc(var(--m) * 111); width: calc(var(--m) * 722); display: flex; flex-direction: column; align-items: center; }
+.login-m .login-form { width: 100%; max-width: none; margin: 0; gap: 0; }
+.login-m .login-form .field { gap: calc(var(--m) * 9); }
+.login-m .login-form .field + .field { margin-top: calc(var(--m) * 26); }
+.login-m .login-form .field-label { color: var(--ink); font-size: max(13px, calc(var(--m) * 28)); font-weight: 700; line-height: max(17px, calc(var(--m) * 38)); }
+.login-m .login-form input:not([type=checkbox]):not([type=radio]):not([type=file]) { height: max(40px, calc(var(--m) * 75)); min-height: 0; padding: 0 max(12px, calc(var(--m) * 28)); border: 2px solid #d3d8e1; border-radius: calc(var(--m) * 24); background: #fbfcff; font-size: max(16px, calc(var(--m) * 28)); color: var(--ink); }
+.login-m .login-form input::placeholder { color: #9aa1af; }
+.login-m .login-form .check { margin-top: calc(var(--m) * 20); gap: calc(var(--m) * 20); min-height: calc(var(--m) * 38); color: var(--ink); font-size: max(13px, calc(var(--m) * 28)); font-weight: 600; }
+.login-m .login-form .check input { -webkit-appearance: none; appearance: none; flex: none; margin: 0; width: max(20px, calc(var(--m) * 38)); height: max(20px, calc(var(--m) * 38)); border: 2px solid #9aa2b4; border-radius: calc(var(--m) * 9); background: #fff; display: grid; place-content: center; cursor: pointer; }
+.login-m .login-form .check input:checked { background: var(--navy); border-color: var(--navy); }
+.login-m .login-form .check input:checked::after { content: ""; width: 28%; height: 50%; border: solid #fff; border-width: 0 2px 2px 0; transform: translateY(-10%) rotate(45deg); }
+.login-m .form-error { margin: calc(var(--m) * 12) 0 0; min-height: 0; font-size: max(13px, calc(var(--m) * 24)); }
+.login-m .form-error:empty { display: none; }
+.login-m .login-form .btn.wide { height: max(44px, calc(var(--m) * 80)); min-height: 0; margin-top: calc(var(--m) * 28); padding: 0; border-radius: 999px; background: #0a2a6b; border-color: #0a2a6b; color: #fff; font-size: max(15px, calc(var(--m) * 32)); font-weight: 700; }
+.login-m .guest-entry { width: max(230px, calc(var(--m) * 470)); margin: calc(var(--m) * 28) 0 0; padding: 0; border: 0; }
+.login-m .guest-entry .btn { height: max(38px, calc(var(--m) * 68)); min-height: 0; padding: 0; border: 2px solid #0a2a6b; border-radius: 999px; background: rgba(255, 255, 255, 0.9); color: #0a2a6b; font-size: max(13px, calc(var(--m) * 27)); font-weight: 700; letter-spacing: -0.02em; }
+.lm-values { box-sizing: content-box; display: grid; grid-template-columns: calc(var(--m) * 316) calc(var(--m) * 310) 1fr; height: calc(var(--m) * 131); margin: 0; padding: 0 calc((100% - var(--m) * 941) / 2) env(safe-area-inset-bottom); width: auto; align-self: stretch; list-style: none; background: #012570; }
+.lm-values li { display: flex; align-items: center; gap: calc(var(--m) * 16); padding-left: calc(var(--m) * 55); color: #fff; font-size: max(12px, calc(var(--m) * 28)); font-weight: 500; line-height: 1.22; letter-spacing: -0.02em; }
+.lm-values li:first-child { padding-left: calc(var(--m) * 88); }
+.lm-values li:nth-child(2) { gap: calc(var(--m) * 21); }
+.lm-values li:nth-child(3) { padding-left: calc(var(--m) * 48); gap: calc(var(--m) * 10); }
+.lm-values li + li { position: relative; }
+.lm-values li + li::before { content: ""; position: absolute; left: 0; top: calc(var(--m) * 29); bottom: calc(var(--m) * 28); width: 2px; background: rgba(255, 255, 255, 0.5); }
+.lm-values .la-ico svg { width: calc(var(--m) * 84); height: calc(var(--m) * 84); display: block; stroke-width: 1.75; }
