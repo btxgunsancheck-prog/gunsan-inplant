@@ -169,13 +169,15 @@
       btn.disabled = true;
       let postId = id;
       let ticket = '';
+      let calMsg = '';
       try {
         const res = await Api.call('boardSave', Object.assign({ id: id || null, board, title: title.value, body: body.value, pinned: pinned.checked, removePhotos: removed },
-          planSum ? { plan: { ym: planSum.ym, days: planSum.days, dist: planSum.dist, file: fileName } } : {}));
+          planSum ? { plan: { ym: planSum.ym, days: planSum.days, dist: planSum.dist, file: fileName, off: Object.keys(Plan.HOLIDAYS).filter((d) => d.indexOf(planSum.ym + '-') === 0) } } : {}));
         postId = res.id;
         ticket = res.ticket;
+        calMsg = res.calendar ? (res.calendar.ok ? ' QR장비점검 근무캘린더(' + Number(res.calendar.ym.slice(5)) + '월)에도 반영했습니다' + (res.calendar.special ? '(특근 ' + res.calendar.special + '일).' : '.') : ' QR장비점검 근무캘린더에는 반영하지 못했습니다. 관리자에게 알려 주세요.') : '';
       } catch (err) { UI.toast(err.message, true); btn.disabled = false; return; }
-      const finish = () => { UI.toast('저장했습니다.'); App.refreshInit(); Router.go('/board/' + board + '/' + postId); };
+      const finish = () => { UI.toast('저장했습니다.' + calMsg, !!calMsg && calMsg.indexOf('못했습니다') >= 0); App.refreshInit(); Router.go('/board/' + board + '/' + postId); };
       const jobs = picker.files.map((file) => ({ file }));
       if (jobs.length) sendPhotos(jobs, ticket, progress, finish); else finish();
     } },
