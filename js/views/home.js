@@ -104,7 +104,7 @@ Router.add('/', (params, app) => {
       h('div', { class: 'tile t-work' }, UI.cardHead('board', '업무 게시판', '#/board/work'), list(home.works, '#/board/work/', '등록된 글이 없습니다.')),
       h('div', { class: 'tile span3 t-quick' }, UI.cardHead('list', '주요 업무 바로가기'), h('div', { class: 'quick-grid' }, quick)),
       h('div', { class: 'tile team-tile team-video' }, UI.cardHead('play', '우리 팀 소개 영상'),
-        h('button', { class: 'tv-thumb', type: 'button', 'aria-label': '우리 팀 소개 영상 재생', onclick: () => UI.videoModal('assets/video/team-intro.mp4', 'assets/video/team-intro-poster.jpg', '우리 팀 소개 영상') },
-          h('img', { src: 'assets/video/team-intro-poster.jpg', alt: '', loading: 'lazy', decoding: 'async' }),
+        h('button', { class: 'tv-thumb', type: 'button', 'aria-label': '우리 팀 소개 영상 재생', onclick: () => UI.videoModal('assets/video/team-intro.mp4?v=20261122', 'assets/video/team-intro-poster.jpg?v=20261122', '우리 팀 소개 영상') },
+          h('img', { src: 'assets/video/team-intro-poster.jpg?v=20261122', alt: '', loading: 'lazy', decoding: 'async' }),
           h('span', { class: 'tv-play' }, UI.icon('play')))))].filter(Boolean));
 });
