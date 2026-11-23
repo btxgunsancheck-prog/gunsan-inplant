@@ -169,3 +169,26 @@ Router.add('/account/push', (params, app, alive) => {
   app.replaceChildren(UI.hero('휴대폰 알림', '공지, 건의, 우수사원 할 일을 휴대폰으로 받습니다.'), h('div', { class: 'section' }, box));
   draw();
 });
+
+/* 글자 크기. 이 기기에만 적용되고(로그아웃해도 유지), 로그인 화면은 그대로 둔다. 화면 전체를 키우는 방식이라 표와 버튼도 함께 커진다. */
+Router.add('/account/font', (params, app, alive) => {
+  const LEVELS = [['0', '보통', '지금 크기입니다.'], ['1', '크게', '15% 키웁니다.'], ['2', '아주 크게', '30% 키웁니다.']];
+  const cur = () => document.documentElement.dataset.fs || '0';
+  const box = h('div', { class: 'fs-opts' });
+  const draw = () => {
+    if (!alive()) return;
+    box.replaceChildren(...LEVELS.map(([v, name, note]) => h('button', {
+      class: 'fs-opt' + (cur() === v ? ' on' : ''), type: 'button', 'aria-pressed': String(cur() === v),
+      onclick: () => {
+        if (v === '0') delete document.documentElement.dataset.fs; else document.documentElement.dataset.fs = v;
+        try { if (v === '0') localStorage.removeItem('fontscale'); else localStorage.setItem('fontscale', v); } catch (e) { /* 저장하지 못해도 지금 화면에는 적용된다 */ }
+        draw();
+      }
+    }, h('strong', null, name), h('span', { class: 'sub' }, note))));
+  };
+  app.replaceChildren(UI.hero('글자 크기', '눈이 편한 크기를 골라 주세요. 이 기기에만 적용됩니다.'),
+    h('div', { class: 'section' }, h('div', { class: 'narrow' }, box,
+      h('p', { class: 'fs-sample' }, '이 글자 크기로 공지, KPI 표, 게시판이 보입니다. 오늘의 현장을 함께 기록합니다.'),
+      h('p', { class: 'sub' }, '로그인 화면은 크기가 바뀌지 않습니다.'))));
+  draw();
+});

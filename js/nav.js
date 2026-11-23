@@ -137,6 +137,7 @@ const Nav = (() => {
       h('div', { class: 'card-actions' },
         UI.has('GUEST') ? null : h('button', { type: 'button', onclick: () => fileIn.click() }, h('span', { class: 'card-ico' }, '✎'), '사진 변경'),
         UI.has('GUEST') || UI.has('VIEW_EXEC') ? null : h('a', { href: '#/account/push', onclick: () => setAvatar(false) }, h('span', { class: 'card-ico' }, '\u2709'), '휴대폰 알림'),
+        h('a', { href: '#/account/font', onclick: () => setAvatar(false) }, h('span', { class: 'card-ico' }, 'A'), '글자 크기'),
         u.empNo === 'GUEST' ? null : h('a', { href: '#/account/password', onclick: () => setAvatar(false) }, h('span', { class: 'card-ico' }, '⚿'), '비밀번호'),
         h('button', { type: 'button', onclick: () => App.logout() }, h('span', { class: 'card-ico' }, '⇥'), u.empNo === 'GUEST' ? '나가기' : '로그아웃')),
       fileIn);

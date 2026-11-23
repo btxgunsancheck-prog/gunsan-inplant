@@ -380,7 +380,44 @@
   const SIDE = [['#/admin', 'home', '대시보드', () => true], ['#/admin/users', 'people', '사용자 관리', () => UI.has('ADMIN')],
     ['#/kpi/team', 'chart', 'KPI 팀 현황', () => UI.has('KPI_VIEW_ALL')], ['#/suggest/all', 'chat', '건의사항 관리', () => UI.hasAny(['SUGGEST_VIEW', 'SUGGEST_READ'])],
     ['#/award', 'trophy', '우수사원 관리', () => true], ['#/kpi/monthly?tab=P2', 'lock', '장비면허 명부', () => UI.has('KPI_MANAGER') && !UI.has('VIEW_EXEC')], ['#/admin/license', 'lock', '장비면허 명부', () => UI.has('VIEW_EXEC')],
-    ['#/admin/targets', 'list', '목표·평가기준', () => UI.hasAny(['ADMIN', 'KPI_TEAM', 'VIEW_EXEC'])], ['#/admin/data', 'gear', '데이터 관리', () => UI.hasAny(['ADMIN', 'VIEW_EXEC'])]];
+    ['#/admin/targets', 'list', '목표·평가기준', () => UI.hasAny(['ADMIN', 'KPI_TEAM', 'VIEW_EXEC'])], ['#/admin/usage', 'clock', '접속 현황', () => UI.hasAny(['ADMIN', 'VIEW_EXEC'])], ['#/admin/data', 'gear', '데이터 관리', () => UI.hasAny(['ADMIN', 'VIEW_EXEC'])]];
+
+  /* 접속 현황: 이번 주(월요일부터) 몇 명이 들어왔는지, 직별 인원, 14일 추이, 14일 이상 안 들어온 직원 */
+  Router.add('/admin/usage', (params, app, alive) => {
+    if (!UI.hasAny(['ADMIN', 'VIEW_EXEC'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
+    const main = h('div', { class: 'admin-main' }, UI.skeleton(8));
+    const side = h('nav', { class: 'admin-side', 'aria-label': '관리자 메뉴' }, h('p', { class: 'admin-side-h' }, UI.icon('gear'), '관리자 메뉴'),
+      SIDE.filter((x) => x[3]()).map(([href, icon, label]) => h('a', { class: href === '#/admin/usage' ? 'on' : '', href }, UI.icon(icon), label)));
+    const WD = ['일', '월', '화', '수', '목', '금', '토'];
+    const load = () => Api.call('usageStats').then((d) => {
+      if (!alive()) return;
+      const canvas = h('canvas');
+      const card = (label, value, sub) => h('div', { class: 'stat plain' }, h('div', null, h('p', null, label), h('strong', null, value), sub ? h('span', { class: 'sub' }, sub) : null));
+      const pct = (n) => (d.total ? Math.round(n / d.total * 100) : 0) + '%';
+      const quietBy = {};
+      d.quiet.forEach((x) => { (quietBy[x.dept || '소속 없음'] = quietBy[x.dept || '소속 없음'] || []).push(x.name + (x.last ? '(' + x.last.slice(5) + ')' : '(기록 없음)')); });
+      fill(main, pcNotice(),
+        h('div', { class: 'admin-head' }, h('div', null, h('h1', null, '접속 현황'), h('p', { class: 'sub' }, '앱을 연 직원 수입니다. 기록은 ' + (d.since || d.today) + '부터 쌓입니다. 외부 열람·열람 전용 계정은 뺍니다.')), h('span', { class: 'date-pill' }, UI.icon('clock'), d.today)),
+        h('div', { class: 'stat-grid' },
+          card('오늘', d.todayN + '명', pct(d.todayN)), card('이번 주(월요일부터)', d.weekN + '명', pct(d.weekN)),
+          card('지난주', d.lastWeekN + '명', pct(d.lastWeekN)), card('최근 30일', d.d30N + '명', pct(d.d30N))),
+        h('div', { class: 'panel-grid' },
+          h('div', { class: 'panel' }, UI.cardHead('chart', '일별 접속 인원 (최근 14일)'), h('div', { class: 'chart-area' }, canvas)),
+          h('div', { class: 'panel' }, UI.cardHead('people', '직별 접속 (전체 ' + d.total + '명)'),
+            h('div', { class: 'table-wrap' }, h('table', { class: 'data' }, h('thead', null, h('tr', null, ['직', '직원', '이번 주', '최근 30일'].map((x) => h('th', null, x)))),
+              h('tbody', null, d.depts.map((x) => h('tr', null, h('td', null, x.dept), h('td', null, x.total + '명'), h('td', null, x.week + '명'), h('td', null, x.d30 + '명')))))))),
+        h('div', { class: 'panel' }, UI.cardHead('todo', '최근 14일 접속하지 않은 직원 ' + d.quietN + '명'),
+          d.quietN ? h('div', null, Object.keys(quietBy).map((k) => h('p', { class: 'quiet-row' }, h('strong', null, k), h('span', null, quietBy[k].join(', ')))),
+            d.quietN > d.quiet.length ? h('p', { class: 'sub' }, '앞의 ' + d.quiet.length + '명만 보여 줍니다.') : null,
+            h('p', { class: 'sub' }, '괄호는 마지막으로 접속한 날(월-일)입니다.')) : h('p', { class: 'sub' }, '모두 최근 14일 안에 접속했습니다.')));
+      const draw = () => new window.Chart(canvas, { type: 'bar', data: { labels: d.days.map((x) => x.d.slice(8) + '(' + WD[new Date(x.d + 'T12:00:00Z').getUTCDay()] + ')'), datasets: [{ label: '접속 인원', data: d.days.map((x) => x.n), backgroundColor: '#0b2282', borderRadius: 6, maxBarThickness: 36 }] },
+        options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { min: 0, max: Math.max(d.total, 1), ticks: { precision: 0 } } } } });
+      if (window.Chart) draw();
+      else { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'; s.onload = draw; document.head.append(s); }
+    }, (e) => { if (alive()) main.replaceChildren(UI.error(e.message, load)); });
+    app.replaceChildren(h('div', { class: 'admin-shell' }, side, main));
+    load();
+  });
 
   Router.add('/admin', (params, app, alive) => {
     if (!UI.hasAny(['ADMIN', 'VIEW_EXEC', 'KPI_TEAM'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
@@ -400,6 +437,7 @@
           stat('#/suggest/all', 'chat', '답변 전 건의', d.suggestOpen + '건', d.suggestOpen ? 'warn' : ''),
           stat('#/award', 'trophy', '개선 제안 결정 대기', d.proposals === null ? '-' : d.proposals + '건', d.proposals ? 'warn' : ''),
           stat('#/admin/users', 'people', '사용 중 직원', d.users.active + '명', d.users.locked ? 'bad' : ''),
+          d.usage ? stat('#/admin/usage', 'clock', '이번 주 접속', d.usage.week + ' / ' + d.usage.total + '명') : null,
           d.errors === null || d.errors === undefined ? null : stat('#/admin/data', 'gear', '최근 7일 오류', d.errors + '건', d.errors ? 'warn' : '')),
         d.users.locked ? h('p', { class: 'note' }, '로그인 잠금 상태 직원이 ' + d.users.locked + '명 있습니다. 사용자 관리에서 잠금을 풀 수 있습니다.') : null,
         h('div', { class: 'panel-grid' },
