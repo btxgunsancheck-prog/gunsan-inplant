@@ -11,7 +11,7 @@ const Home3D = (() => {
     introSrc() {
       const c = navigator.connection || {};
       const phone = Math.min(window.innerWidth, screen.width || 9999) < 834 || c.saveData === true;
-      return 'assets/video/' + (phone ? 'team-intro-m.mp4?v=20261123b' : 'team-intro.mp4?v=20261123b');
+      return 'assets/video/' + (phone ? 'team-intro-m.mp4?v=20261123d' : 'team-intro.mp4?v=20261123d');
     },
     element() {
       if (host) return host;
