@@ -194,6 +194,8 @@
         postId = res.id;
         ticket = res.ticket;
         calMsg = res.calendar ? (res.calendar.ok ? ' QR장비점검 근무캘린더(' + Number(res.calendar.ym.slice(5)) + '월)에도 반영했습니다' + (res.calendar.special ? '(특근 ' + res.calendar.special + '일).' : '.') : ' QR장비점검 근무캘린더에는 반영하지 못했습니다. 관리자에게 알려 주세요.') : '';
+        const mhr = res.calendar && res.calendar.mh;
+        if (mhr) calMsg += ' 공수 현황에 ' + Number(mhr.ym.slice(5)) + '월 생산 ' + mhr.prod + '대' + (mhr.contract !== null && mhr.contract !== undefined ? ', 계약 인원 ' + mhr.contract + '명(' + mhr.label + ')을 반영했습니다.' : '을 반영했습니다(계약 인원표를 올리면 계약 인원도 채워집니다).');
       } catch (err) { UI.toast(err.message, true); btn.disabled = false; return; }
       const finish = () => { UI.toast('저장했습니다.' + calMsg, !!calMsg && calMsg.indexOf('못했습니다') >= 0); App.refreshInit(); Router.go('/board/' + board + '/' + postId); };
       const jobs = picker.files.map((file) => ({ file }));

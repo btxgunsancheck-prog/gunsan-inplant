@@ -162,6 +162,81 @@ const MH = (() => {
     };
   }
 
+  /* ---------- 계약 인원표(엑셀 '사내물류팀' 시트) ----------
+     머리글 줄의 '100대/월' 같은 칸에서 구간을 읽고, 아래 업무 줄을 직(왼쪽 두 번째 열)별로 더한다. '총계' 줄에서 멈춘다. */
+  function parseContract(XLSX, data) {
+    const wb = XLSX.read(data, { type: 'array' });
+    const hasBand = (ws) => { for (const k of Object.keys(ws)) { if (k[0] !== '!' && /^\s*\d+\s*대\s*\/\s*월\s*$/.test(String(ws[k].v))) return true; } return false; };
+    let name = wb.SheetNames.find((n) => n.replace(/\s/g, '') === '사내물류팀' && hasBand(wb.Sheets[n])) || wb.SheetNames.find((n) => hasBand(wb.Sheets[n]));
+    if (!name) return { errors: ['"몇 대/월" 구간 머리글(예: 100대/월)이 있는 시트를 찾지 못했습니다. 월 생산대수별 계약 인원 엑셀인지 확인해 주세요.'] };
+    const ws = wb.Sheets[name];
+    const R = XLSX.utils.decode_range(range(ws));
+    let hr = -1; let cols = [];
+    for (let r = R.s.r; r <= Math.min(R.e.r, 40) && hr < 0; r++) {
+      const found = [];
+      for (let c = R.s.c; c <= Math.min(R.e.c, 40); c++) {
+        const cell = ws[XLSX.utils.encode_cell({ r, c })];
+        const m = cell ? String(cell.v).match(/^\s*(\d+)\s*대\s*\/\s*월\s*$/) : null;
+        if (m) found.push({ c, low: Number(m[1]) });
+      }
+      if (found.length >= 2) { hr = r; cols = found; }
+    }
+    if (hr < 0) return { errors: ['구간 머리글 줄을 찾지 못했습니다.'] };
+    const gc = cols[0].c - 2;
+    if (gc < 0) return { errors: ['직(구분) 열을 찾지 못했습니다.'] };
+    const groups = []; const idx = {};
+    let totals = null;
+    for (let r = hr + 1; r <= R.e.r; r++) {
+      const g = String((ws[XLSX.utils.encode_cell({ r, c: gc })] || {}).v || '').trim();
+      if (/총\s*계/.test(g)) { totals = cols.map((x) => n((ws[XLSX.utils.encode_cell({ r, c: x.c })] || {}).v)); break; }
+      const task = String((ws[XLSX.utils.encode_cell({ r, c: gc + 1 })] || {}).v || '').trim();
+      if (!g || !task) continue;
+      if (idx[g] === undefined) { idx[g] = groups.length; groups.push({ name: g, values: cols.map(() => 0) }); }
+      cols.forEach((x, k) => { groups[idx[g]].values[k] += n((ws[XLSX.utils.encode_cell({ r, c: x.c })] || {}).v); });
+    }
+    if (!groups.length) return { errors: ['업무 줄을 읽지 못했습니다.'] };
+    groups.forEach((g) => { g.values = g.values.map((v) => Math.round(v * 100) / 100); });
+    const sums = cols.map((_, k) => Math.round(groups.reduce((a, g) => a + g.values[k], 0) * 100) / 100);
+    return { errors: [], sheet: name, brackets: cols.map((x) => x.low), groups, sums, fileTotals: totals, same: !totals || totals.every((v, k) => Math.abs(v - sums[k]) < 0.001) };
+  }
+
+  /* ---------- 월별 기록 CSV(연월, 일CAPA, 월생산량, 운영인원, 계약인원). 엑셀에서 복사한 탭 구분도 읽는다 ---------- */
+  function parseMonthCsv(text) {
+    const src = String(text || '').replace(/^﻿/, '');
+    const delim = src.indexOf('\t') >= 0 && src.split('\n')[0].indexOf('\t') >= 0 ? '\t' : ',';
+    const rows = []; let row = []; let cell = ''; let q = false;
+    for (let i = 0; i < src.length; i++) {
+      const c = src[i];
+      if (q) { if (c === '"' && src[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+      else if (c === '"') q = true;
+      else if (c === delim) { row.push(cell); cell = ''; }
+      else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+      else if (c !== '\r') cell += c;
+    }
+    if (cell || row.length) { row.push(cell); rows.push(row); }
+    const norm = (s) => String(s || '').replace(/\s/g, '');
+    const hi = rows.findIndex((r) => r.some((x) => norm(x) === '연월'));
+    if (hi < 0) return { errors: ['머리글 줄(연월, 일CAPA, 월생산량, 운영인원, 계약인원)을 찾지 못했습니다.'] };
+    const head = rows[hi].map(norm);
+    const col = { ym: head.indexOf('연월'), capa: head.indexOf('일CAPA'), prod: head.indexOf('월생산량'), staff: head.indexOf('운영인원'), contract: head.indexOf('계약인원') };
+    const out = []; const errors = [];
+    rows.slice(hi + 1).forEach((r, i) => {
+      if (!r.some((x) => String(x).trim())) return;
+      const ym = String(r[col.ym] || '').trim().replace(/[./]/g, '-').replace(/^(\d{4})-(\d)$/, '$1-0$2');
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(ym)) { errors.push((hi + i + 2) + '번째 줄: 연월(예: 2026-07)을 확인해 주세요.'); return; }
+      const o = { ym };
+      ['capa', 'prod', 'staff', 'contract'].forEach((k) => {
+        const v = col[k] >= 0 ? String(r[col[k]] || '').trim().replace(/,/g, '') : '';
+        if (v === '') { o[k] = ''; return; }
+        if (!isFinite(Number(v))) errors.push((hi + i + 2) + '번째 줄: ' + k + ' 값이 숫자가 아닙니다.'); else o[k] = Number(v);
+      });
+      out.push(o);
+    });
+    return { errors, rows: out, missingCols: Object.keys(col).filter((k) => col[k] < 0) };
+  }
+
+  const MONTH_CSV_SAMPLE = '﻿연월,일CAPA,월생산량,운영인원,계약인원\r\n2026-07,17,345,59,\r\n2026-08,,,,\r\n';
+
   /* 서버로 보낼 모양(엑셀에서만 쓰는 확인용 값은 뺀다) */
   function payload(p) {
     return p.tasks.map((t) => ({
@@ -173,6 +248,6 @@ const MH = (() => {
 
   const fmt = (v, d) => (v === '' || v === null || v === undefined ? '' : (Math.round(Number(v) * Math.pow(10, d === undefined ? 2 : d)) / Math.pow(10, d === undefined ? 2 : d)).toLocaleString('ko-KR', { maximumFractionDigits: d === undefined ? 2 : d }));
 
-  return { MODELS, FIXED, rowMin, moveMin, calcTask, parse, payload, fmt };
+  return { MODELS, FIXED, rowMin, moveMin, calcTask, parse, parseContract, parseMonthCsv, MONTH_CSV_SAMPLE, payload, fmt };
 })();
 if (typeof module !== 'undefined') module.exports = MH;

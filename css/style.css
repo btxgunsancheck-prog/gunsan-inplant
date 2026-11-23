@@ -1221,3 +1221,27 @@ html[data-fs='2'] body:not([data-page='login']) { zoom: 1.3; }
 .lib-tabs { margin-bottom: 10px; flex-wrap: wrap; overflow: visible; height: auto; }
 .lib-count { margin-left: 5px; font-size: 12px; opacity: .7; }
 .lib-general-up { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+
+/* 공수 대시보드 */
+.mhd { margin-bottom: 28px; padding: 22px; border-radius: var(--r-card); background: #fff; box-shadow: var(--shadow-1); }
+.mhd-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+.mhd-main { margin: 0; font-size: 20px; font-weight: 700; }
+.mhd-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+.mhd-card { position: relative; display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 14px 14px 12px 18px; border: 1px solid var(--line, #e5e8ef); border-radius: 12px; background: #fff; color: var(--text); font: inherit; cursor: pointer; opacity: .55; overflow: hidden; }
+.mhd-card.on { opacity: 1; box-shadow: var(--shadow-1); }
+.mhd-accent { position: absolute; left: 0; top: 0; bottom: 0; width: 5px; }
+.mhd-label { font-size: 13px; color: var(--text-sub); }
+.mhd-card strong { font-size: 24px; line-height: 1.2; }
+.mhd-ctrls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.mhd-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.mhd-ctrl { flex: 0 0 40px; font-size: 13px; color: var(--text-sub); }
+.mhd-pill { border: 1px solid var(--line, #dfe3ec); background: #fff; color: var(--text-sub); border-radius: 980px; padding: 6px 14px; font-size: 14px; cursor: pointer; }
+.mhd-pill.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.mhd-chart-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; margin: 14px 0 6px; }
+.mhd-title { font-weight: 700; }
+.mhd-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--text-sub); }
+.mhd-leg { display: inline-flex; align-items: center; gap: 6px; }
+.mhd-sq { display: inline-block; width: 18px; height: 3px; }
+.mhd-chart { position: relative; height: 340px; }
+.mh-admin .block-h { margin-top: 22px; }
+@media (max-width: 833px) { .mhd { padding: 16px 12px; } .mhd-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .mhd-chart { height: 300px; } .mhd-main { font-size: 17px; } }

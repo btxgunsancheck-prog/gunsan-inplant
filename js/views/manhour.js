@@ -10,6 +10,230 @@
   const ymLabel = (ym) => (ym ? ym.slice(0, 4) + '년 ' + Number(ym.slice(5, 7)) + '월' : '');
   const shiftYm = (ym, k) => { const [y, m] = ym.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 + k, 1)); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0'); };
 
+
+  /* ---------- 대시보드(맨 위) ----------
+     연도와 항목을 눌러 켜고 끈다(여러 개 동시에). 연도를 안 고르면 연도별 연평균, 한 해 이상 고르면 월별 선.
+     항목: 일 생산CAPA, 월 생산량, 운영인원, 계약인원, 계약대비 차이(계약-운영). */
+  const ITEMS = [
+    { key: 'capa', label: '일 생산CAPA', axis: 'yL', line: '#378ADD', bg: 'rgba(55,138,221,0.10)', txt: '#185FA5', unit: '' },
+    { key: 'prod', label: '월 생산량', axis: 'yR', line: '#1D9E75', bg: 'rgba(29,158,117,0.10)', txt: '#0F6E56', unit: '대' },
+    { key: 'staff', label: '운영인원', axis: 'yL', line: '#D85A30', bg: 'rgba(216,90,48,0.10)', txt: '#993C1D', unit: '명' },
+    { key: 'contract', label: '계약인원', axis: 'yL', line: '#C58A00', bg: 'rgba(197,138,0,0.10)', txt: '#8A6100', unit: '명' },
+    { key: 'diff', label: '계약대비 차이', axis: 'yL', line: '#8B5CF6', bg: 'rgba(139,92,246,0.10)', txt: '#5B21B6', unit: '명' }
+  ];
+  const YEAR_COLORS = ['#378ADD', '#D85A30', '#1D9E75', '#8B5CF6', '#C58A00', '#0E7C86', '#B83280'];
+  const YEAR_DASH = [[], [8, 4], [2, 3], [10, 3, 2, 3], [4, 4], [1, 4], [6, 2]];
+  const has = (v) => v !== '' && v !== null && v !== undefined;
+  const mean = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : null);
+  const r1 = (v) => (v === null ? null : Math.round(v * 10) / 10);
+  const WD_LABEL = (ym) => ym.slice(0, 4) + '년 ' + Number(ym.slice(5)) + '월';
+  const fmtVal = (key, v) => (v === null || v === undefined ? '-' : key === 'prod' ? Math.round(v).toLocaleString('ko-KR') : MH.fmt(v, 1));
+
+  function dashboard(d) {
+    const rows = d.dash.months.map((m) => {
+      const o = { ym: m.ym, y: m.ym.slice(0, 4), m: Number(m.ym.slice(5)) };
+      ['capa', 'prod', 'staff', 'contract'].forEach((k) => { o[k] = has(m[k]) ? Number(m[k]) : null; });
+      o.diff = o.contract !== null && o.staff !== null ? Math.round((o.contract - o.staff) * 100) / 100 : null;
+      return o;
+    });
+    const years = Array.from(new Set(rows.map((r) => r.y))).sort();
+    const sel = { years: [], items: ['capa', 'prod', 'staff', 'contract'] };
+    const byYear = (y) => rows.filter((r) => r.y === y);
+    const yearAvg = (y, k) => { const v = byYear(y).map((r) => r[k]).filter((x) => x !== null); return v.length ? mean(v) : null; };
+    let chart = null;
+    const cards = h('div', { class: 'mhd-cards' });
+    const yearBar = h('div', { class: 'mhd-row' });
+    const itemBar = h('div', { class: 'mhd-row' });
+    const title = h('span', { class: 'mhd-title' });
+    const legend = h('div', { class: 'mhd-legend' });
+    const canvas = h('canvas', { role: 'img', 'aria-label': '공수 현황 그래프' });
+    const tableBox = h('div');
+    const focusYear = () => (sel.years.length ? sel.years[sel.years.length - 1] : (years[years.length - 1] || ''));
+
+    function drawCards() {
+      const y = focusYear();
+      const sub = y ? y + '년 월평균' : '';
+      cards.replaceChildren(...ITEMS.map((it) => {
+        const v = y ? (it.key === 'prod' ? yearAvg(y, 'prod') : yearAvg(y, it.key)) : null;
+        const shown = v === null ? '-' : (it.key === 'diff' && v > 0 ? '+' : '') + fmtVal(it.key, v) + it.unit;
+        return h('button', { type: 'button', class: 'mhd-card' + (sel.items.includes(it.key) ? ' on' : ''), 'aria-pressed': String(sel.items.includes(it.key)),
+          onclick: () => toggleItem(it.key) },
+          h('span', { class: 'mhd-accent', style: 'background:' + it.line }), h('span', { class: 'mhd-label' }, it.label),
+          h('strong', { style: 'color:' + it.txt }, shown), h('span', { class: 'sub' }, sub));
+      }));
+    }
+    function drawBars() {
+      yearBar.replaceChildren(h('span', { class: 'mhd-ctrl' }, '연도'),
+        h('button', { type: 'button', class: 'mhd-pill' + (!sel.years.length ? ' on' : ''), 'aria-pressed': String(!sel.years.length), onclick: () => { sel.years = []; render(); } }, '전체'),
+        ...years.map((y) => h('button', { type: 'button', class: 'mhd-pill' + (sel.years.includes(y) ? ' on' : ''), 'aria-pressed': String(sel.years.includes(y)), onclick: () => toggleYear(y) }, y)));
+      itemBar.replaceChildren(h('span', { class: 'mhd-ctrl' }, '항목'),
+        ...ITEMS.map((it) => h('button', { type: 'button', class: 'mhd-pill item' + (sel.items.includes(it.key) ? ' on' : ''), 'aria-pressed': String(sel.items.includes(it.key)), onclick: () => toggleItem(it.key),
+          style: sel.items.includes(it.key) ? 'background:' + it.line + ';border-color:' + it.line : '' }, it.label)));
+    }
+    function toggleYear(y) {
+      sel.years = sel.years.includes(y) ? sel.years.filter((x) => x !== y) : sel.years.concat(y).sort();
+      render();
+    }
+    function toggleItem(k) {
+      if (sel.items.includes(k)) { if (sel.items.length === 1) { UI.toast('항목은 하나 이상 켜 두어야 합니다.'); return; } sel.items = sel.items.filter((x) => x !== k); }
+      else sel.items = sel.items.concat(k);
+      render();
+    }
+
+    function datasets() {
+      const items = ITEMS.filter((it) => sel.items.includes(it.key));
+      const sets = [];
+      if (!sel.years.length) {
+        const labels = years.map((y) => y + '년');
+        items.forEach((it) => sets.push(mk(it, it.label, years.map((y) => r1(yearAvg(y, it.key)) === null ? null : (it.key === 'prod' ? Math.round(yearAvg(y, it.key)) : r1(yearAvg(y, it.key)))), it.line, it.key === 'staff' ? [6, 3] : [])));
+        return { labels, sets, title: years.length ? '연도별 월평균 추이 (' + years[0] + '–' + years[years.length - 1] + ')' : '연도별 추이' };
+      }
+      const labels = Array.from({ length: 12 }, (_, i) => (i + 1) + '월');
+      sel.years.forEach((y, yi) => items.forEach((it) => {
+        const data = labels.map((_, i) => { const r = rows.find((x) => x.y === y && x.m === i + 1); return r ? r[it.key] : null; });
+        const color = items.length === 1 ? YEAR_COLORS[years.indexOf(y) % YEAR_COLORS.length] : it.line;
+        const dash = sel.years.length > 1 ? YEAR_DASH[yi % YEAR_DASH.length] : (it.key === 'staff' ? [6, 3] : []);
+        sets.push(mk(it, (sel.years.length > 1 ? y + ' ' : '') + it.label, data, color, dash));
+      }));
+      return { labels, sets, title: sel.years.length === 1 ? sel.years[0] + '년 월별 상세' : sel.years.join('·') + '년 월별 비교' };
+    }
+    function mk(it, label, data, color, dash) {
+      return { label, data, borderColor: color, backgroundColor: it.bg, borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 7, tension: 0.35, fill: false, yAxisID: it.axis, borderDash: dash, spanGaps: false, itemKey: it.key };
+    }
+    function drawLegend(sets) {
+      legend.replaceChildren(...sets.map((s) => h('span', { class: 'mhd-leg' },
+        h('span', { class: 'mhd-sq', style: s.borderDash && s.borderDash.length ? 'border-top:2.5px dashed ' + s.borderColor : 'background:' + s.borderColor }),
+        s.label + (s.yAxisID === 'yR' ? ' (우축)' : ' (좌축)'))));
+    }
+    function drawTable() {
+      const list = sel.years.length ? rows.filter((r) => sel.years.includes(r.y)) : rows.slice(-12);
+      if (!list.length) { tableBox.replaceChildren(); return; }
+      tableBox.replaceChildren(h('details', { class: 'config' }, h('summary', null, sel.years.length ? '월별 숫자 보기' : '최근 12개월 숫자 보기'),
+        h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
+          h('thead', null, h('tr', null, ['연월', '일 생산CAPA', '월 생산량', '운영인원', '계약인원', '계약대비 차이'].map((x, i) => h('th', { class: i ? 'num' : '' }, x)))),
+          h('tbody', null, list.map((r) => h('tr', null, h('td', null, WD_LABEL(r.ym)),
+            ['capa', 'prod', 'staff', 'contract', 'diff'].map((k) => h('td', { class: 'num' + (k === 'diff' && r.diff !== null && r.diff < 0 ? ' bad' : '') }, r[k] === null ? '-' : (k === 'diff' && r.diff > 0 ? '+' : '') + fmtVal(k, r[k]))))))))));
+    }
+    function render() {
+      drawCards();
+      drawBars();
+      const ds = datasets();
+      title.textContent = ds.title;
+      drawLegend(ds.sets);
+      drawTable();
+      const useR = ds.sets.some((s) => s.yAxisID === 'yR'), useL = ds.sets.some((s) => s.yAxisID === 'yL');
+      const build = () => {
+        if (!canvas.isConnected) return;
+        if (chart) chart.destroy();
+        chart = new window.Chart(canvas.getContext('2d'), { type: 'line', data: { labels: ds.labels, datasets: ds.sets }, options: {
+          responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(255,255,255,0.97)', borderColor: 'rgba(0,0,0,0.1)', borderWidth: 1, titleColor: '#333', bodyColor: '#555', padding: 10,
+            callbacks: { label: (c) => ' ' + c.dataset.label + ': ' + (c.parsed.y === null ? '-' : fmtVal(c.dataset.itemKey, c.parsed.y)) } } },
+          scales: {
+            x: { ticks: { font: { size: 13 }, autoSkip: false, maxRotation: 45, color: '#888' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+            yL: { display: useL, position: 'left', title: { display: true, text: 'CAPA / 인원', color: '#888' }, ticks: { color: '#888' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+            yR: { display: useR, position: 'right', title: { display: true, text: '월 생산량(대)', color: '#888' }, ticks: { color: '#888' }, grid: { drawOnChartArea: false } }
+          } } });
+      };
+      if (window.Chart) build();
+      else if (!render.loading) {
+        render.loading = true;
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+        s.onload = () => { render.loading = false; build(); };
+        document.head.append(s);
+      }
+    }
+    const now = d.dash.now;
+    const note = !d.dash.tableReady
+      ? h('p', { class: 'work-note' }, '계약 인원표가 아직 없습니다.' + (d.canEdit ? ' 아래 "월별 기록·계약 인원 관리"에서 엑셀을 올리면 생산계획을 올릴 때 계약 인원이 자동으로 채워집니다.' : ' 공수 관리 권한자가 올리면 계약 인원이 표시됩니다.'))
+      : (now ? h('p', { class: 'note' }, '계약 인원: ' + WD_LABEL(now.ym) + ' 생산계획 ' + now.prod + '대 → ' + now.label + ' 구간 ' + MH.fmt(now.total, 1) + '명 (' + Object.keys(now.groups).map((g) => g + ' ' + MH.fmt(now.groups[g], 1)).join(', ') + ')' + (now.below ? ' · 첫 구간보다 적어 첫 구간 기준' : '')) : null);
+    const el = h('section', { class: 'mhd' },
+      h('div', { class: 'mhd-head' }, h('h2', { class: 'mhd-main' }, '군산 사내물류팀 물동량 대비 인력 운영현황'), h('span', { class: 'sub' }, '연도·항목을 눌러 켜고 끄면 그래프가 바뀝니다. 여러 개를 함께 켤 수 있습니다.')),
+      cards, h('div', { class: 'mhd-ctrls' }, yearBar, itemBar), note,
+      h('div', { class: 'mhd-chart-head' }, title, legend), h('div', { class: 'mhd-chart' }, canvas), tableBox);
+    if (!rows.length) el.append(h('p', { class: 'sub' }, '월별 기록이 아직 없습니다. 생산계획을 올리거나 월 CAPA를 저장하면 쌓이기 시작합니다.' + (d.canEdit ? ' 지난 실적은 "월별 기록·계약 인원 관리"에서 한 번에 올릴 수 있습니다.' : '')));
+    render();
+    return el;
+  }
+
+  /* 월별 기록·계약 인원 관리(공수 관리 권한자) */
+  function adminBox(d, reload) {
+    const parseFile = async (file, fn) => { const [X, data] = await Promise.all([Plan.loadLib(), file.arrayBuffer()]); return fn(X, data); };
+    /* 1) 계약 인원표 */
+    const cFile = h('input', { type: 'file', accept: '.xlsx,.xlsm,.xls', 'aria-label': '월 생산대수별 계약 인원 엑셀' });
+    const cMsg = h('div');
+    cFile.onchange = async () => {
+      cMsg.replaceChildren();
+      const f = cFile.files[0];
+      if (!f) return;
+      cMsg.append(h('p', { class: 'sub' }, '파일을 읽는 중입니다.'));
+      try {
+        const p = await parseFile(f, MH.parseContract);
+        if (p.errors.length) { cMsg.replaceChildren(h('p', { class: 'form-error' }, p.errors.join(' '))); return; }
+        const btn = h('button', { class: 'btn', type: 'button', onclick: async () => {
+          if (!confirm('지금 사이트의 계약 인원표가 이 엑셀 내용으로 바뀝니다. 올릴까요?')) return;
+          btn.disabled = true;
+          try {
+            const r = await Api.call('mhContractImport', { file: f.name, brackets: p.brackets, groups: p.groups });
+            UI.toast('계약 인원표를 올렸습니다(구간 ' + r.brackets + '개, 직 ' + r.groups + '개)' + (r.filled ? '. 계약 인원이 비어 있던 ' + r.filled + '개월을 채웠습니다.' : '.'));
+            reload();
+          } catch (e) { UI.toast(e.message, true); btn.disabled = false; }
+        } }, '이 계약 인원표로 올리기');
+        cMsg.replaceChildren(
+          h('p', { class: p.same ? 'note' : 'work-note' }, '시트 "' + p.sheet + '" 에서 구간 ' + p.brackets.length + '개, 직 ' + p.groups.length + '개를 읽었습니다.' + (p.fileTotals ? (p.same ? ' 엑셀 총계와 일치합니다.' : ' 엑셀 총계와 다른 구간이 있습니다. 확인해 주세요.') : '')),
+          h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
+            h('thead', null, h('tr', null, [h('th', null, '직')].concat(p.brackets.map((l, k) => h('th', { class: 'num' }, l + (k === p.brackets.length - 1 ? '대~' : '대~' + (p.brackets[k + 1] - 1))))))),
+            h('tbody', null, p.groups.map((g) => h('tr', null, h('td', null, g.name), g.values.map((v) => h('td', { class: 'num' }, MH.fmt(v, 2))))),
+              h('tr', { class: 'mh-total' }, h('td', null, '합계'), p.sums.map((v) => h('td', { class: 'num' }, MH.fmt(v, 2))))))), btn);
+      } catch (e) { cMsg.replaceChildren(h('p', { class: 'form-error' }, e.message || '파일을 읽지 못했습니다.')); }
+    };
+    /* 2) 지난 월별 기록 CSV */
+    const hFile = h('input', { type: 'file', accept: '.csv,.txt', 'aria-label': '월별 기록 CSV' });
+    const hMsg = h('div');
+    hFile.onchange = async () => {
+      hMsg.replaceChildren();
+      const f = hFile.files[0];
+      if (!f) return;
+      try {
+        const p = MH.parseMonthCsv(await f.text());
+        if (p.errors.length && !(p.rows || []).length) { hMsg.replaceChildren(h('p', { class: 'form-error' }, p.errors.join(' '))); return; }
+        const btn = h('button', { class: 'btn', type: 'button', disabled: p.errors.length > 0, onclick: async () => {
+          btn.disabled = true;
+          try {
+            const r = await Api.call('mhMonthImport', { file: f.name, rows: p.rows });
+            UI.toast(r.months + '개월을 올렸습니다' + (r.filled ? '. 계약인원이 비어 있던 ' + r.filled + '개월은 계약 인원표로 채웠습니다.' : '.'));
+            reload();
+          } catch (e) { UI.toast(e.message, true); btn.disabled = false; }
+        } }, p.rows.length + '개월 올리기');
+        hMsg.replaceChildren(p.errors.length ? h('div', { class: 'form-error' }, h('p', null, '고쳐야 할 줄이 있습니다.'), h('ul', null, p.errors.slice(0, 8).map((x) => h('li', null, x)))) : h('p', { class: 'note' }, p.rows.length + '개월(' + p.rows[0].ym + ' ~ ' + p.rows[p.rows.length - 1].ym + ')을 읽었습니다. 빈칸은 기존 값을 그대로 둡니다. 계약인원이 비어 있고 월 생산량이 있으면 계약 인원표 구간으로 채웁니다.'), btn);
+      } catch (e) { hMsg.replaceChildren(h('p', { class: 'form-error' }, e.message || '파일을 읽지 못했습니다.')); }
+    };
+    const sample = h('button', { class: 'btn ghost', type: 'button', onclick: () => UI.saveBytes([new TextEncoder().encode(MH.MONTH_CSV_SAMPLE)], '공수_월별기록_양식.csv', 'text/csv;charset=utf-8') }, '양식(CSV) 내려받기');
+    /* 3) 한 달 직접 입력 */
+    const f = {};
+    const ymIn = h('input', { type: 'month', value: d.thisMonth, 'aria-label': '연월' });
+    [['capa', '일 생산CAPA'], ['prod', '월 생산량(대)'], ['staff', '운영인원(명)'], ['contract', '계약인원(명)']].forEach(([k, label]) => { f[k] = h('input', { type: 'number', step: 'any', min: '0', inputmode: 'decimal', 'aria-label': label }); });
+    const one = h('form', { class: 'mh-capa-form', onsubmit: async (e) => {
+      e.preventDefault();
+      const row = { ym: ymIn.value };
+      ['capa', 'prod', 'staff', 'contract'].forEach((k) => { row[k] = f[k].value; });
+      if (!row.ym || !['capa', 'prod', 'staff', 'contract'].some((k) => row[k] !== '')) { UI.toast('연월과 넣을 값을 하나 이상 입력해 주세요.', true); return; }
+      try { await Api.call('mhMonthImport', { rows: [row] }); UI.toast(row.ym + ' 기록을 저장했습니다.'); reload(); } catch (err) { UI.toast(err.message, true); }
+    } }, h('div', { class: 'mh-capa-row' }, UI.field('연월', ymIn), UI.field('일 생산CAPA', f.capa), UI.field('월 생산량(대)', f.prod), UI.field('운영인원(명)', f.staff), UI.field('계약인원(명)', f.contract)),
+      h('p', { class: 'sub' }, '빈칸은 그대로 둡니다. 월 생산량·계약인원은 생산계획을 올리면 자동으로 채워지고, 이번 달 운영인원은 사용 중인 직원 수로 자동 갱신됩니다(사용자 등록·사용 중지 때 바로 반영).'),
+      h('button', { class: 'btn', type: 'submit' }, '저장'));
+    return h('details', { class: 'config mh-admin', open: !d.dash.tableReady || !d.dash.months.length },
+      h('summary', null, '월별 기록·계약 인원 관리'),
+      h('h3', { class: 'block-h' }, '1. 계약 인원표 (월 생산대수 구간별)'),
+      h('p', { class: 'sub' }, '"월 생산대수별 계약 인원" 엑셀의 사내물류팀 시트를 올립니다. 생산계획을 올릴 때 그 달 생산량에 맞는 구간의 인원이 계약인원으로 들어갑니다.' + (d.dash.tableReady ? ' 지금 ' + d.dash.brackets.length + '개 구간이 등록되어 있습니다.' : '')),
+      h('div', { class: 'toolbar wrap-row' }, cFile), cMsg,
+      h('h3', { class: 'block-h' }, '2. 지난 월별 기록 올리기'),
+      h('p', { class: 'sub' }, '연월, 일CAPA, 월생산량, 운영인원, 계약인원 순서의 CSV(엑셀 복사본)를 올립니다. 그래프의 예전 연도 자료가 됩니다.'),
+      h('div', { class: 'toolbar wrap-row' }, hFile, sample), hMsg,
+      h('h3', { class: 'block-h' }, '3. 한 달 직접 입력·수정'), one);
+  }
+
   /* ---------- 종합 ---------- */
   Router.add('/manhour', (params, app, alive) => {
     if (!App.home.mhView) { deny(app); return; }
@@ -27,6 +251,7 @@
         const ym = h('select', { 'aria-label': '대상월' }, [-1, 0, 1].map((k) => { const v = shiftYm(d.thisMonth, k); return h('option', { value: v, selected: k === 0 }, ymLabel(v)); }));
         const date = h('input', { type: 'date', value: (App.home.today || ''), 'aria-label': '기준일' });
         const ins = {};
+        const capaTotal = h('input', { type: 'number', step: 'any', min: '0', max: '200', inputmode: 'decimal', 'aria-label': '일 생산 CAPA 전체', placeholder: '비우면 4개 합계', value: (d.dash.months.find((m) => m.ym === d.thisMonth) || {}).capa || '' });
         MH.MODELS.forEach((m) => { ins[m] = h('input', { type: 'number', step: '0.01', min: '0', max: '100', inputmode: 'decimal', value: c ? c[m] : '', 'aria-label': m + ' CAPA' }); });
         const btn = h('button', { class: 'btn', type: 'submit' }, '저장');
         const form = h('form', { class: 'mh-capa-form', onsubmit: async (e) => {
@@ -34,13 +259,14 @@
           if (MH.MODELS.some((m) => ins[m].value === '')) { UI.toast('기종 4개 CAPA를 모두 넣어 주세요.', true); return; }
           btn.disabled = true;
           try {
-            await Api.call('mhCapaSave', Object.assign({ ym: ym.value, date: date.value }, ...MH.MODELS.map((m) => ({ [m]: Number(ins[m].value) }))));
+            await Api.call('mhCapaSave', Object.assign({ ym: ym.value, date: date.value, capaTotal: capaTotal.value }, ...MH.MODELS.map((m) => ({ [m]: Number(ins[m].value) }))));
             UI.toast(ymLabel(ym.value) + ' CAPA를 저장했습니다. 모든 업무 공수를 다시 계산했습니다.');
             App.refreshInit();
             load();
           } catch (err) { UI.toast(err.message, true); btn.disabled = false; }
         } }, h('div', { class: 'mh-capa-row' }, UI.field('대상월', ym), UI.field('기준일', date)),
-          h('div', { class: 'mh-capa-row' }, MH.MODELS.map((m) => UI.field(m, ins[m]))), btn);
+          h('div', { class: 'mh-capa-row' }, MH.MODELS.map((m) => UI.field(m, ins[m]))),
+          UI.field('일 생산 CAPA (대시보드용, 대/일)', capaTotal, '그래프의 "일 생산CAPA"입니다. 비워 두면 위 4개 기종 합계를 씁니다.'), btn);
         box.append(h('details', { class: 'config', open: !d.capaDone }, h('summary', null, 'CAPA 입력·수정'), form));
       }
       return box;
@@ -96,6 +322,7 @@
       const t = d.summary.total;
       const card = (label, value, sub) => h('div', { class: 'stat plain' }, h('div', null, h('p', null, label), h('strong', null, value), sub ? h('span', { class: 'sub' }, sub) : null));
       fill(body,
+        dashboard(d),
         h('p', { class: 'pc-notice m-only', role: 'note' }, '표가 넓어 PC에서 보시는 것이 편합니다. 휴대폰에서는 표를 옆으로 밀어 보세요.'),
         capaBox(d),
         h('div', { class: 'stat-grid mh-stats' }, card('계약 인원', f2(t.contract) + '명'), card('현재 인원', f2(t.current) + '명', '계약 대비 ' + f2(t.contract - t.current) + '명'),
@@ -106,7 +333,8 @@
         d.summary.groups.length ? table(d) : UI.empty(canEdit() ? '등록된 업무가 없습니다. 엑셀을 올리거나 업무를 추가해 주세요.' : '등록된 업무가 없습니다.', 'data'),
         h('p', { class: 'sub' }, '줄을 누르면 업무의 STS(단위작업)를 볼 수 있습니다. 빨간 숫자는 모자라거나 넘치는 쪽(음수)입니다.'),
         canEdit() ? hiddenBox(d) : null,
-        history(d));
+        history(d),
+        canEdit() ? adminBox(d, load) : null);
     }
     load();
   });
