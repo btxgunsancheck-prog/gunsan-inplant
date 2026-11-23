@@ -49,7 +49,7 @@
     USER: '기본(로그인, 게시판, 건의, 소속 직 KPI)', KPI_VIEW_ALL: 'KPI 전체 열람', VIEW_EXEC: '열람 전용(사업부장)', NOTICE_WRITE: '공지 작성',
     'KPI_CHECK:물류1직': '물류1직 확인(직장)', 'KPI_CHECK:물류2직': '물류2직 확인(직장)', 'KPI_CHECK:물류3직': '물류3직 확인(직장)', 'KPI_CHECK:물류4직': '물류4직 확인(직장)',
     KPI_TEAM: '팀 KPI 관리, 월 마감', KPI_MANAGER: 'KPI 관리자(장비면허 전체, 표준서·습숙도 전 직)', UPLOAD_ABNORMAL: '이상발생 업로드', UPLOAD_INVENTORY: '순환재고 업로드',
-    SUGGEST_VIEW: '건의 전체 열람·답변', SUGGEST_READ: '건의 전체 열람(관제)', BEST_REVIEW: '우수개선 검토·선정(과장, 팀장)', PLAN_UPLOAD: '생산계획 등록(업무게시판에 생산계획표 올리기)', PALLET_WRITE: '팔레트 실적 등록(전담 작업자)', MANHOUR_EDIT: '공수 관리(생산 CAPA·업무·STS 수정, 공수 엑셀 올리기)', GUEST: '외부 열람(고객사·타 부서, 팀 전체 KPI와 우수개선만)', ADMIN: '관리자 메뉴 전체'
+    SUGGEST_VIEW: '건의 전체 열람·답변', SUGGEST_READ: '건의 전체 열람(관제)', BEST_REVIEW: '우수개선 검토·선정(과장, 팀장)', PLAN_UPLOAD: '생산계획 등록(업무게시판에 생산계획표 올리기)', PALLET_WRITE: '팔레트 실적 등록(전담 작업자)', MANHOUR_EDIT: '공수 관리(생산 CAPA·업무·STS 수정, 공수 엑셀 올리기)', LIB_WRITE: '자료실 등록(회사 규정·지침, 안전·교육, 양식 올리기·지우기)', GUEST: '외부 열람(고객사·타 부서, 팀 전체 KPI와 우수개선만)', ADMIN: '관리자 메뉴 전체'
   };
   const stateOf = (u) => (!u.site ? '미등록' : !u.active ? '사용 중지' : u.locked ? '잠김' : u.mustChange ? '첫 로그인 전' : '사용');
   const stateClass = { 사용: 'good', '사용 중지': 'bad', 잠김: 'bad', '첫 로그인 전': 'warn', 미등록: '' };

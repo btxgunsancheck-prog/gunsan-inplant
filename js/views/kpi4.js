@@ -233,7 +233,7 @@ window.TisUpload = function (opts) {
   const date = h('input', { type: 'date', value: today, max: today, 'aria-label': '제/개정 일자' });
   const file = h('input', { type: 'file', accept: '.xlsx,.xlsm,.xls,.xlsb' });
   const preview = h('div');
-  const MAX = 12 * 1048576;
+  const MAX = 10 * 1048576;
   const canApply = (dept) => UI.has('KPI_MANAGER') || UI.checkDepts().includes(dept);
   let items = [];
 
@@ -241,7 +241,7 @@ window.TisUpload = function (opts) {
     const f = file.files[0];
     preview.replaceChildren();
     if (!f) return;
-    if (f.size > MAX) { preview.append(h('p', { class: 'form-error' }, '파일이 12MB를 넘습니다. 그림 용량을 줄여 다시 올려 주세요.')); return; }
+    if (f.size > MAX) { preview.append(h('p', { class: 'form-error' }, '파일이 10MB를 넘습니다(지금 ' + UI.size(f.size) + '). 그림 용량을 줄이거나 TIS 시트만 남겨 10MB 이하로 다시 올려 주세요.')); return; }
     preview.append(UI.skeleton(2));
     let names = [];
     let have = [];
@@ -275,7 +275,7 @@ window.TisUpload = function (opts) {
   const btn = h('button', { class: 'btn', type: 'button', onclick: async () => {
     const f = file.files[0];
     if (!f) { UI.toast('작업표준서 엑셀 파일을 골라 주세요.', true); return; }
-    if (f.size > MAX) { UI.toast('파일이 12MB를 넘습니다.', true); return; }
+    if (f.size > MAX) { UI.toast('파일이 10MB를 넘습니다(지금 ' + UI.size(f.size) + '). 10MB 이하로 줄여 다시 올려 주세요.', true); return; }
     const dept = deptSel.value;
     const apply = canApply(dept) ? items.filter((x) => x.kind) : [];
     if (!confirm(dept + ' 작업표준서를 자료실에 올립니다.' + (apply.length ? ' 표준서 실적에 제정 ' + apply.filter((x) => x.kind === '제정').length + '건, 개정 ' + apply.filter((x) => x.kind === '개정').length + '건을 더합니다.' : '') + ' 진행할까요?')) return;
@@ -296,5 +296,5 @@ window.TisUpload = function (opts) {
   } }, '올리기');
   return h('div', { class: 'tis-up' },
     h('div', { class: 'toolbar wrap-row' }, depts.length > 1 ? deptSel : h('strong', null, depts[0]), h('span', { class: 'sub' }, '제/개정 일자'), date),
-    UI.field('작업표준서 엑셀 파일 (12MB 이하)', file), preview, h('div', { class: 'row-btns' }, btn), result);
+    UI.field('작업표준서 엑셀 파일 (10MB까지)', file), preview, h('div', { class: 'row-btns' }, btn), result);
 };

@@ -1216,3 +1216,8 @@ html[data-fs='2'] body:not([data-page='login']) { zoom: 1.3; }
 .mh-hidden { list-style: none; padding: 0; }
 .mh-hidden li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }
 @media (max-width: 833px) { .mh-capa-vals, .stat-grid.mh-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .stat-grid.mh-stats .stat { padding: 14px 16px; } .stat-grid.mh-stats .stat strong { font-size: 22px; } }
+
+/* 자료실 분류 탭 */
+.lib-tabs { margin-bottom: 10px; flex-wrap: wrap; overflow: visible; height: auto; }
+.lib-count { margin-left: 5px; font-size: 12px; opacity: .7; }
+.lib-general-up { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }

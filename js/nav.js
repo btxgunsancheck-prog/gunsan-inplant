@@ -58,11 +58,11 @@ const Nav = (() => {
     const list = [
       { key: 'news', label: '소식', first: [link('공지사항', '#/board/notice'), link('업무 게시판', '#/board/work'), link('생산계획', '#/plan')],
         groups: [{ title: '바로가기', links: boardQuick }, { title: '최신 공지', links: notices }] },
-      { key: 'field', label: '현장 업무', first: [link('QR장비점검', '#/qr'), link('팔레트 실적', '#/pallet'), link('작업표준서', '#/library')],
+      { key: 'field', label: '현장 업무', first: [link('QR장비점검', '#/qr'), link('팔레트 실적', '#/pallet'), link('작업표준서', '#/library?cat=' + encodeURIComponent('작업표준서'))],
         groups: [{ title: '바로가기', links: fieldQuick }] },
       { key: 'kpi', label: 'KPI', first: kpiFirst, groups: [{ title: '바로가기', links: quick }, { title: '이번 달 내 직', links: myKpi() }] },
       { key: 'join', label: '참여', first: join, groups: [] },
-      { key: 'library', label: '자료실', first: [link('자료실', '#/library')], groups: [] }
+      { key: 'library', label: '자료실', first: [link('전체 자료', '#/library'), link('작업표준서', '#/library?cat=' + encodeURIComponent('작업표준서')), link('회사 규정·지침', '#/library?cat=' + encodeURIComponent('회사 규정·지침')), link('안전·교육', '#/library?cat=' + encodeURIComponent('안전·교육')), link('양식', '#/library?cat=' + encodeURIComponent('양식'))], groups: [] }
     ];
     if (admin.length) list.push({ key: 'admin', label: '관리', first: admin, groups: [{ title: '바로가기', links: adminQuick }] });
     return list;
