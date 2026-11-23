@@ -169,11 +169,16 @@ const UI = {
   /* 직장(확인 권한)이 있는 직 */
   checkDepts() { return ((App.user && App.user.perms) || []).filter((p) => p.startsWith('KPI_CHECK:')).map((p) => p.slice(10)); },
   /* 서버에서 받은 파일(Base64)을 내려받는다. 큰 파일도 되도록 Blob 주소를 쓴다. */
-  saveFile(base64, name, type) {
+  saveFile(base64, name, type) { UI.saveBytes([UI.fromBase64(base64)], name, type); },
+  fromBase64(base64) {
     const bin = atob(base64);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    const url = URL.createObjectURL(new Blob([bytes], { type: type || 'application/octet-stream' }));
+    return bytes;
+  },
+  /* 조각(Uint8Array 목록)을 이어 붙여 내려받는다 */
+  saveBytes(chunks, name, type) {
+    const url = URL.createObjectURL(new Blob(chunks, { type: type || 'application/octet-stream' }));
     const a = h('a', { href: url, download: name });
     document.body.append(a);
     a.click();

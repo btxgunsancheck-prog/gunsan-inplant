@@ -61,13 +61,21 @@
     const delBox = h('div');
     let data = null;
 
+    /* 큰 파일은 1.5MB 조각으로 나눠 3개씩 동시에 받아 이어 붙인다(서버 한 번에 보내는 양이 줄어 빠르다) */
+    const PART = 1572864;
     const download = async (it, btn) => {
       btn.disabled = true;
       const old = btn.textContent;
       btn.textContent = '받는 중';
       try {
-        const f = await Api.call('libraryFile', { id: it.id });
-        UI.saveFile(f.data, f.name, f.type);
+        const parts = Math.max(1, Math.ceil(it.size / PART));
+        let done = 0;
+        const got = await Promise.all(Array.from({ length: parts }, (_, i) => Api.call('libraryFile', parts > 1 ? { id: it.id, part: i, parts } : { id: it.id, part: 0, parts: 1 }).then((r) => {
+          done++;
+          if (parts > 1) btn.textContent = '받는 중 ' + Math.round(done / parts * 100) + '%';
+          return r;
+        })));
+        UI.saveBytes(got.map((r) => UI.fromBase64(r.data)), got[0].name, got[0].type);
       } catch (e) { UI.toast(e.message, true); }
       btn.disabled = false;
       btn.textContent = old;
