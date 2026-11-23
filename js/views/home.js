@@ -58,6 +58,7 @@ Router.add('/', (params, app) => {
   if (UI.has('UPLOAD_ABNORMAL')) tasks.push(task('#/kpi/upload', '오늘 이상발생 업로드', home.abnormalToday ? '완료' : '미업로드', !home.abnormalToday));
   if (UI.has('UPLOAD_INVENTORY')) tasks.push(task('#/kpi/upload', '이번 달 순환재고 업로드', home.inventoryThisMonth ? '완료' : '미업로드', !home.inventoryThisMonth));
   if (UI.has('KPI_TEAM')) tasks.push(task('#/kpi/team', '이번 달 월 마감', home.closedThisMonth ? '완료' : '미완료', !home.closedThisMonth));
+  if (home.mhCapaDone !== undefined) tasks.push(task('#/manhour', '이번 달 생산 CAPA 입력', home.mhCapaDone ? '완료' : '미입력', !home.mhCapaDone));
   (home.awardTodo || []).forEach((t) => tasks.push(task(t.href, t.label, t.value, true)));
 
   const kpi = home.kpiHome || {};

@@ -49,7 +49,7 @@
     USER: '기본(로그인, 게시판, 건의, 소속 직 KPI)', KPI_VIEW_ALL: 'KPI 전체 열람', VIEW_EXEC: '열람 전용(사업부장)', NOTICE_WRITE: '공지 작성',
     'KPI_CHECK:물류1직': '물류1직 확인(직장)', 'KPI_CHECK:물류2직': '물류2직 확인(직장)', 'KPI_CHECK:물류3직': '물류3직 확인(직장)', 'KPI_CHECK:물류4직': '물류4직 확인(직장)',
     KPI_TEAM: '팀 KPI 관리, 월 마감', KPI_MANAGER: 'KPI 관리자(장비면허 전체, 표준서·습숙도 전 직)', UPLOAD_ABNORMAL: '이상발생 업로드', UPLOAD_INVENTORY: '순환재고 업로드',
-    SUGGEST_VIEW: '건의 전체 열람·답변', SUGGEST_READ: '건의 전체 열람(관제)', BEST_REVIEW: '우수개선 검토·선정(과장, 팀장)', PLAN_UPLOAD: '생산계획 등록(업무게시판에 생산계획표 올리기)', PALLET_WRITE: '팔레트 실적 등록(전담 작업자)', GUEST: '외부 열람(고객사·타 부서, 팀 전체 KPI와 우수개선만)', ADMIN: '관리자 메뉴 전체'
+    SUGGEST_VIEW: '건의 전체 열람·답변', SUGGEST_READ: '건의 전체 열람(관제)', BEST_REVIEW: '우수개선 검토·선정(과장, 팀장)', PLAN_UPLOAD: '생산계획 등록(업무게시판에 생산계획표 올리기)', PALLET_WRITE: '팔레트 실적 등록(전담 작업자)', MANHOUR_EDIT: '공수 관리(생산 CAPA·업무·STS 수정, 공수 엑셀 올리기)', GUEST: '외부 열람(고객사·타 부서, 팀 전체 KPI와 우수개선만)', ADMIN: '관리자 메뉴 전체'
   };
   const stateOf = (u) => (!u.site ? '미등록' : !u.active ? '사용 중지' : u.locked ? '잠김' : u.mustChange ? '첫 로그인 전' : '사용');
   const stateClass = { 사용: 'good', '사용 중지': 'bad', 잠김: 'bad', '첫 로그인 전': 'warn', 미등록: '' };
@@ -377,7 +377,7 @@
   });
 
   /* ---------- 관리자 대시보드 ---------- */
-  const SIDE = [['#/admin', 'home', '대시보드', () => true], ['#/admin/users', 'people', '사용자 관리', () => UI.has('ADMIN')],
+  const SIDE = [['#/manhour', 'people', '공수 현황', () => !!App.home.mhView], ['#/admin', 'home', '대시보드', () => true], ['#/admin/users', 'people', '사용자 관리', () => UI.has('ADMIN')],
     ['#/kpi/team', 'chart', 'KPI 팀 현황', () => UI.has('KPI_VIEW_ALL')], ['#/suggest/all', 'chat', '건의사항 관리', () => UI.hasAny(['SUGGEST_VIEW', 'SUGGEST_READ'])],
     ['#/award', 'trophy', '우수사원 관리', () => true], ['#/kpi/monthly?tab=P2', 'lock', '장비면허 명부', () => UI.has('KPI_MANAGER') && !UI.has('VIEW_EXEC')], ['#/admin/license', 'lock', '장비면허 명부', () => UI.has('VIEW_EXEC')],
     ['#/admin/targets', 'list', '목표·평가기준', () => UI.hasAny(['ADMIN', 'KPI_TEAM', 'VIEW_EXEC'])], ['#/admin/usage', 'clock', '접속 현황', () => UI.hasAny(['ADMIN', 'VIEW_EXEC'])], ['#/admin/data', 'gear', '데이터 관리', () => UI.hasAny(['ADMIN', 'VIEW_EXEC'])]];

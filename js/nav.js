@@ -33,32 +33,38 @@ const Nav = (() => {
     /* 관리자 직급은 실적 업로드(관제)에서 개선사항만 등록한다 */
     if (UI.isUploader() || UI.canWriteBest()) quick.push(link('실적 업로드(관제)', '#/kpi/upload'));
     if (UI.hasAny(['UPLOAD_ABNORMAL', 'UPLOAD_INVENTORY', 'ADMIN', 'VIEW_EXEC'])) quick.push(link('업로드 이력', '#/kpi/upload'));
-    const suggest = [link('건의하기', '#/suggest')];
-    if (!UI.has('VIEW_EXEC')) suggest.push(link('내 건의', '#/suggest/mine'));
-    if (!UI.has('VIEW_EXEC') && (UI.hasAny(['SUGGEST_VIEW', 'SUGGEST_READ']) || u.perms.some((p) => p.startsWith('KPI_CHECK:')))) suggest.push(link('전체 건의', '#/suggest/all'));
+    const join = [link('건의하기', '#/suggest')];
+    if (!UI.has('VIEW_EXEC')) join.push(link('내 건의', '#/suggest/mine'));
+    if (!UI.has('VIEW_EXEC') && (UI.hasAny(['SUGGEST_VIEW', 'SUGGEST_READ']) || u.perms.some((p) => p.startsWith('KPI_CHECK:')))) join.push(link('전체 건의', '#/suggest/all'));
+    join.push(link('우수사원 평가', '#/award'));
+    /* 관리: 공수 현황은 관리자 직급 전부(사원 외), 나머지는 시스템 관리 권한자 */
     const admin = [];
+    if (App.home.mhView) admin.push(link('공수 현황', '#/manhour'));
     if (UI.hasAny(['ADMIN', 'VIEW_EXEC', 'KPI_TEAM'])) admin.push(link('대시보드', '#/admin'));
     if (UI.has('ADMIN')) admin.push(link('사용자 관리', '#/admin/users'));
+    if (UI.hasAny(['ADMIN', 'VIEW_EXEC'])) admin.push(link('접속 현황', '#/admin/usage'));
     /* 장비면허 입력은 월 입력(직장)으로 옮겼다. 열람 전용 계정만 여기서 본다. */
     if (UI.has('VIEW_EXEC')) admin.push(link('장비면허 명부', '#/admin/license'));
     if (UI.hasAny(['ADMIN', 'KPI_TEAM', 'VIEW_EXEC'])) admin.push(link('목표·평가기준', '#/admin/targets'));
     if (UI.hasAny(['ADMIN', 'VIEW_EXEC'])) admin.push(link('데이터 관리', '#/admin/data'));
+    const adminQuick = [];
+    if (App.home.mhView && UI.has('MANHOUR_EDIT') && !UI.has('VIEW_EXEC')) adminQuick.push(link('생산 CAPA 입력', '#/manhour'), link('공수 엑셀 올리기', '#/manhour/upload'));
     /* 게시판 바로가기: 업무 게시판 글쓰기는 관리자 직급만, 생산계획 올리기는 전용 권한자만 */
     const boardQuick = [];
     if (!UI.has('VIEW_EXEC') && UI.isManager()) boardQuick.push(link('글쓰기', '#/board/work/new'));
     if (!UI.has('VIEW_EXEC') && UI.has('PLAN_UPLOAD')) boardQuick.push(link('생산계획 올리기', '#/board/plan/new'));
+    const fieldQuick = !UI.has('VIEW_EXEC') && UI.hasAny(['PALLET_WRITE', 'ADMIN']) ? [link('팔레트 실적 등록', '#/pallet/new')] : [];
+    /* 2026-11-23 메뉴 정리: 8개 → 소식, 현장 업무, KPI, 참여, 자료실, 관리(권한자만). 화면 주소는 그대로다. */
     const list = [
-      { key: 'board', label: '게시판', first: [link('공지사항', '#/board/notice'), link('업무 게시판', '#/board/work'), link('생산계획', '#/plan')],
+      { key: 'news', label: '소식', first: [link('공지사항', '#/board/notice'), link('업무 게시판', '#/board/work'), link('생산계획', '#/plan')],
         groups: [{ title: '바로가기', links: boardQuick }, { title: '최신 공지', links: notices }] },
+      { key: 'field', label: '현장 업무', first: [link('QR장비점검', '#/qr'), link('팔레트 실적', '#/pallet'), link('작업표준서', '#/library')],
+        groups: [{ title: '바로가기', links: fieldQuick }] },
       { key: 'kpi', label: 'KPI', first: kpiFirst, groups: [{ title: '바로가기', links: quick }, { title: '이번 달 내 직', links: myKpi() }] },
-      { key: 'suggest', label: '건의사항', first: suggest, groups: [] },
-      { key: 'award', label: '우수사원', first: [link('우수사원 평가', '#/award')], groups: [] },
-      { key: 'library', label: '자료실', first: [link('작업표준서', '#/library')], groups: [] }
+      { key: 'join', label: '참여', first: join, groups: [] },
+      { key: 'library', label: '자료실', first: [link('자료실', '#/library')], groups: [] }
     ];
-    list.push({ key: 'qr', label: 'QR장비점검', first: [link('장비 점검', '#/qr')], groups: [] });
-    list.push({ key: 'pallet', label: '팔레트 실적', first: [link('팔레트 실적', '#/pallet')],
-      groups: [{ title: '바로가기', links: !UI.has('VIEW_EXEC') && UI.hasAny(['PALLET_WRITE', 'ADMIN']) ? [link('실적 등록', '#/pallet/new')] : [] }] });
-    if (admin.length) list.push({ key: 'admin', label: '관리자', first: admin, groups: [] });
+    if (admin.length) list.push({ key: 'admin', label: '관리', first: admin, groups: [{ title: '바로가기', links: adminQuick }] });
     return list;
   }
 
