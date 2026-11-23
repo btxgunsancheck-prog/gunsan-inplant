@@ -93,3 +93,25 @@ async function loadThenRefresh(key, fetcher, draw, onError) {
     if (e.code !== 'AUTH_EXPIRED' && !cached) onError(e);
   }
 }
+
+/* 화면 오류 기록. 직원 화면에서 코드 오류가 나면 서버(작업기록)에 남겨 관리자가 원인을 찾을 수 있게 한다.
+   한 번 접속에 최대 5건, 같은 오류는 한 번만 보낸다. 로그인 전이거나 통신 실패면 조용히 넘어간다. */
+(function () {
+  const seen = {};
+  let sent = 0;
+  function report(msg, src) {
+    try {
+      msg = String(msg || '').slice(0, 200);
+      if (!Store.get('token') || sent >= 5 || !msg || seen[msg] || /ResizeObserver/.test(msg)) return;
+      seen[msg] = 1;
+      sent++;
+      Api.call('errorLog', { msg, src, where: location.hash.slice(0, 80), ver: document.documentElement.dataset.ver || '', device: navigator.userAgent.slice(0, 120) }).catch(() => {});
+    } catch (e) { /* 오류 기록 중의 오류는 무시한다 */ }
+  }
+  window.addEventListener('error', (e) => { if (e.message) report(e.message, String(e.filename || '').split('/').pop() + ':' + e.lineno); });
+  window.addEventListener('unhandledrejection', (e) => {
+    const r = e.reason;
+    if (r instanceof ApiError) return; /* 서버가 알려 준 오류는 서버에 이미 기록되어 있다 */
+    report(r && r.message ? r.message : r, 'promise');
+  });
+})();

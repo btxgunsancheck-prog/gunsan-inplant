@@ -1161,3 +1161,15 @@ table.data select:not([multiple]) { padding-right: 30px; background-position: ri
 .lm-values li + li { position: relative; }
 .lm-values li + li::before { content: ""; position: absolute; left: 0; top: calc(var(--m) * 29); bottom: calc(var(--m) * 28); width: 2px; background: rgba(255, 255, 255, 0.5); }
 .lm-values .la-ico svg { width: calc(var(--m) * 84); height: calc(var(--m) * 84); display: block; stroke-width: 1.75; }
+
+/* 새 글 표시와 공지 읽음 확인 */
+.chip.new { color: #fff; background: var(--accent); }
+.reads { margin-top: 28px; }
+.reads-bar { height: 8px; border-radius: 980px; background: var(--bg); overflow: hidden; margin: 8px 0 12px; }
+.reads-bar span { display: block; height: 100%; background: var(--accent); }
+.reads details { margin: 6px 0; }
+.reads summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+.reads-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.reads-list li { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--line, #e5e8ef); font-size: 14px; }
+.reads-list strong { flex: 0 0 64px; }
+.reads-list span { color: var(--text-sub); word-break: keep-all; }

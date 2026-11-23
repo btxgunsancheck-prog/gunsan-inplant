@@ -7,6 +7,12 @@ const Home3D = (() => {
   const V = 'assets/video/';
   const VER = '?v=5'; /* 영상을 다시 만들면 올린다 */
   return {
+    /* 소개 영상: 휴대폰(폭 834 미만)이나 데이터 절약 설정이면 작은 영상(약 9MB), 그 외는 원본(약 45MB)을 쓴다. */
+    introSrc() {
+      const c = navigator.connection || {};
+      const phone = Math.min(window.innerWidth, screen.width || 9999) < 834 || c.saveData === true;
+      return 'assets/video/' + (phone ? 'team-intro-m.mp4?v=20261123' : 'team-intro.mp4?v=20261122');
+    },
     element() {
       if (host) return host;
       const small = Math.max(window.innerWidth, screen.width || 0) < 1000;
@@ -44,7 +50,7 @@ Router.add('/', (params, app) => {
   const u = App.user;
   const list = (items, base, empty) => (items && items.length
     ? h('ul', { class: 'tile-list' }, items.map((n) => h('li', null,
-      h('a', { href: base + n.id }, n.pinned && h('span', { class: 'chip bad mini' }, '중요'), n.title), h('span', { class: 'sub' }, UI.dateOnly(n.created).slice(5)))))
+      h('a', { href: base + n.id }, n.read === false && h('span', { class: 'chip new mini' }, '새 글'), n.pinned && h('span', { class: 'chip bad mini' }, '중요'), n.title), h('span', { class: 'sub' }, UI.dateOnly(n.created).slice(5)))))
     : UI.empty(empty, 'board', true));
   const tasks = [];
   const task = (href, label, value, hot) => h('a', { class: 'task', href }, h('span', null, label), h('strong', { class: hot ? 'hot' : '' }, value));
@@ -104,7 +110,7 @@ Router.add('/', (params, app) => {
       h('div', { class: 'tile t-work' }, UI.cardHead('board', '업무 게시판', '#/board/work'), list(home.works, '#/board/work/', '등록된 글이 없습니다.')),
       h('div', { class: 'tile span3 t-quick' }, UI.cardHead('list', '주요 업무 바로가기'), h('div', { class: 'quick-grid' }, quick)),
       h('div', { class: 'tile team-tile team-video' }, UI.cardHead('play', '우리 팀 소개 영상'),
-        h('button', { class: 'tv-thumb', type: 'button', 'aria-label': '우리 팀 소개 영상 재생', onclick: () => UI.videoModal('assets/video/team-intro.mp4?v=20261122', 'assets/video/team-intro-poster.jpg?v=20261122', '우리 팀 소개 영상') },
+        h('button', { class: 'tv-thumb', type: 'button', 'aria-label': '우리 팀 소개 영상 재생', onclick: () => UI.videoModal(Home3D.introSrc(), 'assets/video/team-intro-poster.jpg?v=20261122', '우리 팀 소개 영상') },
           h('img', { src: 'assets/video/team-intro-poster.jpg?v=20261122', alt: '', loading: 'lazy', decoding: 'async' }),
           h('span', { class: 'tv-play' }, UI.icon('play')))))].filter(Boolean));
 });

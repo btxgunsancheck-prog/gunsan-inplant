@@ -15,7 +15,7 @@
         data.items.length
           ? [h('ul', { class: 'post-cards m-only' }, data.items.map((p) => h('li', { class: p.pinned ? 'pinned' : '' },
             h('a', { href: '#/board/' + board + '/' + p.id },
-              h('span', { class: 'pc-title' }, p.pinned ? h('span', { class: 'chip mini bad' }, board === 'notice' ? '중요' : '고정') : null, p.title),
+              h('span', { class: 'pc-title' }, p.read === false ? h('span', { class: 'chip mini new' }, '새 글') : null, p.pinned ? h('span', { class: 'chip mini bad' }, board === 'notice' ? '중요' : '고정') : null, p.title),
               h('span', { class: 'sub pc-meta' }, [p.author, UI.dateOnly(p.created), p.photoCount ? '사진 ' + p.photoCount : ''].filter(Boolean).join(' · ')))))),
           h('table', { class: 'data board-table pc-only' },
             h('thead', null, h('tr', null, h('th', { class: 'c-no' }, '번호'), h('th', { class: 'c-kind' }, '구분'), h('th', null, '제목'),
@@ -23,7 +23,7 @@
             h('tbody', null, data.items.map((p, i) => h('tr', { class: p.pinned ? 'pinned' : '', onclick: () => { location.hash = '#/board/' + board + '/' + p.id; } },
               h('td', { class: 'c-no' }, p.pinned ? UI.icon('pin') : String(data.total - (data.page - 1) * data.size - i)),
               h('td', { class: 'c-kind' }, h('span', { class: 'chip ' + (p.pinned ? 'bad' : '') }, p.pinned ? (board === 'notice' ? '중요' : '고정') : '일반')),
-              h('td', { class: 'c-title' }, h('a', { href: '#/board/' + board + '/' + p.id }, p.title)),
+              h('td', { class: 'c-title' }, p.read === false ? h('span', { class: 'chip mini new' }, '새 글') : null, h('a', { href: '#/board/' + board + '/' + p.id }, p.title)),
               h('td', { class: 'c-who' }, p.author),
               h('td', { class: 'c-date' }, UI.dateOnly(p.created)),
               h('td', { class: 'c-att' }, p.photoCount ? h('span', { class: 'att', title: '사진 ' + p.photoCount + '장' }, UI.icon('photo'), p.photoCount) : '')))))]
@@ -46,6 +46,23 @@
       body),
       canWrite(board) && h('a', { class: 'fab', href: '#/board/' + board + '/new' }, '작성'));
     load();
+  }
+
+  /* 공지 읽음 현황: 읽은 사람 수와, 직별로 묶은 읽은 사람·아직 안 읽은 사람 명단. */
+  function readsPanel(r) {
+    const pct = r.total ? Math.round(r.done.length / r.total * 100) : 0;
+    const group = (list) => {
+      const by = {};
+      list.forEach((x) => { (by[x.dept || '소속 없음'] = by[x.dept || '소속 없음'] || []).push(x.name); });
+      return h('ul', { class: 'reads-list' }, Object.keys(by).map((d) => h('li', null, h('strong', null, d), h('span', null, by[d].join(', ')))));
+    };
+    return h('div', { class: 'reads' },
+      h('h2', { class: 'comment-h' }, '읽음 확인 ' + r.done.length + ' / ' + r.total + '명'),
+      h('div', { class: 'reads-bar', role: 'img', 'aria-label': '읽은 비율 ' + pct + '%' }, h('span', { style: 'width:' + pct + '%' })),
+      h('details', { open: r.missing.length > 0 && r.missing.length <= 30 }, h('summary', null, '아직 안 읽은 사람 ' + r.missing.length + '명'),
+        r.missing.length ? group(r.missing) : h('p', { class: 'sub' }, '모두 읽었습니다.')),
+      h('details', null, h('summary', null, '읽은 사람 ' + r.done.length + '명'), r.done.length ? group(r.done) : h('p', { class: 'sub' }, '아직 없습니다.')),
+      h('p', { class: 'sub' }, '글을 열어 본 시점을 기준으로 합니다. 외부 열람·열람 전용 계정은 대상에서 뺍니다.'));
   }
 
   function detailView(board, id, app, alive) {
@@ -76,6 +93,7 @@
         p.plan ? h('div', { class: 'plan-post' }, Plan.calendar(p.plan),
           h('p', { class: 'sub' }, '원본 ' + p.plan.file + (p.plan.dist ? ' · 배포 ' + p.plan.dist : ''))) : null,
         p.photos.length ? h('div', { class: 'thumbs' }, p.photos.map((f) => UI.thumb(f))) : null,
+        p.reads ? readsPanel(p.reads) : null,
         h('h2', { class: 'comment-h' }, '댓글 ' + p.comments.length),
         h('ul', { class: 'comments' }, p.comments.map((c) => h('li', null,
           h('p', { class: 'sub' }, c.author + ' · ' + c.created), h('p', { class: 'pre' }, c.body),
