@@ -116,41 +116,84 @@
             ['capa', 'prod', 'staff', 'contract', 'diff'].map((k) => h('td', { class: 'num' + (k === 'diff' && r.diff !== null && r.diff < 0 ? ' bad' : '') }, r[k] === null ? '-' : (k === 'diff' && r.diff > 0 ? '+' : '') + fmtVal(k, r[k]))))))))));
     }
     /* 안 A: 월 생산량(막대) + 계약·운영인원(굵은 선, 둘 사이 색칠, 선 끝 값). 안 B: 켜 둔 항목마다 자기 눈금의 작은 그래프. */
-    /* 데이터 레이블: 모든 점의 값을 숫자로 적는다. 선은 점 바깥(위, 계약·운영이 겹치면 높은 쪽은 위·낮은 쪽은 아래), 막대는 가운데. */
+    /* 데이터 레이블: 모든 점의 값을 숫자로 적는다. 선은 점 바깥(위, 계약·운영이 가까우면 높은 쪽은 위·낮은 쪽은 아래).
+       막대는 기본이 가운데이고, 선의 점·값·지나가는 선과 겹치면 막대 안에서 위아래로 비켜 적는다. */
     const LABEL_COLOR = { capa: '#185FA5', prod: '#0F6E56', staff: '#993C1D', contract: '#8A6100', diff: '#5B21B6' };
     const dataLabels = { id: 'dataLabels', afterDatasetsDraw(c) {
       const { ctx } = c;
-      const size = c.canvas.clientWidth < 420 ? 10.5 : (c.options.plugins.dataLabels && c.options.plugins.dataLabels.size) || 12;
+      const size = c.canvas.clientWidth < 420 ? 10.5 : 12;
+      ctx.save();
+      ctx.font = 'bold ' + size + 'px sans-serif';
+      const textOf = (ds, v) => (ds.itemKey === 'diff' && v > 0 ? '+' : '') + fmtVal(ds.itemKey, v);
+      const lines = [], bars = [], boxes = [];
       c.data.datasets.forEach((ds, i) => {
         if (!c.isDatasetVisible(i)) return;
         const m = c.getDatasetMeta(i);
-        const partner = ds.itemKey === 'staff' || ds.itemKey === 'contract' ? c.data.datasets.find((o) => o.itemKey === (ds.itemKey === 'staff' ? 'contract' : 'staff') && o.type !== 'bar') : null;
+        if (ds.type === 'bar') { bars.push({ ds, m }); return; }
+        lines.push({ ds, m });
+      });
+      /* 선 레이블 위치 */
+      const placed = [];
+      lines.forEach(({ ds, m }) => {
+        const partner = ds.itemKey === 'staff' || ds.itemKey === 'contract' ? lines.find((o) => o.ds.itemKey === (ds.itemKey === 'staff' ? 'contract' : 'staff')) : null;
         ds.data.forEach((v, k) => {
           const el = m.data[k];
           if (v === null || v === undefined || !el) return;
-          const text = (ds.itemKey === 'diff' && v > 0 ? '+' : '') + fmtVal(ds.itemKey, v);
-          ctx.save();
-          ctx.font = 'bold ' + size + 'px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.lineJoin = 'round';
-          ctx.lineWidth = 3;
-          ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-          ctx.fillStyle = LABEL_COLOR[ds.itemKey] || '#333';
-          let y;
-          if (ds.type === 'bar') { y = (el.y + el.base) / 2; ctx.textBaseline = 'middle'; }
-          else {
-            let above = true;
-            const pv = partner ? partner.data[k] : null;
-            if (pv !== null && pv !== undefined) above = ds.itemKey === 'contract' ? v >= pv : v > pv;
-            if (ds.itemKey === 'staff' && pv !== null && pv !== undefined && v === pv) above = false;
-            y = el.y + (above ? -10 : 18);
-            ctx.textBaseline = 'alphabetic';
+          let above = true;
+          const pv = partner ? partner.ds.data[k] : null;
+          if (pv !== null && pv !== undefined) above = ds.itemKey === 'contract' ? v >= pv : v > pv;
+          if (ds.itemKey === 'staff' && pv !== null && pv !== undefined && v === pv) above = false;
+          const text = textOf(ds, v);
+          const w = ctx.measureText(text).width;
+          const y = el.y + (above ? -10 : 18);
+          placed.push({ ds, text, x: el.x, y, w });
+          boxes.push({ l: el.x - w / 2 - 2, r: el.x + w / 2 + 2, t: y - size, b: y + 3 });   /* 글자 */
+          boxes.push({ l: el.x - 8, r: el.x + 8, t: el.y - 8, b: el.y + 8 });                  /* 점 */
+        });
+        /* 점과 점 사이를 지나는 선: 일정 간격으로 조각 상자를 만든다 */
+        const pts = ds.data.map((v, k) => (v === null || v === undefined || !m.data[k] ? null : { x: m.data[k].x, y: m.data[k].y })).filter(Boolean);
+        for (let k = 0; k + 1 < pts.length; k++) {
+          const a = pts[k], b = pts[k + 1];
+          const n = Math.max(2, Math.round(Math.abs(b.x - a.x) / 8));
+          for (let q = 0; q <= n; q++) { const t = q / n, x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t; boxes.push({ l: x - 4, r: x + 4, t: y - 4, b: y + 4 }); }
+        }
+      });
+      const hit = (r) => boxes.some((b) => r.l < b.r && r.r > b.l && r.t < b.b && r.b > b.t);
+      /* 막대 레이블: 가운데 → 위로·아래로 번갈아 비켜 간다(막대 안에서) */
+      bars.forEach(({ ds, m }) => {
+        ds.data.forEach((v, k) => {
+          const el = m.data[k];
+          if (v === null || v === undefined || !el) return;
+          const text = textOf(ds, v);
+          const w = ctx.measureText(text).width;
+          const top = Math.min(el.y, el.base) + size / 2 + 3, bottom = Math.max(el.y, el.base) - size / 2 - 3;
+          const mid = (el.y + el.base) / 2;
+          let pick = mid;
+          if (top <= bottom) {
+            const step = size + 2;
+            const cands = [mid];
+            for (let o = 1; o < 40; o++) { cands.push(mid - o * step / 2, mid + o * step / 2); }
+            pick = cands.find((y) => y >= top && y <= bottom && !hit({ l: el.x - w / 2 - 2, r: el.x + w / 2 + 2, t: y - size / 2 - 1, b: y + size / 2 + 1 }));
+            if (pick === undefined) pick = mid;
           }
-          ctx.strokeText(text, el.x, y);
-          ctx.fillText(text, el.x, y);
-          ctx.restore();
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = LABEL_COLOR[ds.itemKey] || '#333';
+          ctx.fillText(text, el.x, pick);
         });
       });
+      /* 선 레이블은 맨 위에(흰 테두리로 읽기 쉽게) */
+      ctx.textBaseline = 'alphabetic';
+      ctx.textAlign = 'center';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = 3;
+      placed.forEach((p) => {
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        ctx.fillStyle = LABEL_COLOR[p.ds.itemKey] || '#333';
+        ctx.strokeText(p.text, p.x, p.y);
+        ctx.fillText(p.text, p.x, p.y);
+      });
+      ctx.restore();
     } };
     const lastVal = (sets) => { const s = sets[sets.length - 1]; if (!s) return null; for (let k = s.data.length - 1; k >= 0; k--) if (s.data[k] !== null && s.data[k] !== undefined) return s.data[k]; return null; };
     const tooltip = { backgroundColor: 'rgba(255,255,255,0.97)', borderColor: 'rgba(0,0,0,0.1)', borderWidth: 1, titleColor: '#333', bodyColor: '#555', padding: 10,
@@ -201,8 +244,8 @@
             plugins: { legend: { display: false }, tooltip },
             scales: {
               x: { ticks: { font: { size: 13 }, autoSkip: false, maxRotation: 45, color: '#667' }, grid: { display: false } },
-              yL: { display: useL, position: 'left', grace: '12%', title: { display: true, text: '인원(명)', color: '#667' }, ticks: { color: '#667' }, grid: { display: false }, border: { display: false } },
-              yR: { display: useR, position: 'right', beginAtZero: true, grace: '15%', title: { display: true, text: '월 생산량(대)', color: '#667' }, ticks: { color: '#667' }, grid: { display: false }, border: { display: false } }
+              yL: { display: useL, position: 'left', grace: '12%', ticks: { color: '#667', callback: (v) => v + '명' }, grid: { display: false }, border: { display: false } },
+              yR: { display: useR, position: 'right', beginAtZero: true, grace: '15%', ticks: { color: '#667', callback: (v) => v + '대' }, grid: { display: false }, border: { display: false } }
             } }, plugins: [dataLabels] }));
         }
         miniGrid.querySelectorAll('canvas').forEach((cv, i) => {
@@ -210,7 +253,7 @@
             responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
             plugins: { legend: { display: false }, tooltip },
             layout: { padding: { top: 20 } },
-            scales: { x: { grid: { display: false }, ticks: { font: { size: 12 }, color: '#667', autoSkip: true, maxRotation: 0 } }, y: { grace: '14%', grid: { display: false }, border: { display: false }, ticks: { font: { size: 12 }, color: '#667' } } } }, plugins: [dataLabels] }));
+            scales: { x: { grid: { display: false }, ticks: { font: { size: 12 }, color: '#667', autoSkip: true, maxRotation: 0 } }, y: { grace: '14%', grid: { display: false }, border: { display: false }, ticks: { font: { size: 12 }, color: '#667', callback: (v) => v + minis[i].it.unit } } } }, plugins: [dataLabels] }));
         });
       };
       if (window.Chart) build();
