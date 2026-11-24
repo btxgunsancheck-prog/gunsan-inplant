@@ -101,7 +101,7 @@
       empNo: h('input', { value: x.empNo, disabled: !isNew, autocapitalize: 'characters', 'aria-label': '사번' }),
       name: h('input', { value: x.name, 'aria-label': '성명' }),
       rank: h('input', { value: x.rank, 'aria-label': '직급' }),
-      dept: UI.select('dept', d.depts, x.dept)
+      dept: h('select', { name: 'dept' }, d.depts.map((v) => h('option', { value: v, selected: v === x.dept }, UI.deptName(v))))
     };
     const boxes = d.perms.map((p) => ({ p, el: h('input', { type: 'checkbox', checked: x.perms.includes(p) || p === 'USER', disabled: p === 'USER' }) }));
     const act = (action, msg, extra) => async () => {
@@ -142,12 +142,12 @@
     let data = null;
     const draw = () => {
       const q = search.value.trim().toLowerCase();
-      const rows = data.rows.filter((u) => (showAll.checked || u.site) && (!q || [u.empNo, u.name, u.dept, u.rank].join(' ').toLowerCase().includes(q)));
+      const rows = data.rows.filter((u) => (showAll.checked || u.site) && (!q || [u.empNo, u.name, u.dept, UI.deptName(u.dept), u.rank].join(' ').toLowerCase().includes(q)));
       fill(body, h('p', { class: 'sub' }, rows.length + '명'),
         h('div', { class: 'table-wrap' }, h('table', { class: 'data click' },
           h('thead', null, h('tr', null, ['사번', '성명', '직급', '소속', '상태', '권한', '최종 로그인'].map((t) => h('th', null, t)))),
           h('tbody', null, rows.map((u) => h('tr', { onclick: () => open(u) },
-            h('td', null, u.empNo), h('td', null, u.name), h('td', null, u.rank), h('td', null, u.dept),
+            h('td', null, u.empNo), h('td', null, u.name), h('td', null, u.rank), h('td', null, UI.deptName(u.dept)),
             h('td', { class: stateClass[stateOf(u)] }, stateOf(u)),
             h('td', { class: 'pre' }, u.perms.filter((p) => p !== 'USER').map((p) => PERM_NAME[p] || p).join(', ') || '기본'),
             h('td', null, u.lastLogin || '-')))))));
@@ -395,7 +395,7 @@
       const card = (label, value, sub) => h('div', { class: 'stat plain' }, h('div', null, h('p', null, label), h('strong', null, value), sub ? h('span', { class: 'sub' }, sub) : null));
       const pct = (n) => (d.total ? Math.round(n / d.total * 100) : 0) + '%';
       const quietBy = {};
-      d.quiet.forEach((x) => { (quietBy[x.dept || '소속 없음'] = quietBy[x.dept || '소속 없음'] || []).push(x.name + (x.last ? '(' + x.last.slice(5) + ')' : '(기록 없음)')); });
+      d.quiet.forEach((x) => { (quietBy[UI.deptName(x.dept) || '소속 없음'] = quietBy[UI.deptName(x.dept) || '소속 없음'] || []).push(x.name + (x.last ? '(' + x.last.slice(5) + ')' : '(기록 없음)')); });
       fill(main, pcNotice(),
         h('div', { class: 'admin-head' }, h('div', null, h('h1', null, '접속 현황'), h('p', { class: 'sub' }, '앱을 연 직원 수입니다. 기록은 ' + (d.since || d.today) + '부터 쌓입니다. 외부 열람·열람 전용 계정은 뺍니다.')), h('span', { class: 'date-pill' }, UI.icon('clock'), d.today)),
         h('div', { class: 'stat-grid' },
@@ -405,7 +405,7 @@
           h('div', { class: 'panel' }, UI.cardHead('chart', '일별 접속 인원 (최근 14일)'), h('div', { class: 'chart-area' }, canvas)),
           h('div', { class: 'panel' }, UI.cardHead('people', '직별 접속 (전체 ' + d.total + '명)'),
             h('div', { class: 'table-wrap' }, h('table', { class: 'data' }, h('thead', null, h('tr', null, ['직', '직원', '이번 주', '최근 30일'].map((x) => h('th', null, x)))),
-              h('tbody', null, d.depts.map((x) => h('tr', null, h('td', null, x.dept), h('td', null, x.total + '명'), h('td', null, x.week + '명'), h('td', null, x.d30 + '명')))))))),
+              h('tbody', null, d.depts.map((x) => h('tr', null, h('td', null, UI.deptName(x.dept)), h('td', null, x.total + '명'), h('td', null, x.week + '명'), h('td', null, x.d30 + '명')))))))),
         h('div', { class: 'panel' }, UI.cardHead('todo', '최근 14일 접속하지 않은 직원 ' + d.quietN + '명'),
           d.quietN ? h('div', null, Object.keys(quietBy).map((k) => h('p', { class: 'quiet-row' }, h('strong', null, k), h('span', null, quietBy[k].join(', ')))),
             d.quietN > d.quiet.length ? h('p', { class: 'sub' }, '앞의 ' + d.quiet.length + '명만 보여 줍니다.') : null,

@@ -139,7 +139,7 @@ const Nav = (() => {
     menu.replaceChildren(
       big,
       h('strong', { class: 'card-name' }, u.name),
-      h('span', { class: 'card-sub' }, u.dept + ' / ' + u.rank),
+      h('span', { class: 'card-sub' }, UI.deptName(u.dept) + ' / ' + u.rank),
       h('div', { class: 'card-actions' },
         UI.has('GUEST') ? null : h('button', { type: 'button', onclick: () => fileIn.click() }, h('span', { class: 'card-ico' }, '✎'), '사진 변경'),
         UI.has('GUEST') || UI.has('VIEW_EXEC') ? null : h('a', { href: '#/account/push', onclick: () => setAvatar(false) }, h('span', { class: 'card-ico' }, '\u2709'), '휴대폰 알림'),

@@ -1245,3 +1245,6 @@ html[data-fs='2'] body:not([data-page='login']) { zoom: 1.3; }
 .mhd-chart { position: relative; height: 340px; }
 .mh-admin .block-h { margin-top: 22px; }
 @media (max-width: 833px) { .mhd { padding: 16px 12px; } .mhd-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .mhd-chart { height: 300px; } .mhd-main { font-size: 17px; } }
+/* 파일 끌어다 놓기 */
+.drop-over { position: relative; outline: 3px dashed var(--accent); outline-offset: -3px; background: rgba(11, 34, 130, 0.05) !important; border-radius: 12px; }
+.drop-over::after { content: '여기에 놓으면 파일이 선택됩니다'; position: absolute; top: 10px; right: 14px; padding: 6px 14px; border-radius: 980px; background: var(--accent); color: #fff; font-size: 14px; pointer-events: none; z-index: 5; }

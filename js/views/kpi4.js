@@ -296,5 +296,5 @@ window.TisUpload = function (opts) {
   } }, '올리기');
   return h('div', { class: 'tis-up' },
     h('div', { class: 'toolbar wrap-row' }, depts.length > 1 ? deptSel : h('strong', null, depts[0]), h('span', { class: 'sub' }, '제/개정 일자'), date),
-    UI.field('작업표준서 엑셀 파일 (10MB까지)', file), preview, h('div', { class: 'row-btns' }, btn), result);
+    UI.field('작업표준서 엑셀 파일 (10MB까지)', file, '파일을 끌어다 놓아도 됩니다'), preview, h('div', { class: 'row-btns' }, btn), result);
 };

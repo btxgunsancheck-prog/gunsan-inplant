@@ -53,7 +53,7 @@
     const pct = r.total ? Math.round(r.done.length / r.total * 100) : 0;
     const group = (list) => {
       const by = {};
-      list.forEach((x) => { (by[x.dept || '소속 없음'] = by[x.dept || '소속 없음'] || []).push(x.name); });
+      list.forEach((x) => { (by[UI.deptName(x.dept) || '소속 없음'] = by[UI.deptName(x.dept) || '소속 없음'] || []).push(x.name); });
       return h('ul', { class: 'reads-list' }, Object.keys(by).map((d) => h('li', null, h('strong', null, d), h('span', null, by[d].join(', ')))));
     };
     return h('div', { class: 'reads' },
@@ -142,7 +142,7 @@
       const fileIn = h('input', { type: 'file', accept: '.xlsx,.xlsm', 'aria-label': '생산계획표 엑셀', hidden: true });
       const fileName2 = h('span', { class: 'sub plan-file' }, '선택된 파일 없음');
       const pick = h('button', { class: 'btn ghost', type: 'button', onclick: () => fileIn.click() }, UI.icon('calendar'), h('span', null, '생산계획표(엑셀) 선택'));
-      const status = h('p', { class: 'sub' }, '생산계획표(xlsx)를 올리고 대상월을 고르면 달력으로 집계합니다.');
+      const status = h('p', { class: 'sub' }, '생산계획표(xlsx)를 올리거나 이 상자 안으로 끌어다 놓고 대상월을 고르면 달력으로 집계합니다.');
       const preview = h('div', { class: 'plan-preview' });
       const refresh = () => {
         planSum = null;

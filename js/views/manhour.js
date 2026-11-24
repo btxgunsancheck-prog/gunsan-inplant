@@ -227,10 +227,10 @@
       h('summary', null, '월별 기록·계약 인원 관리'),
       h('h3', { class: 'block-h' }, '1. 계약 인원표 (월 생산대수 구간별)'),
       h('p', { class: 'sub' }, '"월 생산대수별 계약 인원" 엑셀의 사내물류팀 시트를 올립니다. 생산계획을 올릴 때 그 달 생산량에 맞는 구간의 인원이 계약인원으로 들어갑니다.' + (d.dash.tableReady ? ' 지금 ' + d.dash.brackets.length + '개 구간이 등록되어 있습니다.' : '')),
-      h('div', { class: 'toolbar wrap-row' }, cFile), cMsg,
+      h('div', { class: 'toolbar wrap-row' }, cFile, h('span', { class: 'sub' }, '파일을 끌어다 놓아도 됩니다')), cMsg,
       h('h3', { class: 'block-h' }, '2. 지난 월별 기록 올리기'),
       h('p', { class: 'sub' }, '연월, 일CAPA, 월생산량, 운영인원, 계약인원 순서의 CSV(엑셀 복사본)를 올립니다. 그래프의 예전 연도 자료가 됩니다.'),
-      h('div', { class: 'toolbar wrap-row' }, hFile, sample), hMsg,
+      h('div', { class: 'toolbar wrap-row' }, hFile, sample, h('span', { class: 'sub' }, '파일을 끌어다 놓아도 됩니다')), hMsg,
       h('h3', { class: 'block-h' }, '3. 한 달 직접 입력·수정'), one);
   }
 
@@ -475,7 +475,7 @@
     if (!App.home.mhView || !canEdit()) { deny(app); return; }
     let parsed = null, fileName = '';
     const fileIn = h('input', { type: 'file', accept: '.xlsx,.xlsm', hidden: true, 'aria-label': '물류공수 종합 엑셀' });
-    const status = h('p', { class: 'sub' }, '물류공수 종합 엑셀(종합 시트 + 업무별 STS 시트)을 고르면 내용을 미리 보여 드립니다. 확인 후 올리면 사이트의 공수 내용이 모두 이 엑셀 내용으로 바뀝니다.');
+    const status = h('p', { class: 'sub' }, '물류공수 종합 엑셀(종합 시트 + 업무별 STS 시트)을 고르거나 이 화면에 끌어다 놓으면 내용을 미리 보여 드립니다. 확인 후 올리면 사이트의 공수 내용이 모두 이 엑셀 내용으로 바뀝니다.');
     const preview = h('div');
     const pick = h('button', { class: 'btn', type: 'button', onclick: () => fileIn.click() }, UI.icon('file'), h('span', null, '엑셀 고르기'));
     fileIn.onchange = async () => {

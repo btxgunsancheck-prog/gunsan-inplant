@@ -158,6 +158,8 @@ const UI = {
       h('img', { src: 'assets/illust/' + file + '.svg', alt: '', loading: 'lazy', decoding: 'async', width: 160, height: 120 }),
       h('p', { class: 'sub' }, text));
   },
+  /* 소속 표시 이름. 저장 값('팀', '사업부')은 그대로 두고 화면에서만 바꾼다 */
+  deptName(d) { return ({ '팀': '사내물류팀', '사업부': '군산사업부' })[d] || d; },
   has(perm) { return ((App.user && App.user.perms) || []).includes(perm); },
   hasAny(perms) { return perms.some(UI.has); },
   /* 관리자 직급(팀장, 과장, 주임, 공장, 직장, 반장). 업무 게시판 글쓰기와 개선사항 작성이 직급으로 자동 적용된다. 서버도 같은 기준으로 막는다. */
@@ -206,3 +208,64 @@ const UI = {
   pct(n, d) { return d ? Math.round(n / d * 100) : null; },
   dateOnly(s) { return String(s || '').slice(0, 10); }
 };
+
+/* 파일 끌어다 놓기(2026-11-24). 파일 올리기 칸이 있는 구역(상자, 폼, 접는 칸) 위에 파일을 놓으면 그 칸의 '파일 선택'과 똑같이 선택된다.
+   - 구역 안에 파일 칸이 여러 개면 파일 종류(accept)가 맞는 칸을 고른다(예: 엑셀 칸과 CSV 칸).
+   - 사진 칸(accept에 image)은 제외한다. 사진은 기존 사진 선택 방식을 쓴다.
+   - 칸이 없는 곳에 놓아도 브라우저가 그 파일을 열어 화면이 바뀌지 않게 막는다. */
+(() => {
+  const SEL = 'details, form, .panel, section, .wrap';
+  const docInputs = () => Array.from(document.querySelectorAll('input[type=file]')).filter((i) => !i.disabled && !/image/i.test(i.getAttribute('accept') || ''));
+  const zoneOf = (i) => i.closest(SEL) || i.parentElement;
+  const hasFiles = (e) => !!(e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files'));
+  const accepts = (input, f) => {
+    const list = (input.getAttribute('accept') || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    if (!list.length) return true;
+    const n = f.name.toLowerCase();
+    return list.some((a) => (a.startsWith('.') ? n.endsWith(a) : a.endsWith('/*') ? f.type.startsWith(a.slice(0, -1)) : f.type === a));
+  };
+  /* 놓은 자리를 포함하는 구역 중 가장 안쪽 구역과 그 안의 파일 칸들 */
+  const find = (target) => {
+    const zones = new Map();
+    docInputs().forEach((i) => { const z = zoneOf(i); if (z && z.contains(target)) zones.set(z, (zones.get(z) || []).concat(i)); });
+    let best = null;
+    zones.forEach((inputs, z) => { if (!best || best.zone.contains(z)) best = { zone: z, inputs }; });
+    return best;
+  };
+  let lit = null;
+  const light = (zone) => {
+    if (lit === zone) return;
+    if (lit) lit.classList.remove('drop-over');
+    lit = zone;
+    if (zone) zone.classList.add('drop-over');
+  };
+  document.addEventListener('dragover', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    const hit = find(e.target);
+    e.dataTransfer.dropEffect = hit ? 'copy' : 'none';
+    light(hit ? hit.zone : null);
+  });
+  document.addEventListener('dragleave', (e) => { if (!e.relatedTarget) light(null); });
+  document.addEventListener('drop', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    light(null);
+    const hit = find(e.target);
+    if (!hit) return;
+    const files = Array.from(e.dataTransfer.files);
+    const input = hit.inputs.find((i) => files.every((f) => accepts(i, f))) || hit.inputs.find((i) => accepts(i, files[0]));
+    if (!input) {
+      const exts = Array.from(new Set(hit.inputs.map((i) => i.getAttribute('accept') || '').join(',').split(',').map((s) => s.trim()).filter((s) => s.startsWith('.')))).join(' ');
+      UI.toast('이 파일 형식은 올릴 수 없습니다.' + (exts ? ' (가능: ' + exts + ')' : ''), true);
+      return;
+    }
+    const use = input.multiple ? files.filter((f) => accepts(input, f)) : [files.find((f) => accepts(input, f))];
+    if (!input.multiple && files.length > 1) UI.toast('한 번에 파일 1개만 올릴 수 있어 첫 파일만 선택했습니다.');
+    const dt = new DataTransfer();
+    use.forEach((f) => dt.items.add(f));
+    input.files = dt.files;
+    if (hit.zone.tagName === 'DETAILS') hit.zone.open = true;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+})();
