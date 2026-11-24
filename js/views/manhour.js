@@ -268,7 +268,7 @@
     const now = d.dash.now;
     const note = !d.dash.tableReady
       ? h('p', { class: 'work-note' }, '계약 인원표가 아직 없습니다.' + (d.canEdit ? ' 아래 "월별 기록·계약 인원 관리"에서 엑셀을 올리면 생산계획을 올릴 때 계약 인원이 자동으로 채워집니다.' : ' 공수 관리 권한자가 올리면 계약 인원이 표시됩니다.'))
-      : (now ? h('p', { class: 'note' }, '계약 인원: ' + WD_LABEL(now.ym) + ' 생산계획 ' + now.prod + '대 → ' + now.label + ' 구간 ' + MH.fmt(now.total, 1) + '명 (' + Object.keys(now.groups).map((g) => g + ' ' + MH.fmt(now.groups[g], 1)).join(', ') + ')' + (now.below ? ' · 첫 구간보다 적어 첫 구간 기준' : '')) : null);
+      : (now ? h('p', { class: 'note' }, '계약 인원: ' + WD_LABEL(now.ym) + ' 생산계획 ' + now.prod + '대 → ' + now.label + ' 구간 ' + MH.fmt(now.total, 1) + '명 (' + Object.keys(now.groups).map((g) => g + ' ' + MH.fmt(now.groups[g], 1)).join(', ') + ')' + (now.above ? ' · 마지막 구간보다 많아 마지막 구간 기준' : '')) : null);
     const boxA = h('div', { class: 'mhd-box' },
       h('div', { class: 'mhd-chart-head' }, h('span', { class: 'mhd-title' }, '한 장에 겹쳐 보기'), legend),
       h('p', { class: 'sub' }, '월 생산량은 연한 막대, 계약·운영인원은 굵은 선입니다. 두 선 사이를 색칠해 부족·여유가 보입니다.'),
@@ -311,7 +311,7 @@
         cMsg.replaceChildren(
           h('p', { class: p.same ? 'note' : 'work-note' }, '시트 "' + p.sheet + '" 에서 구간 ' + p.brackets.length + '개, 직 ' + p.groups.length + '개를 읽었습니다.' + (p.fileTotals ? (p.same ? ' 엑셀 총계와 일치합니다.' : ' 엑셀 총계와 다른 구간이 있습니다. 확인해 주세요.') : '')),
           h('div', { class: 'table-wrap' }, h('table', { class: 'data' },
-            h('thead', null, h('tr', null, [h('th', null, '직')].concat(p.brackets.map((l, k) => h('th', { class: 'num' }, l + (k === p.brackets.length - 1 ? '대~' : '대~' + (p.brackets[k + 1] - 1))))))),
+            h('thead', null, h('tr', null, [h('th', null, '직')].concat(p.brackets.map((l, k) => h('th', { class: 'num' }, (k === 0 ? 1 : p.brackets[k - 1] + 1) + '대~' + l + '대'))))),
             h('tbody', null, p.groups.map((g) => h('tr', null, h('td', null, g.name), g.values.map((v) => h('td', { class: 'num' }, MH.fmt(v, 2))))),
               h('tr', { class: 'mh-total' }, h('td', null, '합계'), p.sums.map((v) => h('td', { class: 'num' }, MH.fmt(v, 2))))))), btn);
       } catch (e) { cMsg.replaceChildren(h('p', { class: 'form-error' }, e.message || '파일을 읽지 못했습니다.')); }
