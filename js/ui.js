@@ -211,12 +211,12 @@ const UI = {
 
 /* 파일 끌어다 놓기(2026-11-24). 파일 올리기 칸이 있는 구역(상자, 폼, 접는 칸) 위에 파일을 놓으면 그 칸의 '파일 선택'과 똑같이 선택된다.
    - 구역 안에 파일 칸이 여러 개면 파일 종류(accept)가 맞는 칸을 고른다(예: 엑셀 칸과 CSV 칸).
-   - 사진 칸(accept에 image)은 제외한다. 사진은 기존 사진 선택 방식을 쓴다.
+   - 파일 칸마다 점선 상자와 안내 문구를 자동으로 붙인다(아래 MutationObserver). 사진 칸도 같은 방식이고, 내 사진 바꾸기·면허 사진 칸은 제외한다(data-nodrop).
    - 칸이 없는 곳에 놓아도 브라우저가 그 파일을 열어 화면이 바뀌지 않게 막는다. */
 (() => {
   const SEL = 'details, form, .panel, section, .wrap';
-  const docInputs = () => Array.from(document.querySelectorAll('input[type=file]')).filter((i) => !i.disabled && !/image/i.test(i.getAttribute('accept') || ''));
-  const zoneOf = (i) => i.closest(SEL) || i.parentElement;
+  const docInputs = () => Array.from(document.querySelectorAll('input[type=file]')).filter((i) => !i.disabled && !i.dataset.nodrop);
+  const zoneOf = (i) => i.closest('[data-dropzone]') || i.closest(SEL) || i.parentElement;
   const hasFiles = (e) => !!(e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files'));
   const accepts = (input, f) => {
     const list = (input.getAttribute('accept') || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
@@ -268,4 +268,37 @@ const UI = {
     if (hit.zone.tagName === 'DETAILS') hit.zone.open = true;
     input.dispatchEvent(new Event('change', { bubbles: true }));
   });
+})();
+
+/* 파일 칸마다 끌어다 놓을 수 있는 점선 상자를 자동으로 씌운다. 보이는 파일 칸은 칸을 상자로 감싸고, 숨겨 둔 칸(버튼으로 여는 방식)은 그 칸이 든 줄을 상자로 만든다. */
+(() => {
+  const wrap = (input) => {
+    if (input.dataset.dropped || input.dataset.nodrop) return;
+    input.dataset.dropped = '1';
+    const photo = /image/i.test(input.getAttribute('accept') || '');
+    const text = photo ? '사진을 이 상자 안으로 끌어다 놓아도 됩니다' : '파일을 이 상자 안으로 끌어다 놓아도 됩니다';
+    const hint = () => h('span', { class: 'drop-hint' }, text);
+    const picker = input.closest('.field');
+    if (input.hidden || input.getAttribute('hidden') !== null) {
+      const box = (photo && picker) || input.parentElement;
+      if (!box || box.classList.contains('dropbox')) return;
+      box.classList.add('dropbox');
+      box.dataset.dropzone = '1';
+      box.append(hint());
+      return;
+    }
+    const box = h('div', { class: 'dropbox', dataset: { dropzone: '1' } });
+    input.parentNode.insertBefore(box, input);
+    box.append(input, hint());
+  };
+  const scan = (root) => {
+    if (!root || root.nodeType !== 1) return;
+    if (root.matches && root.matches('input[type=file]')) wrap(root);
+    root.querySelectorAll && root.querySelectorAll('input[type=file]').forEach(wrap);
+  };
+  const start = () => {
+    scan(document.body);
+    new MutationObserver((list) => list.forEach((m) => m.addedNodes.forEach(scan))).observe(document.body, { childList: true, subtree: true });
+  };
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
 })();

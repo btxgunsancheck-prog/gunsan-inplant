@@ -43,7 +43,7 @@
     };
     return h('div', { class: 'lib-general-up' },
       h('div', { class: 'mh-capa-row' }, UI.field('분류', cat), UI.field('제목', title)),
-      UI.field('파일', file, '한 파일 10MB까지 · ' + TYPES_TEXT + ' · 이 상자 안으로 파일을 끌어다 놓아도 됩니다'), msg, h('div', { class: 'row-btns' }, btn),
+      UI.field('파일', file, '한 파일 10MB까지 · ' + TYPES_TEXT), msg, h('div', { class: 'row-btns' }, btn),
       h('p', { class: 'sub' }, '급여명세, 인사기록, 주민번호가 있는 명단처럼 개인정보가 든 파일은 올리지 마세요. 같은 제목으로 다시 올리면 예전 파일은 "이전 판"으로 남습니다.'));
   }
 

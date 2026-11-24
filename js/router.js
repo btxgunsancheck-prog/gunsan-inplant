@@ -22,7 +22,8 @@ const Router = {
       return Views.login();
     }
     if (App.user && App.user.mustChange && path !== '/account/password') { Router.go('/account/password'); return undefined; }
-    if (UI.has('GUEST') && !/^\/(kpi\/team|kpi\/team\/[A-Z][A-Z0-9]*|kpi\/best|account\/password|account\/font)?$/.test(path)) { Router.go('/'); return undefined; }
+    if (UI.has('GUEST') && !/^\/(kpi\/team|kpi\/team\/[A-Z][A-Z0-9]*|kpi\/best|account\/password|account\/font)?$/.test(path)
+      && !(UI.has('OTHER') && /^\/(board\/notice|board\/notice\/\d+|board\/plan\/\d+|plan|library)$/.test(path))) { Router.go('/'); return undefined; }
     const app = document.getElementById('app');
     for (const r of Router.routes) {
       const m = path.match(r.re);

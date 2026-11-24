@@ -40,13 +40,14 @@
     const sel = { years: [], items: ['capa', 'prod', 'staff', 'contract'] };
     const byYear = (y) => rows.filter((r) => r.y === y);
     const yearAvg = (y, k) => { const v = byYear(y).map((r) => r[k]).filter((x) => x !== null); return v.length ? mean(v) : null; };
-    let chart = null;
+    let charts = [];
     const cards = h('div', { class: 'mhd-cards' });
     const yearBar = h('div', { class: 'mhd-row' });
     const itemBar = h('div', { class: 'mhd-row' });
     const title = h('span', { class: 'mhd-title' });
     const legend = h('div', { class: 'mhd-legend' });
-    const canvas = h('canvas', { role: 'img', 'aria-label': '공수 현황 그래프' });
+    const canvasA = h('canvas', { role: 'img', 'aria-label': '공수 현황 그래프' });
+    const miniGrid = h('div', { class: 'mhd-minis' });
     const tableBox = h('div');
     const focusYear = () => (sel.years.length ? sel.years[sel.years.length - 1] : (years[years.length - 1] || ''));
 
@@ -114,26 +115,82 @@
           h('tbody', null, list.map((r) => h('tr', null, h('td', null, WD_LABEL(r.ym)),
             ['capa', 'prod', 'staff', 'contract', 'diff'].map((k) => h('td', { class: 'num' + (k === 'diff' && r.diff !== null && r.diff < 0 ? ' bad' : '') }, r[k] === null ? '-' : (k === 'diff' && r.diff > 0 ? '+' : '') + fmtVal(k, r[k]))))))))));
     }
+    /* 안 A: 월 생산량(막대) + 계약·운영인원(굵은 선, 둘 사이 색칠, 선 끝 값). 안 B: 켜 둔 항목마다 자기 눈금의 작은 그래프. */
+    const endLabels = { id: 'endLabels', afterDatasetsDraw(c) {
+      const { ctx } = c;
+      c.data.datasets.forEach((ds, i) => {
+        if (ds.type === 'bar' || !c.isDatasetVisible(i)) return;
+        const m = c.getDatasetMeta(i);
+        let k = ds.data.length - 1;
+        while (k >= 0 && (ds.data[k] === null || ds.data[k] === undefined)) k--;
+        if (k < 0 || !m.data[k]) return;
+        ctx.save();
+        ctx.fillStyle = ds.borderColor;
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(fmtVal(ds.itemKey, ds.data[k]), m.data[k].x + 9, m.data[k].y + 5);
+        ctx.restore();
+      });
+    } };
+    const lastVal = (sets) => { const s = sets[sets.length - 1]; if (!s) return null; for (let k = s.data.length - 1; k >= 0; k--) if (s.data[k] !== null && s.data[k] !== undefined) return s.data[k]; return null; };
+    const tooltip = { backgroundColor: 'rgba(255,255,255,0.97)', borderColor: 'rgba(0,0,0,0.1)', borderWidth: 1, titleColor: '#333', bodyColor: '#555', padding: 10,
+      callbacks: { label: (c) => ' ' + c.dataset.label + ': ' + (c.parsed.y === null ? '-' : fmtVal(c.dataset.itemKey, c.parsed.y)) } };
+
     function render() {
       drawCards();
       drawBars();
       const ds = datasets();
       title.textContent = ds.title;
-      drawLegend(ds.sets);
       drawTable();
-      const useR = ds.sets.some((s) => s.yAxisID === 'yR'), useL = ds.sets.some((s) => s.yAxisID === 'yL');
+      const single = sel.years.length <= 1;
+      const order = { prod: 0, contract: 1, staff: 2 };
+      const aSets = ds.sets.filter((s) => order[s.itemKey] !== undefined).sort((a, b) => order[a.itemKey] - order[b.itemKey]).map((s, i, arr) => {
+        const o = Object.assign({}, s);
+        if (s.itemKey === 'prod') Object.assign(o, { type: 'bar', backgroundColor: s.borderColor + '2e', borderWidth: 0, borderRadius: 6, barPercentage: 0.7, order: 5, fill: false });
+        else Object.assign(o, { type: 'line', borderWidth: 4, pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#fff', pointBorderWidth: 3, order: s.itemKey === 'staff' ? 1 : 2 });
+        /* 계약선 바로 다음이 운영선이면 둘 사이를 색칠한다(한 해만 볼 때) */
+        if (single && s.itemKey === 'contract' && arr[i + 1] && arr[i + 1].itemKey === 'staff') { o.fill = '+1'; o.backgroundColor = 'rgba(216,90,48,0.15)'; }
+        return o;
+      });
+      drawLegend(aSets);
+      boxA.hidden = !aSets.length;
+      const useR = aSets.some((s) => s.yAxisID === 'yR'), useL = aSets.some((s) => s.yAxisID === 'yL');
+      /* 안 B 칸 만들기 */
+      const minis = ITEMS.filter((it) => sel.items.includes(it.key)).map((it) => {
+        const sets = ds.sets.filter((s) => s.itemKey === it.key).map((s, i, arr) => {
+          const o = Object.assign({}, s, { type: 'line', borderWidth: 3.5, pointRadius: 3.5, yAxisID: 'y', fill: false });
+          if (arr.length === 1) { o.fill = true; o.backgroundColor = it.bg; }
+          if (it.key === 'diff' && arr.length === 1) { o.type = 'bar'; o.borderRadius = 5; o.borderWidth = 0; o.backgroundColor = s.data.map((v) => (v !== null && v < 0 ? 'rgba(217,48,37,0.75)' : 'rgba(139,92,246,0.75)')); }
+          return o;
+        });
+        return { it, sets };
+      });
+      miniGrid.replaceChildren(...minis.map((m) => {
+        const v = lastVal(m.sets);
+        return h('div', { class: 'mhd-mini' }, h('h3', null, m.it.label), h('div', { class: 'mhd-big', style: 'color:' + m.it.txt }, v === null ? '-' : (m.it.key === 'diff' && v > 0 ? '+' : '') + fmtVal(m.it.key, v) + m.it.unit),
+          h('div', { class: 'mhd-mini-chart' }, h('canvas', { role: 'img', 'aria-label': m.it.label + ' 그래프' })));
+      }));
+      boxB.hidden = !minis.length;
       const build = () => {
-        if (!canvas.isConnected) return;
-        if (chart) chart.destroy();
-        chart = new window.Chart(canvas.getContext('2d'), { type: 'line', data: { labels: ds.labels, datasets: ds.sets }, options: {
-          responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
-          plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(255,255,255,0.97)', borderColor: 'rgba(0,0,0,0.1)', borderWidth: 1, titleColor: '#333', bodyColor: '#555', padding: 10,
-            callbacks: { label: (c) => ' ' + c.dataset.label + ': ' + (c.parsed.y === null ? '-' : fmtVal(c.dataset.itemKey, c.parsed.y)) } } },
-          scales: {
-            x: { ticks: { font: { size: 13 }, autoSkip: false, maxRotation: 45, color: '#888' }, grid: { color: 'rgba(0,0,0,0.05)' } },
-            yL: { display: useL, position: 'left', title: { display: true, text: 'CAPA / 인원', color: '#888' }, ticks: { color: '#888' }, grid: { color: 'rgba(0,0,0,0.05)' } },
-            yR: { display: useR, position: 'right', title: { display: true, text: '월 생산량(대)', color: '#888' }, ticks: { color: '#888' }, grid: { drawOnChartArea: false } }
-          } } });
+        if (!canvasA.isConnected) return;
+        charts.forEach((c) => c.destroy());
+        charts = [];
+        if (aSets.length) {
+          charts.push(new window.Chart(canvasA.getContext('2d'), { data: { labels: ds.labels, datasets: aSets }, options: {
+            responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false }, layout: { padding: { right: 44, top: 12 } },
+            plugins: { legend: { display: false }, tooltip },
+            scales: {
+              x: { ticks: { font: { size: 13 }, autoSkip: false, maxRotation: 45, color: '#667' }, grid: { display: false } },
+              yL: { display: useL, position: 'left', grace: '8%', title: { display: true, text: '인원(명)', color: '#667' }, ticks: { color: '#667' }, grid: { color: '#e9edf5' } },
+              yR: { display: useR, position: 'right', beginAtZero: true, grace: '15%', title: { display: true, text: '월 생산량(대)', color: '#667' }, ticks: { color: '#667' }, grid: { drawOnChartArea: false } }
+            } }, plugins: [endLabels] }));
+        }
+        miniGrid.querySelectorAll('canvas').forEach((cv, i) => {
+          charts.push(new window.Chart(cv.getContext('2d'), { data: { labels: ds.labels, datasets: minis[i].sets }, options: {
+            responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false }, tooltip },
+            scales: { x: { grid: { display: false }, ticks: { font: { size: 12 }, color: '#667', autoSkip: true, maxRotation: 0 } }, y: { grace: '8%', grid: { color: '#e9edf5' }, ticks: { font: { size: 12 }, color: '#667' } } } } }));
+        });
       };
       if (window.Chart) build();
       else if (!render.loading) {
@@ -148,10 +205,17 @@
     const note = !d.dash.tableReady
       ? h('p', { class: 'work-note' }, '계약 인원표가 아직 없습니다.' + (d.canEdit ? ' 아래 "월별 기록·계약 인원 관리"에서 엑셀을 올리면 생산계획을 올릴 때 계약 인원이 자동으로 채워집니다.' : ' 공수 관리 권한자가 올리면 계약 인원이 표시됩니다.'))
       : (now ? h('p', { class: 'note' }, '계약 인원: ' + WD_LABEL(now.ym) + ' 생산계획 ' + now.prod + '대 → ' + now.label + ' 구간 ' + MH.fmt(now.total, 1) + '명 (' + Object.keys(now.groups).map((g) => g + ' ' + MH.fmt(now.groups[g], 1)).join(', ') + ')' + (now.below ? ' · 첫 구간보다 적어 첫 구간 기준' : '')) : null);
+    const boxA = h('div', { class: 'mhd-box' },
+      h('div', { class: 'mhd-chart-head' }, h('span', { class: 'mhd-title' }, '한 장에 겹쳐 보기'), legend),
+      h('p', { class: 'sub' }, '월 생산량은 연한 막대, 계약·운영인원은 굵은 선입니다. 한 해만 켜면 두 선 사이를 색칠해 부족·여유가 보입니다.'),
+      h('div', { class: 'mhd-chart' }, canvasA));
+    const boxB = h('div', { class: 'mhd-box' },
+      h('div', { class: 'mhd-chart-head' }, h('span', { class: 'mhd-title' }, '항목별로 나눠 보기')),
+      h('p', { class: 'sub' }, '켜 둔 항목마다 자기 눈금으로 그립니다. 위 숫자는 가장 최근 값입니다.'), miniGrid);
     const el = h('section', { class: 'mhd' },
       h('div', { class: 'mhd-head' }, h('h2', { class: 'mhd-main' }, '군산 사내물류팀 물동량 대비 인력 운영현황'), h('span', { class: 'sub' }, '연도·항목을 눌러 켜고 끄면 그래프가 바뀝니다. 여러 개를 함께 켤 수 있습니다.')),
       cards, h('div', { class: 'mhd-ctrls' }, yearBar, itemBar), note,
-      h('div', { class: 'mhd-chart-head' }, title, legend), h('div', { class: 'mhd-chart' }, canvas), tableBox);
+      h('p', { class: 'mhd-ttl' }, title), boxA, boxB, tableBox);
     if (!rows.length) el.append(h('p', { class: 'sub' }, '월별 기록이 아직 없습니다. 생산계획을 올리거나 월 CAPA를 저장하면 쌓이기 시작합니다.' + (d.canEdit ? ' 지난 실적은 "월별 기록·계약 인원 관리"에서 한 번에 올릴 수 있습니다.' : '')));
     render();
     return el;
@@ -227,10 +291,10 @@
       h('summary', null, '월별 기록·계약 인원 관리'),
       h('h3', { class: 'block-h' }, '1. 계약 인원표 (월 생산대수 구간별)'),
       h('p', { class: 'sub' }, '"월 생산대수별 계약 인원" 엑셀의 사내물류팀 시트를 올립니다. 생산계획을 올릴 때 그 달 생산량에 맞는 구간의 인원이 계약인원으로 들어갑니다.' + (d.dash.tableReady ? ' 지금 ' + d.dash.brackets.length + '개 구간이 등록되어 있습니다.' : '')),
-      h('div', { class: 'toolbar wrap-row' }, cFile, h('span', { class: 'sub' }, '파일을 끌어다 놓아도 됩니다')), cMsg,
+      h('div', { class: 'toolbar wrap-row' }, cFile), cMsg,
       h('h3', { class: 'block-h' }, '2. 지난 월별 기록 올리기'),
       h('p', { class: 'sub' }, '연월, 일CAPA, 월생산량, 운영인원, 계약인원 순서의 CSV(엑셀 복사본)를 올립니다. 그래프의 예전 연도 자료가 됩니다.'),
-      h('div', { class: 'toolbar wrap-row' }, hFile, sample, h('span', { class: 'sub' }, '파일을 끌어다 놓아도 됩니다')), hMsg,
+      h('div', { class: 'toolbar wrap-row' }, hFile, sample), hMsg,
       h('h3', { class: 'block-h' }, '3. 한 달 직접 입력·수정'), one);
   }
 
@@ -475,7 +539,7 @@
     if (!App.home.mhView || !canEdit()) { deny(app); return; }
     let parsed = null, fileName = '';
     const fileIn = h('input', { type: 'file', accept: '.xlsx,.xlsm', hidden: true, 'aria-label': '물류공수 종합 엑셀' });
-    const status = h('p', { class: 'sub' }, '물류공수 종합 엑셀(종합 시트 + 업무별 STS 시트)을 고르거나 이 화면에 끌어다 놓으면 내용을 미리 보여 드립니다. 확인 후 올리면 사이트의 공수 내용이 모두 이 엑셀 내용으로 바뀝니다.');
+    const status = h('p', { class: 'sub' }, '물류공수 종합 엑셀(종합 시트 + 업무별 STS 시트)을 고르면 내용을 미리 보여 드립니다. 확인 후 올리면 사이트의 공수 내용이 모두 이 엑셀 내용으로 바뀝니다.');
     const preview = h('div');
     const pick = h('button', { class: 'btn', type: 'button', onclick: () => fileIn.click() }, UI.icon('file'), h('span', null, '엑셀 고르기'));
     fileIn.onchange = async () => {

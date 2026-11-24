@@ -150,7 +150,7 @@ window.LicenseBox = function (host, alive) {
         } }, '×'));
       }
       if (r.canEdit && r.photos < 4) {
-        const input = h('input', { type: 'file', accept: 'image/*,.heic,.heif', hidden: true, onchange: async () => {
+        const input = h('input', { type: 'file', accept: 'image/*,.heic,.heif', hidden: true, 'data-nodrop': '1', onchange: async () => {
           const file = input.files[0];
           if (!file) return;
           try { await Api.call('licensePhotoAdd', { rowNo: r.rowNo, name: r.v[0], data: await ImageTool.compress(file) }); UI.toast('사진을 올렸습니다.'); load(); }
@@ -296,5 +296,5 @@ window.TisUpload = function (opts) {
   } }, '올리기');
   return h('div', { class: 'tis-up' },
     h('div', { class: 'toolbar wrap-row' }, depts.length > 1 ? deptSel : h('strong', null, depts[0]), h('span', { class: 'sub' }, '제/개정 일자'), date),
-    UI.field('작업표준서 엑셀 파일 (10MB까지)', file, '파일을 끌어다 놓아도 됩니다'), preview, h('div', { class: 'row-btns' }, btn), result);
+    UI.field('작업표준서 엑셀 파일 (10MB까지)', file), preview, h('div', { class: 'row-btns' }, btn), result);
 };

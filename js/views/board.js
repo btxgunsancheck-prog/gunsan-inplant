@@ -77,7 +77,7 @@
         catch (e) { UI.toast(e.message, true); }
       };
       const input = h('textarea', { rows: 2, placeholder: '댓글을 입력해 주세요', 'aria-label': '댓글' });
-      const commentForm = !UI.has('VIEW_EXEC') && h('form', { class: 'comment-form', onsubmit: async (e) => {
+      const commentForm = !UI.has('VIEW_EXEC') && !UI.has('OTHER') && h('form', { class: 'comment-form', onsubmit: async (e) => {
         e.preventDefault();
         if (!input.value.trim()) return;
         try { await Api.call('commentAdd', { postId: id, body: input.value }); load(); } catch (err) { UI.toast(err.message, true); }
@@ -85,7 +85,7 @@
       app.replaceChildren(h('article', { class: 'section' }, h('div', { class: 'wrap' },
         h('a', { class: 'back', href: board === 'plan' ? '#/plan' : '#/board/' + board }, NAMES[board]),
         h('h1', { class: 'post-h' }, p.title),
-        h('p', { class: 'sub' }, p.author + ' · ' + p.created + (p.updated ? ' (수정됨)' : '')),
+        h('p', { class: 'sub' }, p.author + ' · ' + p.created + (p.updated ? ' (수정됨)' : '') + (board === 'notice' && p.canEdit && !UI.has('OTHER') ? (p.ext ? ' · 기타부서에 공개' : ' · 우리 팀 내부용') : '')),
         p.canEdit && h('div', { class: 'row-btns' },
           h('a', { class: 'btn ghost', href: '#/board/' + board + '/' + id + '/edit' }, '수정'),
           h('button', { class: 'btn ghost', type: 'button', onclick: remove }, '삭제')),
@@ -94,7 +94,7 @@
           h('p', { class: 'sub' }, '원본 ' + p.plan.file + (p.plan.dist ? ' · 배포 ' + p.plan.dist : ''))) : null,
         p.photos.length ? h('div', { class: 'thumbs' }, p.photos.map((f) => UI.thumb(f))) : null,
         p.reads ? readsPanel(p.reads) : null,
-        h('h2', { class: 'comment-h' }, '댓글 ' + p.comments.length),
+        UI.has('OTHER') ? null : h('h2', { class: 'comment-h' }, '댓글 ' + p.comments.length),
         h('ul', { class: 'comments' }, p.comments.map((c) => h('li', null,
           h('p', { class: 'sub' }, c.author + ' · ' + c.created), h('p', { class: 'pre' }, c.body),
           c.canDelete && !UI.has('VIEW_EXEC') && h('button', { class: 'link', type: 'button', onclick: async () => {
@@ -115,6 +115,7 @@
     const title = h('input', { required: true, maxlength: 200, value: cur ? cur.title : '' });
     const body = h('textarea', { rows: 10, required: true, value: cur ? cur.body : '' });
     const pinned = h('input', { type: 'checkbox', checked: !!(cur && cur.pinned) });
+    const ext = h('input', { type: 'checkbox', checked: !!(cur && cur.ext) });
     const existing = cur ? cur.photos.slice() : [];
     const removed = [];
     const left = 5 - existing.length;
@@ -142,7 +143,7 @@
       const fileIn = h('input', { type: 'file', accept: '.xlsx,.xlsm', 'aria-label': '생산계획표 엑셀', hidden: true });
       const fileName2 = h('span', { class: 'sub plan-file' }, '선택된 파일 없음');
       const pick = h('button', { class: 'btn ghost', type: 'button', onclick: () => fileIn.click() }, UI.icon('calendar'), h('span', null, '생산계획표(엑셀) 선택'));
-      const status = h('p', { class: 'sub' }, '생산계획표(xlsx)를 올리거나 이 상자 안으로 끌어다 놓고 대상월을 고르면 달력으로 집계합니다.');
+      const status = h('p', { class: 'sub' }, '생산계획표(xlsx)를 올리고 대상월을 고르면 달력으로 집계합니다.');
       const preview = h('div', { class: 'plan-preview' });
       const refresh = () => {
         planSum = null;
@@ -189,7 +190,7 @@
       let ticket = '';
       let calMsg = '';
       try {
-        const res = await Api.call('boardSave', Object.assign({ id: id || null, board, title: title.value, body: body.value, pinned: pinned.checked, removePhotos: removed },
+        const res = await Api.call('boardSave', Object.assign({ id: id || null, board, title: title.value, body: body.value, pinned: pinned.checked, ext: ext.checked, removePhotos: removed },
           planSum ? { plan: { ym: planSum.ym, days: planSum.days, dist: planSum.dist, file: fileName, off: Object.keys(Plan.HOLIDAYS).filter((d) => d.indexOf(planSum.ym + '-') === 0) } } : {}));
         postId = res.id;
         ticket = res.ticket;
@@ -203,6 +204,7 @@
     } },
       planOn ? planBox : null, UI.field('제목', title), UI.field('내용', body),
       board === 'notice' && UI.has('NOTICE_WRITE') && h('label', { class: 'check' }, pinned, h('span', null, '상단 고정')),
+      board === 'notice' && UI.has('NOTICE_WRITE') && h('label', { class: 'check' }, ext, h('span', null, '기타부서(외부 부서 직원)에도 공개 — 내부 업무 내용이 있으면 체크하지 마세요')),
       existing.length ? keep : null, board === 'plan' ? null : picker.el, h('div', { class: 'submit-bar' }, btn));
     const progress = ProgressBox(form);
     app.replaceChildren(UI.hero(cur ? '글 수정' : board === 'plan' ? '생산계획 올리기' : NAMES[board] + ' 글쓰기'), h('section', { class: 'section' }, form));

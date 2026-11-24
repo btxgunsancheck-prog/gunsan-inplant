@@ -11,6 +11,16 @@ const Nav = (() => {
 
   function menus() {
     const u = App.user;
+    /* 기타부서(외부 부서 직원): 공지(기타부서 공개 글), 생산계획, 팀 전체 KPI, 우수개선현황, 자료실(회사 규정·지침, 양식) */
+    if (UI.has('OTHER')) {
+      const nl = (App.home.notices || []).map((n) => link(n.title, '#/board/notice/' + n.id));
+      return [
+        { key: 'news', label: '소식', first: [link('공지사항', '#/board/notice'), link('생산계획', '#/plan')], groups: [{ title: '최신 공지', links: nl }] },
+        { key: 'kpi', label: 'KPI', first: [link('팀 전체 현황', '#/kpi/team')], groups: [] },
+        { key: 'best', label: '우수개선현황', first: [link('우수개선현황', '#/kpi/best')], groups: [] },
+        { key: 'library', label: '자료실', first: [link('전체 자료', '#/library'), link('회사 규정·지침', '#/library?cat=' + encodeURIComponent('회사 규정·지침')), link('양식', '#/library?cat=' + encodeURIComponent('양식'))], groups: [] }
+      ];
+    }
     /* 외부 열람 계정: 팀 전체 KPI와 우수개선현황만 보인다. */
     if (UI.has('GUEST')) {
       return [
@@ -122,7 +132,7 @@ const Nav = (() => {
       ? h('img', { src: 'data:image/jpeg;base64,' + u.photo, alt: '' })
       : h('span', { class: 'avatar-letter' }, String(u.name || '').charAt(0)));
     const menu = document.getElementById('avatar-menu');
-    const fileIn = h('input', { type: 'file', accept: 'image/*', hidden: true, onchange: async () => {
+    const fileIn = h('input', { type: 'file', accept: 'image/*', hidden: true, 'data-nodrop': '1', onchange: async () => {
       const f = fileIn.files[0];
       if (!f) return;
       try {
@@ -142,7 +152,7 @@ const Nav = (() => {
       h('span', { class: 'card-sub' }, UI.deptName(u.dept) + ' / ' + u.rank),
       h('div', { class: 'card-actions' },
         UI.has('GUEST') ? null : h('button', { type: 'button', onclick: () => fileIn.click() }, h('span', { class: 'card-ico' }, '✎'), '사진 변경'),
-        UI.has('GUEST') || UI.has('VIEW_EXEC') ? null : h('a', { href: '#/account/push', onclick: () => setAvatar(false) }, h('span', { class: 'card-ico' }, '\u2709'), '휴대폰 알림'),
+        UI.has('GUEST') || UI.has('VIEW_EXEC') || UI.has('OTHER') ? null : h('a', { href: '#/account/push', onclick: () => setAvatar(false) }, h('span', { class: 'card-ico' }, '\u2709'), '휴대폰 알림'),
         h('a', { href: '#/account/font', onclick: () => setAvatar(false) }, h('span', { class: 'card-ico' }, 'A'), '글자 크기'),
         u.empNo === 'GUEST' ? null : h('a', { href: '#/account/password', onclick: () => setAvatar(false) }, h('span', { class: 'card-ico' }, '⚿'), '비밀번호'),
         h('button', { type: 'button', onclick: () => App.logout() }, h('span', { class: 'card-ico' }, '⇥'), u.empNo === 'GUEST' ? '나가기' : '로그아웃')),
@@ -204,6 +214,12 @@ const Nav = (() => {
     const bar = document.getElementById('tabbar');
     const exec = UI.has('VIEW_EXEC');
     const tab = (key, href, icon, label) => h('a', { class: 'tab-item', href, dataset: { tab: key } }, UI.icon(icon), h('span', null, label));
+    if (UI.has('OTHER')) {
+      bar.replaceChildren(tab('home', '#/', 'home', '홈'), tab('notice', '#/board/notice', 'megaphone', '공지'), tab('kpi', '#/kpi/team', 'chart', 'KPI'), tab('library', '#/library', 'folder', '자료실'));
+      bar.hidden = false;
+      markTab();
+      return;
+    }
     if (UI.has('GUEST')) {
       bar.replaceChildren(tab('home', '#/', 'home', '홈'), tab('kpi', '#/kpi/team', 'chart', 'KPI'), tab('best', '#/kpi/best', 'trophy', '우수개선'));
       bar.hidden = false;

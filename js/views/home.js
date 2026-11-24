@@ -85,8 +85,15 @@ Router.add('/', (params, app) => {
       h('div', { class: 'tile t-kpi' }, UI.cardHead('chart', home.kpiMonth ? '마감월(' + Number(home.kpiMonth.slice(5, 7)) + '월) KPI' : '마감월 KPI', '#/kpi/team'),
         gt ? h('p', { class: 'big-rate' }, h('strong', null, UI.num(UI.pct(gk.G, gt), '%')), h('span', { class: 'sub' }, '팀 전체 달성 비율'))
           : UI.empty(home.kpiMonth ? '표시할 KPI가 없습니다.' : '마감이 끝난 달이 없습니다.', 'data', true)),
+      home.other ? h('div', { class: 'tile t-notice' }, UI.cardHead('megaphone', '최신 공지', '#/board/notice'), list(home.notices, '#/board/notice/', '기타부서에 공개된 공지가 없습니다.')) : null,
       h('div', { class: 'tile' }, UI.cardHead('trophy', '우수개선현황', '#/kpi/best'),
-        h('p', { class: 'sub' }, '개선 활동 중 우수 사례로 선정된 건을 확인할 수 있습니다.'))));
+        h('p', { class: 'sub' }, '개선 활동 중 우수 사례로 선정된 건을 확인할 수 있습니다.')),
+      home.other ? h('div', { class: 'tile' }, UI.cardHead('calendar', '생산계획', '#/plan'), h('p', { class: 'sub' }, '월별 생산계획 달력을 볼 수 있습니다.')) : null,
+      home.other ? h('div', { class: 'tile' }, UI.cardHead('folder', '자료실', '#/library'), h('p', { class: 'sub' }, '회사 규정·지침과 양식을 내려받을 수 있습니다.')) : null,
+      home.other ? h('div', { class: 'tile team-tile team-video' }, UI.cardHead('play', '우리 팀 소개 영상'),
+        h('button', { class: 'tv-thumb', type: 'button', 'aria-label': '우리 팀 소개 영상 재생', onclick: () => UI.videoModal(Home3D.introSrc(), 'assets/video/team-intro-poster.jpg?v=20261122', '우리 팀 소개 영상') },
+          h('img', { src: 'assets/video/team-intro-poster.jpg?v=20261122', alt: '', loading: 'lazy', decoding: 'async' }),
+          h('span', { class: 'tv-play' }, UI.icon('play')))) : null));
     return;
   }
   /* 알림을 아직 켜지 않은 직원에게 켜라고 안내한다(이미 켠 기기는 조용히 다시 등록). */
