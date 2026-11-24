@@ -37,7 +37,9 @@
       return o;
     });
     const years = Array.from(new Set(rows.map((r) => r.y))).sort();
-    const sel = { years: [], items: ['capa', 'prod', 'staff', 'contract'] };
+    /* 처음에는 올해(기록이 있으면)의 월별 그래프를 보여 준다. 올해 기록이 없으면 전체(연도별) */
+    const thisYear = String(App.home.today || '').slice(0, 4);
+    const sel = { years: years.includes(thisYear) ? [thisYear] : [], items: ['capa', 'prod', 'staff', 'contract'] };
     const byYear = (y) => rows.filter((r) => r.y === y);
     const yearAvg = (y, k) => { const v = byYear(y).map((r) => r[k]).filter((x) => x !== null); return v.length ? mean(v) : null; };
     let charts = [];
@@ -234,8 +236,10 @@
           h('div', { class: 'mhd-mini-chart' }, h('canvas', { role: 'img', 'aria-label': m.it.label + ' 그래프' })));
       }));
       boxB.hidden = !minis.length;
+      /* 그래프 칸이 화면에 붙기 전에 불리면(이미 불러 둔 Chart.js를 쓸 때) 붙을 때까지 잠깐씩 기다린다 */
       const build = () => {
-        if (!canvasA.isConnected) return;
+        if (!canvasA.isConnected) { build.tries = (build.tries || 0) + 1; if (build.tries < 60) setTimeout(build, 50); return; }
+        build.tries = 0;
         charts.forEach((c) => c.destroy());
         charts = [];
         if (aSets.length) {
