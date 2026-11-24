@@ -85,7 +85,7 @@ Router.add('/', (params, app) => {
       h('div', { class: 'tile t-kpi' }, UI.cardHead('chart', home.kpiMonth ? '마감월(' + Number(home.kpiMonth.slice(5, 7)) + '월) KPI' : '마감월 KPI', '#/kpi/team'),
         gt ? h('p', { class: 'big-rate' }, h('strong', null, UI.num(UI.pct(gk.G, gt), '%')), h('span', { class: 'sub' }, '팀 전체 달성 비율'))
           : UI.empty(home.kpiMonth ? '표시할 KPI가 없습니다.' : '마감이 끝난 달이 없습니다.', 'data', true)),
-      home.other ? h('div', { class: 'tile t-notice' }, UI.cardHead('megaphone', '최신 공지', '#/board/notice'), list(home.notices, '#/board/notice/', '기타부서에 공개된 공지가 없습니다.')) : null,
+      home.other ? h('div', { class: 'tile t-notice' }, UI.cardHead('megaphone', '최신 공지', '#/board/notice'), list(home.notices, '#/board/notice/', '등록된 공지가 없습니다.')) : null,
       h('div', { class: 'tile' }, UI.cardHead('trophy', '우수개선현황', '#/kpi/best'),
         h('p', { class: 'sub' }, '개선 활동 중 우수 사례로 선정된 건을 확인할 수 있습니다.')),
       home.other ? h('div', { class: 'tile' }, UI.cardHead('calendar', '생산계획', '#/plan'), h('p', { class: 'sub' }, '월별 생산계획 달력을 볼 수 있습니다.')) : null,
