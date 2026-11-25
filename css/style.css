@@ -1269,3 +1269,29 @@ html[data-fs='2'] body:not([data-page='login']) { zoom: 1.3; }
 .mhd-big { font-size: 26px; font-weight: 700; line-height: 1.25; }
 .mhd-mini-chart { position: relative; height: 190px; }
 @media (max-width: 833px) { .mhd-minis { grid-template-columns: minmax(0, 1fr); } }
+
+/* 2026-11-25 기타부서 가입: 로그인 화면 아래 안내 줄과 가입 폼 */
+.login-switch { margin: 14px 0 0; text-align: center; font-size: 13px; color: var(--text-sub); }
+.login-switch .link { color: var(--navy); font-weight: 700; text-decoration: underline; font-size: inherit; }
+.signup-form .signup-h { margin: 0; font-size: 18px; font-weight: 800; color: var(--navy); }
+.signup-form > .sub { margin: 0; font-size: 12.5px; }
+.login-v2 .login-switch { margin-top: calc(var(--u) * 1.6); font-size: calc(var(--u) * 1.15); }
+.login-v2 .signup-form .signup-h { font-size: calc(var(--u) * 1.6); }
+.login-v2 .signup-form > .sub { font-size: calc(var(--u) * 1.05); }
+.login-v2 .signup-form .field .hint, .login-v2 .signup-form .field .sub { font-size: calc(var(--u) * 1); }
+.login-m .login-switch { margin-top: calc(var(--m) * 28); font-size: max(13px, calc(var(--m) * 26)); }
+.login-m .signup-form { padding-bottom: calc(var(--m) * 30); }
+.login-m .signup-form .signup-h { font-size: max(17px, calc(var(--m) * 38)); margin-bottom: calc(var(--m) * 8); }
+.login-m .signup-form > .sub { font-size: max(12px, calc(var(--m) * 24)); margin-bottom: calc(var(--m) * 20); }
+.login-m .signup-form .field .hint, .login-m .signup-form .field .sub { font-size: max(11.5px, calc(var(--m) * 22)); }
+/* 가입 화면은 입력 칸이 많아 로고와 간격을 줄여 한 화면에 들어오게 한다 */
+.login-v2.is-signup .lc-body { top: calc(var(--u) * 3.2); }
+.login-v2.is-signup .login-logo { width: calc(var(--u) * 11.5); }
+.login-v2.is-signup .login-card h1 { margin: calc(var(--u) * 0.7) 0 calc(var(--u) * 1.1); font-size: calc(var(--u) * 2.2); }
+.login-v2.is-signup .login-form { gap: calc(var(--u) * 0.55); }
+.login-v2.is-signup .login-form .field { gap: calc(var(--u) * 0.35); }
+.login-v2.is-signup .login-form .field-label { font-size: calc(var(--u) * 1.15); }
+.login-v2.is-signup .login-form input:not([type=checkbox]) { height: calc(var(--u) * 3); }
+.login-v2.is-signup .login-form .btn.wide { height: calc(var(--u) * 3.2); margin-top: calc(var(--u) * 0.6); font-size: calc(var(--u) * 1.4); }
+.login-v2.is-signup .signup-form .signup-h { font-size: calc(var(--u) * 1.45); }
+.login-v2.is-signup .login-switch { margin-top: calc(var(--u) * 0.6); }

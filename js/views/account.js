@@ -6,6 +6,8 @@ const Views = {};
 const LOGIN_PC = window.matchMedia('(min-width: 834px)');
 LOGIN_PC.addEventListener('change', () => { if (document.querySelector('.login-split')) Views.login(); });
 
+let LOGIN_SIGNUP = false;
+
 Views.login = function () {
   const pc = LOGIN_PC.matches;
   document.getElementById('nav').hidden = true;
@@ -48,6 +50,39 @@ Views.login = function () {
     }
   } }, '게스트로 둘러보기 (로그인 없이)');
   const guestBox = h('div', { class: 'guest-entry' }, guestBtn);
+  /* 2026-11-25 기타부서 가입: 사번 형식과 관리자가 정한 가입 코드가 맞으면 기타부서 계정이 만들어지고 바로 로그인된다. */
+  const switchTo = (on) => { LOGIN_SIGNUP = on; Views.login(); };
+  const sEmp = h('input', { name: 'empNo', placeholder: '사번을 입력하세요', autocomplete: 'username', autocapitalize: 'characters', spellcheck: 'false', required: true });
+  const sCode = h('input', { name: 'code', placeholder: '안내받은 가입 코드', autocomplete: 'off', spellcheck: 'false', required: true });
+  const sPw = h('input', { name: 'password', type: 'password', placeholder: '6자 이상, 사번과 다르게', autocomplete: 'new-password', required: true, minlength: 6 });
+  const sPw2 = h('input', { name: 'password2', type: 'password', placeholder: '한 번 더 입력', autocomplete: 'new-password', required: true, minlength: 6 });
+  const sMsg = h('p', { class: 'form-error', role: 'alert' });
+  const sBtn = h('button', { class: 'btn wide', type: 'submit' }, '가입하고 들어가기');
+  const signupForm = h('form', { class: 'login-form signup-form', onsubmit: async (e) => {
+    e.preventDefault();
+    sMsg.textContent = '';
+    if (sPw.value !== sPw2.value) { sMsg.textContent = '비밀번호가 서로 다릅니다.'; return; }
+    sBtn.disabled = true;
+    sBtn.textContent = '가입 중';
+    try {
+      const data = await Api.call('signupOther', { empNo: sEmp.value, code: sCode.value, password: sPw.value, device: navigator.userAgent.slice(0, 120) });
+      LOGIN_SIGNUP = false;
+      await App.startSession(data, false);
+    } catch (err) {
+      sMsg.textContent = err.message;
+      sBtn.disabled = false;
+      sBtn.textContent = '가입하고 들어가기';
+    }
+  } },
+    h('h2', { class: 'signup-h' }, '기타부서 가입'),
+    h('p', { class: 'sub' }, '처음 한 번만 하면 됩니다. 다음부터는 사번과 비밀번호로 로그인합니다.'),
+    UI.field('사번', sEmp),
+    UI.field('가입 코드', sCode, '사내 공지나 안내문으로 받은 코드입니다.'),
+    UI.field('비밀번호', sPw), UI.field('비밀번호 확인', sPw2),
+    sMsg, sBtn,
+    h('p', { class: 'login-switch' }, '이미 가입했나요? ', h('button', { class: 'link', type: 'button', onclick: () => switchTo(false) }, '로그인')));
+  const signupLink = h('p', { class: 'login-switch' }, '기타부서 직원이세요? ', h('button', { class: 'link', type: 'button', onclick: () => switchTo(true) }, '처음 가입하기'));
+  const mainBody = LOGIN_SIGNUP ? [signupForm] : [form, guestBox, signupLink];
   /* 2026-11-19 로그인 화면 개편(사용자 시안): 왼쪽은 현장 사진과 단체 사진(대각선으로 나눔), 문구, 아래 가치 3개.
      오른쪽은 곡선으로 파고든 흰 패널에 로그인. 휴대폰에서는 위에 현장 사진 띠, 아래 로그인 순서로 쌓인다.
      단체 사진은 직원 얼굴이 보이지만 사용자(팀장)가 그대로 쓰기로 결정했다(2026-11-19). */
@@ -61,7 +96,7 @@ Views.login = function () {
   if (!pc) {
     /* 2026-11-20 휴대폰 로그인(사용자 시안 941x1672를 실측해 맞춤): 위 단체 사진과 남색·주황 곡선, 로고, 문구, 로그인, 아래 현장 사진, 남색 띠의 가치 3개.
        --m은 시안 1px 크기(화면 폭 / 941). 화면이 시안보다 길면 아래 현장 사진이 늘어난다. 단체 사진은 사용자가 쓰기로 결정한 사진(2026-11-19)을 휴대폰용으로 자른 것. */
-    app.replaceChildren(h('div', { class: 'login login-split login-m' },
+    app.replaceChildren(h('div', { class: 'login login-split login-m' + (LOGIN_SIGNUP ? ' is-signup' : '') },
       h('div', { class: 'lm-stage' },
         h('div', { class: 'lm-field' }),
         h('div', { class: 'lm-top' }, svg('<defs><linearGradient id="lmb" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1a45b0" stop-opacity="0"/><stop offset=".45" stop-color="#1a45b0" stop-opacity=".55"/><stop offset="1" stop-color="#173f9f" stop-opacity=".92"/></linearGradient>'
@@ -78,11 +113,11 @@ Views.login = function () {
           h('img', { class: 'lm-hamkke', src: 'assets/login/hamkke.png', alt: '함께', width: 176, height: 80 }),
           h('span', { class: 'lm-l2' }, ' 만들어갑니다.'),
           svg('<path d="M17.6 55.8 L20.3 55.1 L24.0 54.1 L28.3 52.9 L33.2 51.6 L38.2 50.3 L43.4 49.0 L48.7 47.8 L54.5 46.4 L60.6 45.1 L66.8 43.7 L73.0 42.4 L79.1 41.1 L85.0 40.0 L90.9 38.8 L96.9 37.8 L102.9 36.7 L108.8 35.7 L114.8 34.7 L120.8 33.7 L126.7 32.8 L132.7 31.8 L138.7 30.9 L144.6 30.1 L150.6 29.3 L156.5 28.5 L162.5 27.8 L168.4 27.1 L174.4 26.4 L180.4 25.8 L186.3 25.3 L192.3 24.8 L198.2 24.3 L204.2 23.9 L210.2 23.5 L216.2 23.1 L222.2 22.8 L228.1 22.5 L234.1 22.2 L240.1 21.9 L246.1 21.7 L252.1 21.5 L258.1 21.2 L264.1 21.0 L270.1 20.8 L276.1 20.6 L282.0 20.4 L288.0 20.3 L294.0 20.2 L300.0 20.1 L305.9 20.2 L311.9 20.2 L317.9 20.3 L323.9 20.4 L329.9 20.6 L336.0 20.7 L342.3 20.9 L348.7 21.2 L354.8 21.4 L360.6 21.6 L365.9 21.9 L370.6 22.1 L374.7 22.3 L378.5 22.5 L382.1 22.8 L385.9 23.0 L389.9 23.4 L394.5 23.8 L399.7 24.3 L404.9 24.8 L409.8 25.4 L414.0 25.8 L417.0 26.0 L417.0 26.0 L414.0 25.4 L409.9 24.7 L405.1 23.9 L399.9 23.1 L394.7 22.3 L390.1 21.6 L386.1 21.1 L382.3 20.7 L378.7 20.3 L374.9 19.9 L370.7 19.5 L366.1 19.1 L360.8 18.7 L355.0 18.2 L348.8 17.7 L342.5 17.3 L336.2 16.8 L330.1 16.4 L324.1 16.1 L318.1 15.8 L312.1 15.5 L306.1 15.2 L300.0 15.0 L294.0 14.8 L288.0 14.7 L282.0 14.7 L275.9 14.7 L269.9 14.7 L263.9 14.7 L257.9 14.8 L251.9 14.8 L245.9 14.8 L239.9 14.9 L233.9 15.0 L227.9 15.1 L221.8 15.2 L215.8 15.4 L209.8 15.6 L203.8 15.8 L197.8 16.1 L191.7 16.4 L185.7 16.7 L179.6 17.1 L173.6 17.6 L167.6 18.0 L161.5 18.6 L155.5 19.1 L149.4 19.7 L143.4 20.4 L137.3 21.1 L131.3 21.9 L125.3 22.6 L119.2 23.5 L113.2 24.3 L107.2 25.1 L101.1 26.0 L95.1 26.9 L89.1 27.9 L83.0 28.8 L76.9 29.9 L70.8 31.0 L64.5 32.2 L58.2 33.4 L52.0 34.6 L46.1 35.8 L40.6 37.0 L35.3 38.1 L30.1 39.4 L25.2 40.5 L20.8 41.6 L17.1 42.5 L14.4 43.2 L13.5 43.5 L11.4 44.9 L10.0 47.0 L9.5 49.5 L10.0 52.0 L11.4 54.1 L13.5 55.5 Z" fill="#f66e14"/>', 'lm-swoosh', '0 0 430 65')),
-        h('div', { class: 'lm-body' }, form, guestBox)),
+        h('div', { class: 'lm-body' }, ...mainBody)),
       h('ul', { class: 'lm-values' }, values.map(([i, t]) => h('li', null, i, h('span', null, t.slice(0, t.lastIndexOf(' ')), h('br'), t.slice(t.lastIndexOf(' ') + 1)))))));
     return;
   }
-  app.replaceChildren(h('div', { class: 'login login-split login-v2' },
+  app.replaceChildren(h('div', { class: 'login login-split login-v2' + (LOGIN_SIGNUP ? ' is-signup' : '') },
     h('section', { class: 'login-art' },
       h('div', { class: 'la-photo la-field' }), h('div', { class: 'la-photo la-group' }),
       h('div', { class: 'la-bar' }),
@@ -106,7 +141,7 @@ Views.login = function () {
       svg('<path d="M1209 941 L1195 925 L1300 909 L1592 833 L1672 748 L1672 941 Z" fill="#c3d7fa"/><path d="M1130 941 L1175 930 L1300 909 L1255 941 Z" fill="#a6c3f9"/><path d="M1156 941 L1672 809 L1672 941 Z" fill="#a6c3f7"/><path d="M1156 941 L1211 927 L1270 941 Z" fill="#7daaf8"/><path d="M1528 941 L1528 884 L1592 833 L1672 809 L1672 941 Z" fill="#7ca8f2"/><path d="M1222 941 L1300 918 L1450 896 L1672 860 L1672 885 L1500 941 Z" fill="#124cb9"/><path d="M1305 941 L1672 846 L1672 941 Z" fill="#002572"/><path d="M1440 941 L1672 856 L1672 873 Z" fill="#fc7a00"/>', 'lc-deco lc-bottom', '600 740 1072 201', ' preserveAspectRatio="xMaxYMax meet"'),
       h('div', { class: 'lc-body' },
         h('img', { src: 'assets/logo.png', alt: 'BTRIPLE', class: 'login-logo', width: 483, height: 90 }),
-        h('h1', null, '군산 사내물류팀'), form, guestBox))));
+        h('h1', null, '군산 사내물류팀'), ...mainBody))));
 };
 
 Router.add('/account/password', (params, app) => {

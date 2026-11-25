@@ -93,6 +93,34 @@
         UI.field('CSV 파일', input), info, btn));
   }
 
+  /* 기타부서 가입 코드(2026-11-25): 로그인 화면의 "처음 가입하기"에서 사번과 함께 입력하는 공용 코드. 비우면 가입을 받지 않는다. */
+  function signupBox() {
+    const input = h('input', { maxlength: 30, placeholder: '예: 군산물류2026', autocomplete: 'off', spellcheck: 'false', 'aria-label': '가입 코드' });
+    const info = h('p', { class: 'sub' }, '불러오는 중입니다.');
+    const state = h('p', { class: 'sub' });
+    const apply = (d) => {
+      input.value = d.code;
+      state.textContent = d.code ? '지금 가입을 받고 있습니다. 기타부서 가입자 ' + d.count + '명' : '지금은 가입을 받지 않습니다(코드가 비어 있음). 기타부서 가입자 ' + d.count + '명';
+      info.textContent = '';
+    };
+    const save = async (code, msg) => {
+      if (msg && !confirm(msg)) return;
+      try { await Api.call('signupCodeSave', { code }); const d = await Api.call('signupCodeGet'); apply(d); UI.toast(code ? '가입 코드를 저장했습니다.' : '가입 받기를 중지했습니다.'); }
+      catch (e) { UI.toast(e.message, true); }
+    };
+    const load = () => Api.call('signupCodeGet').then(apply, (e) => { info.textContent = e.message; });
+    let loaded = false;
+    const box = h('details', { class: 'config', ontoggle: () => { if (box.open && !loaded) { loaded = true; load(); } } }, h('summary', null, '기타부서 가입 코드'),
+      h('div', { class: 'narrow' },
+        h('p', { class: 'sub' }, '기타부서 직원은 로그인 화면의 "처음 가입하기"에서 사번(예: 201907B003), 이 가입 코드, 본인이 정할 비밀번호를 입력해 가입합니다. 보기 범위는 공지, 생산계획, 자료실 일부입니다.'),
+        UI.field('가입 코드', input, '공백 없이 4자 이상 30자 이하. 사내 공지나 안내문으로만 알려 주세요.'), state, info,
+        h('div', { class: 'row-btns' },
+          h('button', { class: 'btn', type: 'button', onclick: () => save(input.value.trim()) }, '저장'),
+          h('button', { class: 'btn ghost', type: 'button', onclick: () => save('', '가입 받기를 중지할까요? 이미 가입한 사람은 계속 쓸 수 있습니다.') }, '가입 받기 중지')),
+        h('p', { class: 'sub' }, '코드가 퍼졌다고 느껴지면 새 코드로 바꾸세요. 이미 가입한 사람은 그대로 쓰고, 새로 가입하는 사람만 새 코드가 필요합니다. 문제가 있는 가입자는 위 표에서 사용 중지할 수 있습니다.')));
+    return box;
+  }
+
   function editor(u, d, done) {
     const isNew = !u;
     const x = u || { empNo: '', name: '', rank: '사원', dept: '물류1직', perms: ['USER'], site: false };
@@ -163,7 +191,7 @@
       h('section', { class: 'section' }, h('div', { class: 'wrap wide' },
         h('div', { class: 'toolbar wrap-row' }, search, h('label', { class: 'check' }, showAll, h('span', null, 'QR장비점검에만 있는 사람도 보기')),
           h('button', { class: 'btn', type: 'button', onclick: () => open(null) }, '새 사용자 등록')),
-        edit, body, importBox(() => data))));
+        edit, body, signupBox(), importBox(() => data))));
     load();
   });
 
