@@ -411,6 +411,7 @@
     ['#/admin/targets', 'list', '목표·평가기준', () => UI.hasAny(['ADMIN', 'KPI_TEAM', 'VIEW_EXEC'])], ['#/admin/usage', 'clock', '접속 현황', () => UI.hasAny(['ADMIN', 'VIEW_EXEC'])], ['#/admin/data', 'gear', '데이터 관리', () => UI.hasAny(['ADMIN', 'VIEW_EXEC'])]];
 
   /* 2026-11-25 관리 메뉴 정리: 위 메뉴의 관리는 '관리자 대시보드' 하나로 두고, 관리 화면들은 모두 왼쪽 관리자 메뉴로 오간다. */
+  window.AdminShell = (active, ...content) => adminShell(active, ...content);
   function adminShell(active, ...content) {
     if (!UI.hasAny(['ADMIN', 'VIEW_EXEC', 'KPI_TEAM'])) return h('div', null, ...content);
     return h('div', { class: 'admin-shell admin-sub' }, h('nav', { class: 'admin-side', 'aria-label': '관리자 메뉴' }, h('p', { class: 'admin-side-h' }, UI.icon('gear'), '관리자 메뉴'),

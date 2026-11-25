@@ -6,6 +6,8 @@
   const diff = (a, b) => (blank(a) && blank(b) ? '' : (Number(a) || 0) - (Number(b) || 0));
   const tone = (v) => (blank(v) || Math.abs(v) < 0.005 ? '' : v < 0 ? 'bad' : '');
   const canEdit = () => UI.has('MANHOUR_EDIT') && !UI.has('VIEW_EXEC');
+  /* 관리자 대시보드를 여는 사람은 왼쪽 관리자 메뉴와 함께 보여 준다(2026-11-25). 그 밖의 관리자 직급은 그대로. */
+  const shell = (...content) => (window.AdminShell ? window.AdminShell('#/manhour', ...content) : h('div', null, ...content));
   const deny = (app) => app.replaceChildren(UI.placeholder('권한이 없습니다', '공수 현황은 관리자(사원 외 직급)만 볼 수 있습니다.'));
   const ymLabel = (ym) => (ym ? ym.slice(0, 4) + '년 ' + Number(ym.slice(5, 7)) + '월' : '');
   const shiftYm = (ym, k) => { const [y, m] = ym.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 + k, 1)); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0'); };
@@ -370,7 +372,7 @@
   Router.add('/manhour', (params, app, alive) => {
     if (!App.home.mhView) { deny(app); return; }
     const body = h('div', { class: 'wrap wide' }, UI.skeleton(10));
-    app.replaceChildren(UI.hero('공수 현황', '생산 CAPA 기준 업무별 산출 공수와 계약·현재 인원을 비교합니다.'), h('section', { class: 'section' }, body));
+    app.replaceChildren(shell(UI.hero('공수 현황', '생산 CAPA 기준 업무별 산출 공수와 계약·현재 인원을 비교합니다.'), h('section', { class: 'section' }, body)));
     const load = () => Api.call('mhGet').then((d) => { if (alive()) draw(d); }, (e) => { if (alive()) body.replaceChildren(UI.error(e.message, load)); });
 
     function capaBox(d) {
@@ -655,7 +657,7 @@
             h('td', { class: 'num' }, MH.fmt(MH.calcTask(t, t.rows, p.capa || {}).mh, 3)), h('td', null, t.mode === 'STS' ? 'STS ' + t.rows.length + '줄' : '고정')))))),
         btn);
     }
-    app.replaceChildren(UI.hero('공수 엑셀 올리기', '종합 시트와 업무별 STS 시트를 한 번에 읽어 바꿉니다.'), h('section', { class: 'section' }, h('div', { class: 'wrap wide' },
-      h('a', { class: 'back', href: '#/manhour' }, '공수 현황'), h('div', { class: 'plan-pick' }, pick, fileIn), status, preview)));
+    app.replaceChildren(shell(UI.hero('공수 엑셀 올리기', '종합 시트와 업무별 STS 시트를 한 번에 읽어 바꿉니다.'), h('section', { class: 'section' }, h('div', { class: 'wrap wide' },
+      h('a', { class: 'back', href: '#/manhour' }, '공수 현황'), h('div', { class: 'plan-pick' }, pick, fileIn), status, preview))));
   });
 })();
