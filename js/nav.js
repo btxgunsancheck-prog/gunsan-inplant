@@ -1,4 +1,11 @@
 /* 상단 메뉴(PC 롤오버 패널, 모바일 전체 화면 메뉴)와 직원 사진. */
+/* 관리자 메뉴(위 메뉴의 관리, 관리 화면 왼쪽 메뉴가 함께 쓴다): 주소, 아이콘, 이름 */
+const ADMIN_MENU = [
+  ['#/admin', 'home', '관리자 대시보드'], ['#/manhour', 'people', '공수 현황'], ['#/admin/users', 'people', '사용자 관리'],
+  ['#/admin/usage', 'clock', '접속 현황'], ['#/admin/data', 'gear', '데이터 관리'],
+  ['#/kpi/team', 'chart', 'KPI 팀 현황'], ['#/suggest/all', 'chat', '건의사항 관리'], ['#/admin/award', 'trophy', '우수사원 관리'],
+  ['#/admin/license', 'lock', '장비면허 명부'], ['#/admin/targets', 'list', '목표·평가기준']
+];
 const Nav = (() => {
   const OPEN_DELAY = 200;
   const CLOSE_DELAY = 300;
@@ -47,10 +54,11 @@ const Nav = (() => {
     if (!UI.has('VIEW_EXEC')) join.push(link('내 건의', '#/suggest/mine'));
     if (!UI.has('VIEW_EXEC') && (UI.hasAny(['SUGGEST_VIEW', 'SUGGEST_READ']) || u.perms.some((p) => p.startsWith('KPI_CHECK:')))) join.push(link('전체 건의', '#/suggest/all'));
     join.push(link('우수사원 평가', '#/award'));
-    /* 관리(2026-11-25 정리): 관리 화면은 관리자 대시보드의 왼쪽 메뉴로 모았다. 대시보드를 못 여는 관리자 직급은 공수 현황만 바로 간다. */
-    const admin = [];
-    if (UI.hasAny(['ADMIN', 'VIEW_EXEC', 'KPI_TEAM'])) admin.push(link('관리자 대시보드', '#/admin'));
-    else if (App.home.mhView) admin.push(link('공수 현황', '#/manhour'));
+    /* 관리(2026-11-25 사용자 결정): 관리자 메뉴 전체를 위 메뉴에 띄운다. 권한이 없는 화면은 들어가면 '권한이 없습니다'가 나온다.
+       관리 메뉴는 관리자 대시보드를 열 수 있거나 공수 현황을 볼 수 있는 사람에게만 보인다. */
+    const showAdmin = UI.hasAny(['ADMIN', 'VIEW_EXEC', 'KPI_TEAM']) || !!App.home.mhView;
+    const admin = showAdmin ? ADMIN_MENU.slice(0, 5).map((x) => link(x[2], x[0])) : [];
+    const adminMore = showAdmin ? ADMIN_MENU.slice(5).map((x) => link(x[2], x[0])) : [];
     /* 게시판 바로가기: 업무 게시판 글쓰기는 관리자 직급만, 생산계획 올리기는 전용 권한자만 */
     const boardQuick = [];
     if (!UI.has('VIEW_EXEC') && UI.isManager()) boardQuick.push(link('글쓰기', '#/board/work/new'));
@@ -66,7 +74,7 @@ const Nav = (() => {
       { key: 'join', label: '참여', first: join, groups: [] },
       { key: 'library', label: '자료실', first: [link('전체 자료', '#/library'), link('작업표준서', '#/library?cat=' + encodeURIComponent('작업표준서')), link('회사 규정·지침', '#/library?cat=' + encodeURIComponent('회사 규정·지침')), link('안전·교육', '#/library?cat=' + encodeURIComponent('안전·교육')), link('양식', '#/library?cat=' + encodeURIComponent('양식'))], groups: [] }
     ];
-    if (admin.length) list.push({ key: 'admin', label: '관리', first: admin, groups: [] });
+    if (admin.length) list.push({ key: 'admin', label: '관리', first: admin, groups: [{ title: 'KPI·평가', links: adminMore }] });
     return list;
   }
 

@@ -228,10 +228,22 @@
   window.LicenseImportBox = licenseImportBox;
   Router.add('/admin/license', (params, app, alive) => {
     if (!UI.hasAny(['KPI_MANAGER', 'VIEW_EXEC'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
-    if (!UI.has('VIEW_EXEC')) { Router.go('/kpi/monthly?tab=P2'); return; }
+    if (!UI.has('VIEW_EXEC')) { location.replace('#/kpi/monthly?tab=P2'); return; }
     const body = h('div', { class: 'wrap wide' });
     app.replaceChildren(adminShell('#/admin/license', UI.hero('장비면허 명부'), pcNotice(), h('section', { class: 'section' }, body)));
     window.LicenseBox(body, alive);
+  });
+
+  /* 우수사원 관리: 팀장·공장·직장처럼 평가하거나 결과를 보는 사람만 우수사원 화면으로 보낸다. */
+  Router.add('/admin/award', (params, app, alive) => {
+    app.replaceChildren(UI.skeleton(4));
+    const d = new Date();
+    Api.call('awardInfo', { quarter: d.getFullYear() + '-Q' + (Math.floor(d.getMonth() / 3) + 1) }).then((r) => {
+      if (!alive()) return;
+      const role = r.role || {};
+      if (role.lead || role.plant || role.results || (role.chiefDepts && role.chiefDepts.length) || UI.has('ADMIN')) location.replace('#/award');
+      else app.replaceChildren(UI.placeholder('권한이 없습니다', '우수사원 관리는 평가하거나 결과를 보는 관리자만 쓸 수 있습니다.'));
+    }, (e) => { if (alive()) app.replaceChildren(UI.error(e.message)); });
   });
 
   Router.add('/admin/targets', (params, app, alive) => {
@@ -405,10 +417,8 @@
   });
 
   /* ---------- 관리자 대시보드 ---------- */
-  const SIDE = [['#/admin', 'home', '관리자 대시보드', () => true], ['#/manhour', 'people', '공수 현황', () => !!App.home.mhView], ['#/admin/users', 'people', '사용자 관리', () => UI.has('ADMIN')],
-    ['#/kpi/team', 'chart', 'KPI 팀 현황', () => UI.has('KPI_VIEW_ALL')], ['#/suggest/all', 'chat', '건의사항 관리', () => UI.hasAny(['SUGGEST_VIEW', 'SUGGEST_READ'])],
-    ['#/award', 'trophy', '우수사원 관리', () => true], ['#/kpi/monthly?tab=P2', 'lock', '장비면허 명부', () => UI.has('KPI_MANAGER') && !UI.has('VIEW_EXEC')], ['#/admin/license', 'lock', '장비면허 명부', () => UI.has('VIEW_EXEC')],
-    ['#/admin/targets', 'list', '목표·평가기준', () => UI.hasAny(['ADMIN', 'KPI_TEAM', 'VIEW_EXEC'])], ['#/admin/usage', 'clock', '접속 현황', () => UI.hasAny(['ADMIN', 'VIEW_EXEC'])], ['#/admin/data', 'gear', '데이터 관리', () => UI.hasAny(['ADMIN', 'VIEW_EXEC'])]];
+  /* 왼쪽 관리자 메뉴: 위 메뉴의 관리와 같은 목록을 모두 보여 준다(권한이 없으면 들어가서 안내). */
+  const SIDE = ADMIN_MENU.map((x) => x.concat([() => true]));
 
   /* 2026-11-25 관리 메뉴 정리: 위 메뉴의 관리는 '관리자 대시보드' 하나로 두고, 관리 화면들은 모두 왼쪽 관리자 메뉴로 오간다. */
   window.AdminShell = (active, ...content) => adminShell(active, ...content);
