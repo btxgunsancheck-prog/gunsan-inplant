@@ -1299,3 +1299,12 @@ html[data-fs='2'] body:not([data-page='login']) { zoom: 1.3; }
 /* 관리 화면(사용자 관리, 목표·평가기준, 데이터 관리 등)도 왼쪽 관리자 메뉴와 함께 보인다 */
 .admin-sub-main { min-width: 0; }
 .admin-sub-main .section { padding-top: 20px; }
+/* 2026-11-25 관리자 메뉴 안 화면의 위 배너를 관리자 대시보드 배너와 같은 크기로 맞춘다 */
+.admin-sub-main .hero:not(.hero-over) { width: auto; max-width: 1536px; min-height: 118px; margin: 28px 32px 22px; padding: 26px 30px; border-radius: 20px;
+  background: var(--hero-img, none) right 30px center / auto 80% no-repeat, url(../assets/hero-bg.svg) center / 100% 100% no-repeat, #eaf1ff; }
+.admin-sub-main .hero:not(.hero-over) h1 { font-size: 30px; line-height: 1.2; }
+.admin-sub-main .hero:not(.hero-over) p { margin-top: 6px; font-size: 15px; }
+@media (max-width: 833px) {
+  .admin-sub-main .hero:not(.hero-over) { margin: 20px 12px 16px; padding: 22px 20px; background-size: auto 60%, 100% 100%, auto; }
+  .admin-sub-main .hero:not(.hero-over) h1 { font-size: 26px; }
+}
