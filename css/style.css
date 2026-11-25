@@ -1317,3 +1317,11 @@ html[data-fs='2'] body:not([data-page='login']) { zoom: 1.3; }
   .admin-main > .hero:not(.hero-over) { padding: 22px 20px; background-size: auto 60%, 100% 100%, auto; }
   .admin-main > .hero:not(.hero-over) h1 { font-size: 26px; }
 }
+/* 2026-11-25 휴대폰: 관리자 메뉴 파란 띠가 화면 높이만큼 늘어나지 않게 한 줄 높이로 고정 */
+@media (max-width: 833px) {
+  .admin-shell { grid-template-rows: auto minmax(0, 1fr); align-content: start; min-height: 0; }
+  .admin-side { align-items: center; align-self: start; height: auto; padding: 8px; gap: 4px; scrollbar-width: none; }
+  .admin-side::-webkit-scrollbar { display: none; }
+  .admin-side a { padding: 9px 12px; font-size: 14px; border-radius: 999px; white-space: nowrap; }
+  .admin-side a svg { width: 18px; height: 18px; }
+}

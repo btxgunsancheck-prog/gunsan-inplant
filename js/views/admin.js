@@ -421,9 +421,14 @@
 
   /* 2026-11-25 관리 메뉴 정리: 위 메뉴의 관리는 '관리자 대시보드' 하나로 두고, 관리 화면들은 모두 왼쪽 관리자 메뉴로 오간다. */
   window.AdminShell = (active, ...content) => adminShell(active, ...content);
+  function scrollSideOn() {
+    setTimeout(() => { const on = document.querySelector('.admin-side a.on'); if (on && on.parentNode.scrollWidth > on.parentNode.clientWidth) on.parentNode.scrollLeft = on.offsetLeft - 8; }, 0);
+  }
   function adminShell(active, ...content) {
     if (!canAdminMenu()) return h('div', null, ...content);
     const cur = (active || '#' + Router.path()).split('?')[0];
+    /* 휴대폰에서는 메뉴가 가로로 흐르므로 지금 화면 메뉴가 보이도록 옮겨 둔다 */
+    scrollSideOn();
     return h('div', { class: 'admin-shell admin-sub' }, h('nav', { class: 'admin-side', 'aria-label': '관리자 메뉴' }, h('p', { class: 'admin-side-h' }, UI.icon('gear'), '관리자 메뉴'),
       SIDE.map(([href, icon, label]) => h('a', { class: href.split('?')[0] === cur ? 'on' : '', href }, UI.icon(icon), label))), h('div', { class: 'admin-sub-main' }, ...content));
   }
@@ -472,6 +477,7 @@
       else { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'; s.onload = draw; document.head.append(s); }
     }, (e) => { if (alive()) main.replaceChildren(UI.error(e.message, load)); });
     app.replaceChildren(h('div', { class: 'admin-shell' }, side, main));
+    scrollSideOn();
     load();
   });
 
@@ -512,6 +518,7 @@
       else { s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'; s.onload = draw; document.head.append(s); }
     }, (e) => { if (alive()) main.replaceChildren(UI.error(e.message, load)); });
     app.replaceChildren(h('div', { class: 'admin-shell' }, side, main));
+    scrollSideOn();
     load();
   });
 })();
