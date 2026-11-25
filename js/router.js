@@ -7,6 +7,14 @@ const Router = {
     if (keys.length) Router.routes.push({ re, keys, view });
     else Router.routes.unshift({ re, keys, view });
   },
+  /* 다른 화면 안에 이 주소의 화면을 그릴 때 쓴다(관리자 메뉴 안에 KPI 팀 현황 등을 띄울 때). */
+  find(path) {
+    for (const r of Router.routes) {
+      const m = path.match(r.re);
+      if (m) { const params = {}; r.keys.forEach((k, i) => { params[k] = decodeURIComponent(m[i + 1]); }); return { view: r.view, params }; }
+    }
+    return null;
+  },
   path() { return (location.hash || '#/').slice(1) || '/'; },
   go(path) {
     if (Router.path() === path) Router.render();

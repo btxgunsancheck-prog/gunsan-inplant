@@ -162,7 +162,7 @@
   const pcNotice = () => h('p', { class: 'pc-notice m-only', role: 'note' }, '관리자 화면은 표와 입력 칸이 많아 PC에서 이용하시는 것이 편합니다.');
 
   Router.add('/admin/users', (params, app, alive) => {
-    if (!UI.has('ADMIN')) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
+    if (!UI.has('ADMIN')) { app.replaceChildren(adminShell(null, UI.placeholder('권한이 없습니다'))); return; }
     const body = h('div', null, UI.skeleton(8));
     const edit = h('div');
     const search = h('input', { type: 'search', placeholder: '사번, 성명, 소속 검색', 'aria-label': '검색' });
@@ -227,8 +227,8 @@
   /* 장비면허 명부는 월 입력(직장) > 장비면허로 옮겼다(2026-11-17). 열람 전용 계정은 여기서 같은 표를 본다. */
   window.LicenseImportBox = licenseImportBox;
   Router.add('/admin/license', (params, app, alive) => {
-    if (!UI.hasAny(['KPI_MANAGER', 'VIEW_EXEC'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
-    if (!UI.has('VIEW_EXEC')) { location.replace('#/kpi/monthly?tab=P2'); return; }
+    if (!UI.hasAny(['KPI_MANAGER', 'VIEW_EXEC'])) { app.replaceChildren(adminShell(null, UI.placeholder('권한이 없습니다'))); return; }
+    if (!UI.has('VIEW_EXEC')) { embed('/kpi/monthly', app, alive); return; }
     const body = h('div', { class: 'wrap wide' });
     app.replaceChildren(adminShell('#/admin/license', UI.hero('장비면허 명부'), pcNotice(), h('section', { class: 'section' }, body)));
     window.LicenseBox(body, alive);
@@ -241,13 +241,13 @@
     Api.call('awardInfo', { quarter: d.getFullYear() + '-Q' + (Math.floor(d.getMonth() / 3) + 1) }).then((r) => {
       if (!alive()) return;
       const role = r.role || {};
-      if (role.lead || role.plant || role.results || (role.chiefDepts && role.chiefDepts.length) || UI.has('ADMIN')) location.replace('#/award');
-      else app.replaceChildren(UI.placeholder('권한이 없습니다', '우수사원 관리는 평가하거나 결과를 보는 관리자만 쓸 수 있습니다.'));
+      if (role.lead || role.plant || role.results || (role.chiefDepts && role.chiefDepts.length) || UI.has('ADMIN')) embed('/award', app, alive);
+      else app.replaceChildren(adminShell(null, UI.placeholder('권한이 없습니다', '우수사원 관리는 평가하거나 결과를 보는 관리자만 쓸 수 있습니다.')));
     }, (e) => { if (alive()) app.replaceChildren(UI.error(e.message)); });
   });
 
   Router.add('/admin/targets', (params, app, alive) => {
-    if (!UI.hasAny(['ADMIN', 'KPI_TEAM', 'VIEW_EXEC'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
+    if (!UI.hasAny(['ADMIN', 'KPI_TEAM', 'VIEW_EXEC'])) { app.replaceChildren(adminShell(null, UI.placeholder('권한이 없습니다'))); return; }
     const body = h('div', { class: 'wrap wide' }, UI.skeleton(8));
     const load = () => Api.call('targetsGet', {}).then((d) => {
       if (!alive()) return;
@@ -409,7 +409,7 @@
   }
 
   Router.add('/admin/data', (params, app) => {
-    if (!UI.hasAny(['ADMIN', 'VIEW_EXEC'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
+    if (!UI.hasAny(['ADMIN', 'VIEW_EXEC'])) { app.replaceChildren(adminShell(null, UI.placeholder('권한이 없습니다'))); return; }
     const top = h('div');
     if (UI.has('ADMIN')) { top.append(UI.skeleton(4)); dataAdmin(top); }
     app.replaceChildren(adminShell('#/admin/data', UI.hero('데이터 관리', UI.has('ADMIN') ? '월 마감 해제, 신년도 파일, 백업 상태, 작업 기록' : '작업 기록 열람'), pcNotice(),
@@ -418,22 +418,33 @@
 
   /* ---------- 관리자 대시보드 ---------- */
   /* 왼쪽 관리자 메뉴: 위 메뉴의 관리와 같은 목록을 모두 보여 준다(권한이 없으면 들어가서 안내). */
-  const SIDE = ADMIN_MENU.map((x) => x.concat([() => true]));
+  const SIDE = ADMIN_MENU;
 
   /* 2026-11-25 관리 메뉴 정리: 위 메뉴의 관리는 '관리자 대시보드' 하나로 두고, 관리 화면들은 모두 왼쪽 관리자 메뉴로 오간다. */
   window.AdminShell = (active, ...content) => adminShell(active, ...content);
   function adminShell(active, ...content) {
-    if (!UI.hasAny(['ADMIN', 'VIEW_EXEC', 'KPI_TEAM'])) return h('div', null, ...content);
+    if (!canAdminMenu()) return h('div', null, ...content);
+    const cur = (active || '#' + Router.path()).split('?')[0];
     return h('div', { class: 'admin-shell admin-sub' }, h('nav', { class: 'admin-side', 'aria-label': '관리자 메뉴' }, h('p', { class: 'admin-side-h' }, UI.icon('gear'), '관리자 메뉴'),
-      SIDE.filter((x) => x[3]()).map(([href, icon, label]) => h('a', { class: href === active ? 'on' : '', href }, UI.icon(icon), label))), h('div', { class: 'admin-sub-main' }, ...content));
+      SIDE.map(([href, icon, label]) => h('a', { class: href.split('?')[0] === cur ? 'on' : '', href }, UI.icon(icon), label))), h('div', { class: 'admin-sub-main' }, ...content));
   }
+  /* 다른 메뉴의 화면(KPI 팀 현황, 전체 건의, 우수사원, 장비면허)을 관리자 왼쪽 메뉴 안에 띄운다 */
+  function embed(target, app, alive) {
+    const main = h('div', null, UI.skeleton(6));
+    app.replaceChildren(adminShell(null, main));
+    const r = Router.find(target);
+    if (r) r.view(r.params, main, alive);
+  }
+  Router.add('/admin/kpi', (params, app, alive) => embed('/kpi/team', app, alive));
+  Router.add('/admin/suggest', (params, app, alive) => embed('/suggest/all', app, alive));
+
 
   /* 접속 현황: 이번 주(월요일부터) 몇 명이 들어왔는지, 직별 인원, 14일 추이, 14일 이상 안 들어온 직원 */
   Router.add('/admin/usage', (params, app, alive) => {
-    if (!UI.hasAny(['ADMIN', 'VIEW_EXEC'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
+    if (!UI.hasAny(['ADMIN', 'VIEW_EXEC'])) { app.replaceChildren(adminShell(null, UI.placeholder('권한이 없습니다'))); return; }
     const main = h('div', { class: 'admin-main' }, UI.skeleton(8));
     const side = h('nav', { class: 'admin-side', 'aria-label': '관리자 메뉴' }, h('p', { class: 'admin-side-h' }, UI.icon('gear'), '관리자 메뉴'),
-      SIDE.filter((x) => x[3]()).map(([href, icon, label]) => h('a', { class: href === '#/admin/usage' ? 'on' : '', href }, UI.icon(icon), label)));
+      SIDE.map(([href, icon, label]) => h('a', { class: href === '#/admin/usage' ? 'on' : '', href }, UI.icon(icon), label)));
     const WD = ['일', '월', '화', '수', '목', '금', '토'];
     const load = () => Api.call('usageStats').then((d) => {
       if (!alive()) return;
@@ -466,10 +477,10 @@
   });
 
   Router.add('/admin', (params, app, alive) => {
-    if (!UI.hasAny(['ADMIN', 'VIEW_EXEC', 'KPI_TEAM'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
+    if (!UI.hasAny(['ADMIN', 'VIEW_EXEC', 'KPI_TEAM'])) { app.replaceChildren(adminShell(null, UI.placeholder('권한이 없습니다'))); return; }
     const main = h('div', { class: 'admin-main' }, UI.skeleton(8));
     const side = h('nav', { class: 'admin-side', 'aria-label': '관리자 메뉴' }, h('p', { class: 'admin-side-h' }, UI.icon('gear'), '관리자 메뉴'),
-      SIDE.filter((x) => x[3]()).map(([href, icon, label]) => h('a', { class: href === '#/admin' ? 'on' : '', href }, UI.icon(icon), label)));
+      SIDE.map(([href, icon, label]) => h('a', { class: href === '#/admin' ? 'on' : '', href }, UI.icon(icon), label)));
     const stat = (href, icon, label, value, tone) => h('a', { class: 'stat ' + (tone || ''), href }, h('span', { class: 'stat-ico' }, UI.icon(icon)),
       h('div', null, h('p', null, label), h('strong', null, value)), h('span', { class: 'more' }, '바로가기', UI.icon('arrow')));
     const load = () => Api.call('adminDash').then((d) => {
@@ -479,16 +490,16 @@
       fill(main, pcNotice(),
         h('div', { class: 'admin-head' }, h('div', null, h('h1', null, '관리자 대시보드'), h('p', { class: 'sub' }, '처리할 일과 운영 현황을 한눈에 확인합니다.')), h('span', { class: 'date-pill' }, UI.icon('clock'), d.today)),
         h('div', { class: 'stat-grid' },
-          stat('#/kpi/team', 'todo', 'KPI 확인 대기', d.pending + '건', d.pending ? 'warn' : ''),
-          stat('#/suggest/all', 'chat', '답변 전 건의', d.suggestOpen + '건', d.suggestOpen ? 'warn' : ''),
-          stat('#/award', 'trophy', '개선 제안 결정 대기', d.proposals === null ? '-' : d.proposals + '건', d.proposals ? 'warn' : ''),
+          stat('#/admin/kpi', 'todo', 'KPI 확인 대기', d.pending + '건', d.pending ? 'warn' : ''),
+          stat('#/admin/suggest', 'chat', '답변 전 건의', d.suggestOpen + '건', d.suggestOpen ? 'warn' : ''),
+          stat('#/admin/award', 'trophy', '개선 제안 결정 대기', d.proposals === null ? '-' : d.proposals + '건', d.proposals ? 'warn' : ''),
           stat('#/admin/users', 'people', '사용 중 직원', d.users.active + '명', d.users.locked ? 'bad' : ''),
           d.usage ? stat('#/admin/usage', 'clock', '이번 주 접속', d.usage.week + ' / ' + d.usage.total + '명') : null,
           d.errors === null || d.errors === undefined ? null : stat('#/admin/data', 'gear', '최근 7일 오류', d.errors + '건', d.errors ? 'warn' : '')),
         d.users.locked ? h('p', { class: 'note' }, '로그인 잠금 상태 직원이 ' + d.users.locked + '명 있습니다. 사용자 관리에서 잠금을 풀 수 있습니다.') : null,
         h('div', { class: 'panel-grid' },
-          h('div', { class: 'panel' }, UI.cardHead('chart', '직별 이번 달 KPI 달성 비율', '#/kpi/team'), h('div', { class: 'chart-area' }, canvas)),
-          h('div', { class: 'panel' }, UI.cardHead('chat', '최근 건의사항', '#/suggest/all'),
+          h('div', { class: 'panel' }, UI.cardHead('chart', '직별 이번 달 KPI 달성 비율', '#/admin/kpi'), h('div', { class: 'chart-area' }, canvas)),
+          h('div', { class: 'panel' }, UI.cardHead('chat', '최근 건의사항', '#/admin/suggest'),
             d.recent.length ? h('div', { class: 'table-wrap' }, h('table', { class: 'data click' }, h('thead', null, h('tr', null, ['분류', '제목', '등록일', '상태'].map((x) => h('th', null, x)))),
               h('tbody', null, d.recent.map((r) => h('tr', { onclick: () => { location.hash = '#/suggest/view/' + r.id; } },
                 h('td', null, r.category), h('td', { class: 'c-title' }, r.title), h('td', null, UI.dateOnly(r.created)),
