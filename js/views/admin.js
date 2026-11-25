@@ -187,11 +187,11 @@
     const load = () => Api.call('userAdminList').then((d) => { if (!alive()) return; data = d; draw(); }, (e) => { if (alive()) body.replaceChildren(UI.error(e.message, load)); });
     search.oninput = () => data && draw();
     showAll.onchange = () => data && draw();
-    app.replaceChildren(UI.hero('사용자 관리', '줄을 누르면 수정, 비밀번호 초기화, 잠금 해제, 사용 중지를 할 수 있습니다.'), pcNotice(),
+    app.replaceChildren(adminShell('#/admin/users', UI.hero('사용자 관리', '줄을 누르면 수정, 비밀번호 초기화, 잠금 해제, 사용 중지를 할 수 있습니다.'), pcNotice(),
       h('section', { class: 'section' }, h('div', { class: 'wrap wide' },
         h('div', { class: 'toolbar wrap-row' }, search, h('label', { class: 'check' }, showAll, h('span', null, 'QR장비점검에만 있는 사람도 보기')),
           h('button', { class: 'btn', type: 'button', onclick: () => open(null) }, '새 사용자 등록')),
-        edit, body, signupBox(), importBox(() => data))));
+        edit, body, signupBox(), importBox(() => data)))));
     load();
   });
 
@@ -230,7 +230,7 @@
     if (!UI.hasAny(['KPI_MANAGER', 'VIEW_EXEC'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
     if (!UI.has('VIEW_EXEC')) { Router.go('/kpi/monthly?tab=P2'); return; }
     const body = h('div', { class: 'wrap wide' });
-    app.replaceChildren(UI.hero('장비면허 명부'), pcNotice(), h('section', { class: 'section' }, body));
+    app.replaceChildren(adminShell('#/admin/license', UI.hero('장비면허 명부'), pcNotice(), h('section', { class: 'section' }, body)));
     window.LicenseBox(body, alive);
   });
 
@@ -266,7 +266,7 @@
           } }, '저장')));
         }));
     }, (e) => { if (alive()) body.replaceChildren(UI.error(e.message, load)); });
-    app.replaceChildren(UI.hero('목표·평가기준'), pcNotice(), h('section', { class: 'section' }, body));
+    app.replaceChildren(adminShell('#/admin/targets', UI.hero('목표·평가기준'), pcNotice(), h('section', { class: 'section' }, body)));
     load();
   });
 
@@ -400,15 +400,22 @@
     if (!UI.hasAny(['ADMIN', 'VIEW_EXEC'])) { app.replaceChildren(UI.placeholder('권한이 없습니다')); return; }
     const top = h('div');
     if (UI.has('ADMIN')) { top.append(UI.skeleton(4)); dataAdmin(top); }
-    app.replaceChildren(UI.hero('데이터 관리', UI.has('ADMIN') ? '월 마감 해제, 신년도 파일, 백업 상태, 작업 기록' : '작업 기록 열람'), pcNotice(),
-      h('section', { class: 'section' }, h('div', { class: 'wrap wide' }, top, logs())));
+    app.replaceChildren(adminShell('#/admin/data', UI.hero('데이터 관리', UI.has('ADMIN') ? '월 마감 해제, 신년도 파일, 백업 상태, 작업 기록' : '작업 기록 열람'), pcNotice(),
+      h('section', { class: 'section' }, h('div', { class: 'wrap wide' }, top, logs()))));
   });
 
   /* ---------- 관리자 대시보드 ---------- */
-  const SIDE = [['#/manhour', 'people', '공수 현황', () => !!App.home.mhView], ['#/admin', 'home', '대시보드', () => true], ['#/admin/users', 'people', '사용자 관리', () => UI.has('ADMIN')],
+  const SIDE = [['#/admin', 'home', '관리자 대시보드', () => true], ['#/manhour', 'people', '공수 현황', () => !!App.home.mhView], ['#/admin/users', 'people', '사용자 관리', () => UI.has('ADMIN')],
     ['#/kpi/team', 'chart', 'KPI 팀 현황', () => UI.has('KPI_VIEW_ALL')], ['#/suggest/all', 'chat', '건의사항 관리', () => UI.hasAny(['SUGGEST_VIEW', 'SUGGEST_READ'])],
     ['#/award', 'trophy', '우수사원 관리', () => true], ['#/kpi/monthly?tab=P2', 'lock', '장비면허 명부', () => UI.has('KPI_MANAGER') && !UI.has('VIEW_EXEC')], ['#/admin/license', 'lock', '장비면허 명부', () => UI.has('VIEW_EXEC')],
     ['#/admin/targets', 'list', '목표·평가기준', () => UI.hasAny(['ADMIN', 'KPI_TEAM', 'VIEW_EXEC'])], ['#/admin/usage', 'clock', '접속 현황', () => UI.hasAny(['ADMIN', 'VIEW_EXEC'])], ['#/admin/data', 'gear', '데이터 관리', () => UI.hasAny(['ADMIN', 'VIEW_EXEC'])]];
+
+  /* 2026-11-25 관리 메뉴 정리: 위 메뉴의 관리는 '관리자 대시보드' 하나로 두고, 관리 화면들은 모두 왼쪽 관리자 메뉴로 오간다. */
+  function adminShell(active, ...content) {
+    if (!UI.hasAny(['ADMIN', 'VIEW_EXEC', 'KPI_TEAM'])) return h('div', null, ...content);
+    return h('div', { class: 'admin-shell admin-sub' }, h('nav', { class: 'admin-side', 'aria-label': '관리자 메뉴' }, h('p', { class: 'admin-side-h' }, UI.icon('gear'), '관리자 메뉴'),
+      SIDE.filter((x) => x[3]()).map(([href, icon, label]) => h('a', { class: href === active ? 'on' : '', href }, UI.icon(icon), label))), h('div', { class: 'admin-sub-main' }, ...content));
+  }
 
   /* 접속 현황: 이번 주(월요일부터) 몇 명이 들어왔는지, 직별 인원, 14일 추이, 14일 이상 안 들어온 직원 */
   Router.add('/admin/usage', (params, app, alive) => {

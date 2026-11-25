@@ -47,18 +47,10 @@ const Nav = (() => {
     if (!UI.has('VIEW_EXEC')) join.push(link('내 건의', '#/suggest/mine'));
     if (!UI.has('VIEW_EXEC') && (UI.hasAny(['SUGGEST_VIEW', 'SUGGEST_READ']) || u.perms.some((p) => p.startsWith('KPI_CHECK:')))) join.push(link('전체 건의', '#/suggest/all'));
     join.push(link('우수사원 평가', '#/award'));
-    /* 관리: 공수 현황은 관리자 직급 전부(사원 외), 나머지는 시스템 관리 권한자 */
+    /* 관리(2026-11-25 정리): 관리 화면은 관리자 대시보드의 왼쪽 메뉴로 모았다. 대시보드를 못 여는 관리자 직급은 공수 현황만 바로 간다. */
     const admin = [];
-    if (App.home.mhView) admin.push(link('공수 현황', '#/manhour'));
-    if (UI.hasAny(['ADMIN', 'VIEW_EXEC', 'KPI_TEAM'])) admin.push(link('대시보드', '#/admin'));
-    if (UI.has('ADMIN')) admin.push(link('사용자 관리', '#/admin/users'));
-    if (UI.hasAny(['ADMIN', 'VIEW_EXEC'])) admin.push(link('접속 현황', '#/admin/usage'));
-    /* 장비면허 입력은 월 입력(직장)으로 옮겼다. 열람 전용 계정만 여기서 본다. */
-    if (UI.has('VIEW_EXEC')) admin.push(link('장비면허 명부', '#/admin/license'));
-    if (UI.hasAny(['ADMIN', 'KPI_TEAM', 'VIEW_EXEC'])) admin.push(link('목표·평가기준', '#/admin/targets'));
-    if (UI.hasAny(['ADMIN', 'VIEW_EXEC'])) admin.push(link('데이터 관리', '#/admin/data'));
-    const adminQuick = [];
-    if (App.home.mhView && UI.has('MANHOUR_EDIT') && !UI.has('VIEW_EXEC')) adminQuick.push(link('생산 CAPA 입력', '#/manhour'), link('공수 엑셀 올리기', '#/manhour/upload'));
+    if (UI.hasAny(['ADMIN', 'VIEW_EXEC', 'KPI_TEAM'])) admin.push(link('관리자 대시보드', '#/admin'));
+    else if (App.home.mhView) admin.push(link('공수 현황', '#/manhour'));
     /* 게시판 바로가기: 업무 게시판 글쓰기는 관리자 직급만, 생산계획 올리기는 전용 권한자만 */
     const boardQuick = [];
     if (!UI.has('VIEW_EXEC') && UI.isManager()) boardQuick.push(link('글쓰기', '#/board/work/new'));
@@ -74,7 +66,7 @@ const Nav = (() => {
       { key: 'join', label: '참여', first: join, groups: [] },
       { key: 'library', label: '자료실', first: [link('전체 자료', '#/library'), link('작업표준서', '#/library?cat=' + encodeURIComponent('작업표준서')), link('회사 규정·지침', '#/library?cat=' + encodeURIComponent('회사 규정·지침')), link('안전·교육', '#/library?cat=' + encodeURIComponent('안전·교육')), link('양식', '#/library?cat=' + encodeURIComponent('양식'))], groups: [] }
     ];
-    if (admin.length) list.push({ key: 'admin', label: '관리', first: admin, groups: [{ title: '바로가기', links: adminQuick }] });
+    if (admin.length) list.push({ key: 'admin', label: '관리', first: admin, groups: [] });
     return list;
   }
 

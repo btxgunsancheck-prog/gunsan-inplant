@@ -1296,3 +1296,6 @@ html[data-fs='2'] body:not([data-page='login']) { zoom: 1.3; }
 .login-v2.is-signup .signup-form .signup-h { font-size: calc(var(--u) * 1.45); }
 .login-v2.is-signup .login-switch { margin-top: calc(var(--u) * 0.6); }
 .logo-home { cursor: pointer; }
+/* 관리 화면(사용자 관리, 목표·평가기준, 데이터 관리 등)도 왼쪽 관리자 메뉴와 함께 보인다 */
+.admin-sub-main { min-width: 0; }
+.admin-sub-main .section { padding-top: 20px; }
