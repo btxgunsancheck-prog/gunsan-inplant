@@ -236,17 +236,13 @@
 
   /* 우수사원 관리: 팀장·공장·직장처럼 평가하거나 결과를 보는 사람만 우수사원 화면으로 보낸다. */
   Router.add('/admin/award', (params, app, alive) => {
-    /* 왼쪽 메뉴를 먼저 그리고, 권한을 확인한 뒤 오른쪽에만 우수사원 화면이나 안내를 넣는다(화면이 바뀌었다 돌아오는 깜빡임 방지) */
-    const main = h('div', null, UI.skeleton(6));
-    app.replaceChildren(adminShell(null, main));
-    const d = new Date();
-    Api.call('awardInfo', { quarter: d.getFullYear() + '-Q' + (Math.floor(d.getMonth() / 3) + 1) }).then((r) => {
-      if (!alive()) return;
-      const role = r.role || {};
-      const view = Router.find('/award');
-      if ((role.lead || role.plant || role.results || (role.chiefDepts && role.chiefDepts.length) || UI.has('ADMIN')) && view) view.view(view.params, main, alive);
-      else main.replaceChildren(UI.placeholder('권한이 없습니다', '우수사원 관리는 평가하거나 결과를 보는 관리자만 쓸 수 있습니다.'));
-    }, (e) => { if (alive()) main.replaceChildren(UI.error(e.message)); });
+    /* 권한은 서버(awardRole_)와 같은 기준으로 화면에서 바로 판단한다: 팀장, 공장, 사업부장, 직장(직 확인 권한), 관리자.
+       서버에 한 번 더 묻지 않아 우수사원 화면을 한 번만 불러온다(2026-11-25 로딩 단축). */
+    const rank = String((App.user && App.user.rank) || '').trim();
+    const ok = ['팀장', '공장', '사업부장'].includes(rank) || UI.checkDepts().length > 0 || UI.has('ADMIN');
+    const view = Router.find('/award');
+    if (ok && view) embed('/award', app, alive);
+    else app.replaceChildren(adminShell(null, UI.placeholder('권한이 없습니다', '우수사원 관리는 평가하거나 결과를 보는 관리자만 쓸 수 있습니다.')));
   });
 
   Router.add('/admin/targets', (params, app, alive) => {
