@@ -453,7 +453,7 @@
       const quietBy = {};
       d.quiet.forEach((x) => { (quietBy[UI.deptName(x.dept) || '소속 없음'] = quietBy[UI.deptName(x.dept) || '소속 없음'] || []).push(x.name + (x.last ? '(' + x.last.slice(5) + ')' : '(기록 없음)')); });
       fill(main, pcNotice(),
-        h('div', { class: 'admin-head' }, h('div', null, h('h1', null, '접속 현황'), h('p', { class: 'sub' }, '앱을 연 직원 수입니다. 기록은 ' + (d.since || d.today) + '부터 쌓입니다. 외부 열람·열람 전용 계정은 뺍니다.')), h('span', { class: 'date-pill' }, UI.icon('clock'), d.today)),
+        UI.hero('접속 현황', '앱을 연 직원 수입니다. 기록은 ' + (d.since || d.today) + '부터 쌓입니다. 외부 열람·열람 전용 계정은 뺍니다.'),
         h('div', { class: 'stat-grid' },
           card('오늘', d.todayN + '명', pct(d.todayN)), card('이번 주(월요일부터)', d.weekN + '명', pct(d.weekN)),
           card('지난주', d.lastWeekN + '명', pct(d.lastWeekN)), card('최근 30일', d.d30N + '명', pct(d.d30N))),
@@ -487,7 +487,7 @@
       const canvas = h('canvas');
       const depts = Object.keys(d.kpi);
       fill(main, pcNotice(),
-        h('div', { class: 'admin-head' }, h('div', null, h('h1', null, '관리자 대시보드'), h('p', { class: 'sub' }, '처리할 일과 운영 현황을 한눈에 확인합니다.')), h('span', { class: 'date-pill' }, UI.icon('clock'), d.today)),
+        UI.hero('관리자 대시보드', '처리할 일과 운영 현황을 한눈에 확인합니다.'),
         h('div', { class: 'stat-grid' },
           stat('#/admin/kpi', 'todo', 'KPI 확인 대기', d.pending + '건', d.pending ? 'warn' : ''),
           stat('#/admin/suggest', 'chat', '답변 전 건의', d.suggestOpen + '건', d.suggestOpen ? 'warn' : ''),
