@@ -89,6 +89,8 @@
     const keyOf = (it) => it.category + '|' + (it.category === TIS ? it.dept : it.title);
 
     function draw() {
+      /* 분류 탭을 바꾸면 배너 사진과 제목도 그 분류로 바꾼다 */
+      UI.setBanner(hero, UI.LIB_BANNER[cat] || 15, cat ? '자료실 · ' + cat : '자료실');
       tabs.replaceChildren(...[['', '전체']].concat(data.categories.map((c) => [c, c])).map(([k, label]) => h('button', {
         type: 'button', class: 'seg-btn' + (k === cat ? ' on' : ''), onclick: () => { cat = k; draw(); }
       }, label, k ? h('span', { class: 'lib-count' }, String(data.items.filter((it) => it.category === k).length)) : null)));
@@ -143,7 +145,8 @@
       }
     }, (e) => { if (alive()) list.replaceChildren(UI.error(e.message, load)); });
 
-    app.replaceChildren(UI.hero('자료실', '작업표준서, 회사 규정·지침, 안전·교육 자료, 양식을 내려받을 수 있습니다.'),
+    const hero = UI.hero('자료실', '작업표준서, 회사 규정·지침, 안전·교육 자료, 양식을 내려받을 수 있습니다.');
+    app.replaceChildren(hero,
       h('section', { class: 'section' }, h('div', { class: 'wrap' }, upBox, tabs, seg, h('div', { class: 'toolbar' }, search), list, delBox)));
     load();
   });

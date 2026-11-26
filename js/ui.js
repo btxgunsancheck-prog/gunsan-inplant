@@ -93,7 +93,31 @@ const UI = {
       h('p', { class: 'sub' }, message),
       retry && h('button', { class: 'btn', type: 'button', onclick: retry }, '다시 시도')));
   },
+  /* 2026-11-26 메뉴별 사진 배너(Gemini로 만든 가상 인물 사진, assets/banner/bNN.jpg). 번호는 메뉴 표 순서. 없으면 0(예전 그림). */
+  LIB_BANNER: { '작업표준서': 6, '': 15, '회사 규정·지침': 16, '안전·교육': 17, '양식': 18 },
+  bannerOf(full) {
+    const path = full.split('?')[0];
+    const q = new URLSearchParams(full.split('?')[1] || '');
+    if (path === '/library') return UI.LIB_BANNER[q.get('cat') || ''] || 15;
+    const kpi = path.match(/^\/kpi\/([1-4])(\/|$)/);
+    if (kpi) return 7 + Number(kpi[1]);
+    const rules = [[/^\/board\/notice/, 1], [/^\/board\/work/, 2], [/^\/(plan|board\/plan)/, 3], [/^\/qr/, 4], [/^\/pallet/, 5],
+      [/^\/(kpi|admin\/kpi)/, 7], [/^\/(suggest\/all|admin\/suggest)/, 13], [/^\/suggest/, 12], [/^\/(award|admin\/award)/, 14], [/^\/(admin|manhour)/, 19]];
+    const hit = rules.find((r) => r[0].test(path));
+    return hit ? hit[1] : 0;
+  },
+  /* 배너 사진만 바꾼다(자료실 탭처럼 주소가 그대로인 채 분류가 바뀔 때) */
+  setBanner(el, n, title) {
+    if (n) { el.classList.add('hero-photo'); el.style.setProperty('--hero-photo', 'url(../assets/banner/b' + String(n).padStart(2, '0') + '.jpg)'); }
+    if (title) { const t = el.querySelector('h1'); if (t) t.textContent = title; }
+  },
   hero(title, sub) {
+    const n = UI.bannerOf(Router.path());
+    if (n) {
+      const el = h('section', { class: 'hero' }, h('h1', null, title), sub && h('p', null, sub));
+      UI.setBanner(el, n);
+      return el;
+    }
     const key = Router.path().split('?')[0].split('/')[1] || '';
     const art = ['board', 'kpi', 'suggest', 'award', 'admin', 'account', 'qr'].indexOf(key) >= 0 ? key : key === 'manhour' ? 'admin' : '';
     return h('section', { class: 'hero', style: art ? '--hero-img:url(../assets/hero-' + art + '.svg)' : null },

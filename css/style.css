@@ -1325,3 +1325,13 @@ html[data-fs='2'] body:not([data-page='login']) { zoom: 1.3; }
   .admin-side a { padding: 9px 12px; font-size: 14px; border-radius: 999px; white-space: nowrap; }
   .admin-side a svg { width: 18px; height: 18px; }
 }
+/* 2026-11-26 메뉴별 사진 배너: 왼쪽 파란 그라데이션은 사진에 들어 있고, 제목·설명은 흰 글자 */
+.hero.hero-photo:not(.hero-over) { min-height: 280px; background: var(--hero-photo) right 30% / cover no-repeat, #0b2282; }
+.hero.hero-photo:not(.hero-over) h1, .hero.hero-photo:not(.hero-over) p { color: #fff; text-shadow: 0 1px 10px rgba(0, 20, 80, 0.45); }
+.hero.hero-photo:not(.hero-over) p { max-width: 45%; }
+.admin-sub-main .hero.hero-photo:not(.hero-over), .admin-main > .hero.hero-photo:not(.hero-over) { min-height: 220px; background: var(--hero-photo) right 30% / cover no-repeat, #0b2282; }
+@media (max-width: 833px) {
+  .hero.hero-photo:not(.hero-over), .admin-sub-main .hero.hero-photo:not(.hero-over), .admin-main > .hero.hero-photo:not(.hero-over) {
+    min-height: 170px; background: linear-gradient(90deg, rgba(11, 34, 130, 0.88) 0%, rgba(11, 34, 130, 0.55) 55%, rgba(11, 34, 130, 0.1) 100%), var(--hero-photo) 70% center / cover no-repeat, #0b2282; }
+  .hero.hero-photo:not(.hero-over) p { max-width: 75%; }
+}
