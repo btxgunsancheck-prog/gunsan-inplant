@@ -209,12 +209,20 @@ const KpiData = (() => {
       });
     });
     if (code === 'P1' && isTeam) return null;
-    const names = isTeam ? DEPTS.filter((d) => totals[d]) : Object.keys(totals).sort((a, b) => sumOf(totals[b]) - sumOf(totals[a])).slice(0, 15);
-    if (!names.length) return null;
+    if (!Object.keys(totals).length) return null;
+    /* 팀(직별): 실적이 없는 직도 빠짐없이 보여 준다(2026-11-26 사용자 결정). */
+    const names = isTeam ? DEPTS.slice() : Object.keys(totals).sort((a, b) => sumOf(totals[b]) - sumOf(totals[a])).slice(0, 15);
+    names.forEach((n) => { totals[n] = totals[n] || {}; });
     const base = { S2: '2026 누적 위험요소 적출 현황', Q2: '2026 누적 납입이상 적출 현황', Q3: '2026 누적 팔레트 개선 / 보수 현황', C1: '2026 누적 개선 효과금액 (백만원)', D1: '누적 이상발생 현황', D2: '누적 이상발생 현황', P1: '인원별 습숙도 진행현황' }[code];
     const box = chartBox(base + (isTeam ? ' (직별)' : ' (작업자별)'));
     const sets = [...kinds].map((k, i) => dataset({ t: 'bar', label: k }, names.map((n) => totals[n][k] || 0), i));
     const opts = baseOpts(false);
+    /* 직별 누적이 한 종류뿐이면 막대 색을 직별 그래프와 같은 직 색으로 칠하고, 범례는 직 이름이 가로 축에 있으니 숨긴다. */
+    if (isTeam && sets.length === 1) {
+      const cs = names.map((n) => DEPT_COLORS[n] || COLORS[0]);
+      Object.assign(sets[0], { backgroundColor: cs, borderColor: cs });
+      opts.plugins = Object.assign({}, opts.plugins, { legend: { display: false } });
+    }
     if (['Q2', 'Q3', 'C1', 'D1', 'D2'].includes(code)) { opts.scales.x.stacked = true; opts.scales.y.stacked = true; }
     opts.scales.x.ticks.font.size = 9;
     return { c: box, cfg: { type: 'bar', data: { labels: names, datasets: sets }, options: opts } };
