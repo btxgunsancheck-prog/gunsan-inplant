@@ -36,7 +36,7 @@ const KpiData = (() => {
     S2: { title: '[ 위험요소 적출현황 ]', annual: ['S2'], series: [rate('S2', '달성률'), tg('S2', '목표', null, y1), v('S2', '실적', y1)], team: { key: 'S2', t: 'bar', target: 'S2' } },
     P1: { title: '[ 다기능습숙 현황 ]', annual: ['P1'], series: [rate('P1_A', '달성률 공정당', 'P1_TA'), rate('P1_B', '달성률 인당', 'P1_TB'), tg('P1_TA', '목표 공정당', null, y1), tg('P1_TB', '목표 인당', null, y1), v('P1_A', '실적 공정당', y1), v('P1_B', '실적 인당', y1)], team: { key: 'P1', t: 'bar', pct: true, stack: true } },
     P2: { title: '[ 장비면허 취득 현황 ]', annual: ['P2_지게차', 'P2_건설기계'], series: [rate('P2_지게차', '달성률 지게차'), rate('P2_건설기계', '달성률 건설기계'), tg('P2_지게차', '목표 지게차', null, y1), tg('P2_건설기계', '목표 건설기계', null, y1), v('P2_지게차', '실적 지게차', y1), v('P2_건설기계', '실적 건설기계', y1)] },
-    P3: { title: '[ 직무교육현황 ]', annual: ['P3'], series: [rate('P3', '달성률'), tg('P3', '목표', null, y1)], team: { key: 'P3', t: 'bar', pct: true } },
+    P3: { title: '[ 직무교육현황 ]', annual: ['P3'], series: [rate('P3', '달성률'), tg('P3', '목표', null, y1)], team: { key: 'P3', t: 'bar', pct: true, stack: true } },
     Q1: { title: '[ 표준서 제 / 개정 현황 ]', annual: ['Q1'], series: [rate('Q1', '달성률'), tg('Q1', '목표', null, y1), v('Q1', '제정', y1), v('Q1_개정', '개정', y1)], team: { key: 'Q1', t: 'bar' } },
     Q2: { title: '[ 납입이상적출 현황 ]', annual: ['Q2'], series: [v('Q2', '실적')] },
     Q3: { title: '[ 파레트 개선 / 보수 현황 ]', annual: ['Q3_신규', 'Q3_개선', 'Q3_보수'], series: [v('Q3_신규', '신규제작', { t: 'bar' }), v('Q3_개선', '개선(개조)', { t: 'bar' }), v('Q3_보수', '보수', { t: 'bar' })] },
@@ -164,7 +164,7 @@ const KpiData = (() => {
       if (def.team.sumLine) sets.push(dataset({ t: 'line', label: '합계', gray: true }, MONTHS.map((mon) => T.val(TEAM, def.team.sumLine, mon))));
       const teamOpts = baseOpts(false);
       if (def.team.pct) teamOpts.plugins.valueLabels = { decimals: 0 };   /* 직별 % 그래프는 정수로(2026-11-26 사용자 결정) */
-      if (def.team.stack) { teamOpts.scales.x.stacked = true; teamOpts.scales.y.stacked = true; }   /* 다기능습숙 직별: 누적 세로 막대(2026-11-26 사용자 결정) */
+      if (def.team.stack) { teamOpts.scales.x.stacked = true; teamOpts.scales.y.stacked = true; }   /* 다기능습숙·직무교육 직별: 누적 세로 막대(2026-11-26 사용자 결정) */
       out.push({ c: box, cfg: { type: 'bar', data: { labels, datasets: sets }, options: teamOpts } });
     } else {
       const box = chartBox(def.title);
