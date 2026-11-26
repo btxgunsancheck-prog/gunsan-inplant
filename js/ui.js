@@ -246,8 +246,8 @@ const UI = {
       }
     });
     o.layout = Object.assign({}, o.layout, { padding: Object.assign({ top: 18, right: o.indexAxis === 'y' ? 34 : 6 }, o.layout && o.layout.padding) });
-    const fmt = (scale, v) => {
-      const r = Math.round(v * 10) / 10;
+    const fmt = (scale, v, dec) => {
+      const p = Math.pow(10, dec === undefined ? 1 : dec), r = Math.round(v * p) / p;
       const cb = scale && scale.options.ticks && scale.options.ticks.callback;
       if (cb && cb !== Chart.Ticks.formatters.numeric) { try { const t = cb.call(scale, r, 0, [{ value: r }]); if (t !== undefined && t !== null && t !== '') return String(t); } catch (e) { /* 기본 형식 */ } }
       return r.toLocaleString('ko-KR');
@@ -275,7 +275,7 @@ const UI = {
           const el = m.data[k];
           if (v === null || v === undefined || !el || Number.isNaN(v)) return;
           if (stacked && isBar && !v) return;
-          const text = Number(v) === 0 ? '-' : fmt(vScale, v);   /* 0은 '-'로(2026-11-26 사용자 결정) */
+          const text = Number(v) === 0 ? '-' : fmt(vScale, v, (c.options.plugins.valueLabels || {}).decimals);   /* 0은 '-'로(2026-11-26 사용자 결정) */
           const w = ctx.measureText(text).width;
           if (isBar) {
             const len = horiz ? Math.abs(el.x - el.base) : Math.abs(el.y - el.base);
