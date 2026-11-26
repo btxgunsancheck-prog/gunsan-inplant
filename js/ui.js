@@ -275,7 +275,7 @@ const UI = {
           const el = m.data[k];
           if (v === null || v === undefined || !el || Number.isNaN(v)) return;
           if (stacked && isBar && !v) return;
-          const text = Number(v) === 0 ? '-' : fmt(vScale, v, (c.options.plugins.valueLabels || {}).decimals);   /* 0은 '-'로(2026-11-26 사용자 결정) */
+          const text = Number(v) === 0 ? '-' : ds.valueSuffix ? (Math.round(v * Math.pow(10, ds.valueDecimals || 0)) / Math.pow(10, ds.valueDecimals || 0)) + ds.valueSuffix : fmt(vScale, v, (c.options.plugins.valueLabels || {}).decimals);   /* 0은 '-', % 값은 정수 + '%'(2026-11-26 사용자 결정) */
           const w = ctx.measureText(text).width;
           if (isBar) {
             const len = horiz ? Math.abs(el.x - el.base) : Math.abs(el.y - el.base);
@@ -306,6 +306,25 @@ const UI = {
         ctx.fillStyle = p.fill;
         ctx.fillText(p.text, p.x, p.y);
       });
+      /* 누적 막대 맨 위에 그 달의 평균(값이 있는 항목만)을 적는다. 예: 직별 % 누적 그래프(2026-11-26 사용자 결정) */
+      const avg = (c.options.plugins.valueLabels || {}).topAvg;
+      if (avg) {
+        ctx.font = 'bold ' + (size + 1) + 'px sans-serif';
+        ctx.textBaseline = 'bottom';
+        (c.data.labels || []).forEach((lab, k) => {
+          let sum = 0, n = 0, top = Infinity, x = null;
+          c.data.datasets.forEach((ds, i) => {
+            const v = ds.data[k], el = c.getDatasetMeta(i).data[k];
+            if (!c.isDatasetVisible(i) || v === null || v === undefined || !el) return;
+            sum += Number(v); n++; top = Math.min(top, el.y, el.base); x = el.x;
+          });
+          if (!n || x === null) return;
+          const p = Math.pow(10, avg.decimals || 0);
+          const text = (narrow ? '' : '평균 ') + (Math.round(sum / n * p) / p) + (avg.suffix || '');
+          ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.92)'; ctx.strokeText(text, x, top - 4);
+          ctx.fillStyle = '#1a2340'; ctx.fillText(text, x, top - 4);
+        });
+      }
       ctx.restore();
     } };
     cfg.plugins = (cfg.plugins || []).concat(valueLabels);

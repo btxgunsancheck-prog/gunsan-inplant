@@ -117,6 +117,9 @@ const KpiData = (() => {
     return {
       type: s.t, label: s.label, data, yAxisID: s.y1 ? 'y1' : 'y', borderColor: color, backgroundColor: s.t === 'bar' ? color : 'transparent',
       borderWidth: 2, pointRadius: s.t === 'line' ? 2 : 0, borderDash: s.dash ? [5, 4] : [], borderRadius: s.t === 'bar' ? 3 : 0, spanGaps: true, order: s.t === 'line' ? 1 : 2
+,
+      valueSuffix: s.pct ? '%' : undefined,   /* % 값은 레이블에 '95%'처럼(2026-11-26 사용자 결정) */
+      valueDecimals: /^C2_/.test(s.key || '') ? 1 : 0   /* 순환재고 일치율은 99.6%처럼 소수 한 자리 */
     };
   }
 
@@ -129,14 +132,15 @@ const KpiData = (() => {
     let colorIndex = 0;
     return def.series.map((s) => {
       const data = MONTHS.map((mon) => {
-        if (s.src === 'value') return T.val(dept, s.key, mon);
+        const ratio = (n) => (PCT.has(s.key) && n !== null && n !== undefined ? round(n * 100, 1) : n);   /* 비율로 저장된 지표는 % 값으로 */
+        if (s.src === 'value') return ratio(T.val(dept, s.key, mon));
         const tk = s.tkey || s.key;
         const tv = T.target(dept, tk, mon);
-        if (s.src === 'target') return tv;
+        if (s.src === 'target') return ratio(tv);
         const a = T.val(dept, s.key, mon);
         return a === null ? null : (tv ? round(a / tv * 100, 1) : 0);
       });
-      return dataset(s, data, s.gray ? 0 : colorIndex++);
+      return dataset(Object.assign({}, s, { pct: s.src === 'rate' || PCT.has(s.key) }), data, s.gray ? 0 : colorIndex++);
     });
   }
 
@@ -149,14 +153,18 @@ const KpiData = (() => {
     const annualSets = def.annual.map((key, i) => {
       const x = T.t(dept, key);
       const named = METRICS.reduce((o, m) => o || m.keys.find((k) => k[0] === key && k[1]), null);
-      return dataset({ t: 'bar', label: named ? named[1] : key.split('_')[1] || '실적' }, [x ? Number(x.prior) : null, T.annualTarget(dept, key), T.yearVal(dept, key)], i);
+      const vals = [x ? Number(x.prior) : null, T.annualTarget(dept, key), T.yearVal(dept, key)];
+      /* 비율(0.95)로 저장된 지표는 그래프에 95%로 적는다(2026-11-26 사용자 결정). */
+      return dataset({ t: 'bar', label: named ? named[1] : key.split('_')[1] || '실적' }, PCT.has(key) ? vals.map((v) => (v === null || v === undefined || isNaN(v) ? null : round(v * 100, 1))) : vals, i);
     });
-    out.push({ c: annual, cfg: { type: 'bar', data: { labels: ['전년 실적', '올해 목표', '올해 누계'], datasets: annualSets }, options: baseOpts(false) } });
+    const annualOpts = baseOpts(false);
+    if (def.annual.every((k) => PCT.has(k))) { annualOpts.scales.y.ticks.callback = (v) => v + '%'; annualOpts.plugins.valueLabels = { decimals: def.annual.some((k) => /^C2_/.test(k)) ? 1 : 0 }; }
+    out.push({ c: annual, cfg: { type: 'bar', data: { labels: ['전년 실적', '올해 목표', '올해 누계'], datasets: annualSets }, options: annualOpts } });
 
     const guest = UI.has('GUEST');
     if (dept === TEAM && def.team && !guest) {
       const box = chartBox(def.title + ' 직별');
-      const sets = DEPTS.map((d) => dataset({ t: def.team.t, label: d, color: DEPT_COLORS[d] }, MONTHS.map((mon) => {
+      const sets = DEPTS.map((d) => dataset({ t: def.team.t, label: d, color: DEPT_COLORS[d], pct: def.team.pct }, MONTHS.map((mon) => {
         const a = T.val(d, def.team.key, mon);
         return def.team.pct && a !== null ? round(a * 100, 1) : a;
       })));
@@ -164,7 +172,9 @@ const KpiData = (() => {
       if (def.team.sumLine) sets.push(dataset({ t: 'line', label: '합계', gray: true }, MONTHS.map((mon) => T.val(TEAM, def.team.sumLine, mon))));
       const teamOpts = baseOpts(false);
       if (def.team.pct) teamOpts.plugins.valueLabels = { decimals: 0 };   /* 직별 % 그래프는 정수로(2026-11-26 사용자 결정) */
-      if (def.team.stack) { teamOpts.scales.x.stacked = true; teamOpts.scales.y.stacked = true; }   /* 다기능습숙·직무교육·표준서 직별: 누적 세로 막대(2026-11-26 사용자 결정) */
+      /* 다기능습숙·직무교육·표준서 직별: 누적 세로 막대(2026-11-26 사용자 결정). % 그래프는 맨 위에 월 평균(%)을 적는다. */
+      if (def.team.stack) { teamOpts.scales.x.stacked = true; teamOpts.scales.y.stacked = true; }
+      if (def.team.stack && def.team.pct) { teamOpts.plugins.valueLabels.topAvg = { suffix: '%', decimals: 0 }; teamOpts.layout = { padding: { top: 26 } }; }
       out.push({ c: box, cfg: { type: 'bar', data: { labels, datasets: sets }, options: teamOpts } });
     } else {
       const box = chartBox(def.title);
