@@ -40,7 +40,7 @@ const KpiData = (() => {
     Q1: { title: '[ 표준서 제 / 개정 현황 ]', annual: ['Q1'], series: [rate('Q1', '달성률'), tg('Q1', '목표', null, y1), v('Q1', '제정', y1), v('Q1_개정', '개정', y1)], team: { key: 'Q1', t: 'bar', stack: true } },
     Q2: { title: '[ 납입이상적출 현황 ]', annual: ['Q2'], series: [v('Q2', '실적')] },
     Q3: { title: '[ 파레트 개선 / 보수 현황 ]', annual: ['Q3_신규', 'Q3_개선', 'Q3_보수'], series: [v('Q3_신규', '신규제작', { t: 'bar' }), v('Q3_개선', '개선(개조)', { t: 'bar' }), v('Q3_보수', '보수', { t: 'bar' })] },
-    D1: { title: '[ 이상발생 / 비가동 현황 ]', annual: ['D1', 'D2'], series: [rate('D1', '달성률 이상발생'), tg('D1', '목표 이상발생', null, y1), tg('D2', '목표 비가동', null, y1), v('D1', '실적 이상발생', y1), v('D2', '실적 비가동', y1)], team: { key: 'D1', t: 'bar', sumLine: 'D1' } },
+    D1: { title: '[ 이상발생 / 비가동 현황 ]', annual: ['D1', 'D2'], series: [rate('D1', '달성률 이상발생'), tg('D1', '목표 이상발생', null, y1), tg('D2', '목표 비가동', null, y1), v('D1', '실적 이상발생', y1), v('D2', '실적 비가동', y1)], team: { key: 'D1', t: 'bar', sumLine: 'D1', stack: true, topSum: '건' } },
     C1: { title: '[ 개선 현황 ]', annual: ['C1_팔레트', 'C1_Lay-out', 'C1_운영'], annualTitle: '[ 개선 비용절감액 ] (단위: 백만원)', series: [v('C1n_팔레트', '팔레트(건)'), v('C1n_Lay-out', 'Lay-out(건)'), v('C1n_운영', '운영(건)')] },
     C2: { title: '[ 순환재고 일치율 ]', annual: ['C2_품목', 'C2_금액'], series: [v('C2_품목', '일치율 품목', { t: 'bar' }), v('C2_금액', '일치율 금액', { t: 'bar' }), tg('C2_품목', '목표 품목'), tg('C2_금액', '목표 금액'), v('C3_재고보정', '재고보정(백만원)', y1), v('C3_클레임', '클레임(백만원)', y1)] }
   };
@@ -169,11 +169,12 @@ const KpiData = (() => {
         return def.team.pct && a !== null ? round(a * 100, 1) : a;
       })));
       if (def.team.target) sets.push(dataset({ t: 'line', label: '목표', dash: true, gray: true }, MONTHS.map((mon) => T.target(TEAM, def.team.target, mon))));
-      if (def.team.sumLine) sets.push(dataset({ t: 'line', label: '합계', gray: true }, MONTHS.map((mon) => T.val(TEAM, def.team.sumLine, mon))));
+      if (def.team.sumLine && !def.team.topSum) sets.push(dataset({ t: 'line', label: '합계', gray: true }, MONTHS.map((mon) => T.val(TEAM, def.team.sumLine, mon))));
       const teamOpts = baseOpts(false);
       if (def.team.pct) teamOpts.plugins.valueLabels = { decimals: 0 };   /* 직별 % 그래프는 정수로(2026-11-26 사용자 결정) */
       /* 다기능습숙·직무교육·표준서·위험요소 직별: 누적 세로 막대(2026-11-26 사용자 결정). % 그래프는 맨 위에 월 평균(%)을 적는다. */
       if (def.team.stack) { teamOpts.scales.x.stacked = true; teamOpts.scales.y.stacked = true; sets.forEach((s, i) => { if (s.type === 'line') s.stack = 'line' + i; }); }   /* 목표·합계 선은 쌓지 않는다 */
+      if (def.team.topSum) { teamOpts.plugins.valueLabels = Object.assign(teamOpts.plugins.valueLabels || {}, { topAvg: { mode: 'sum', unit: def.team.topSum } }); teamOpts.layout = { padding: { top: 26 } }; }   /* 합계 선 대신 막대 위 총건 */
       if (def.team.stack && def.team.pct) { teamOpts.plugins.valueLabels.topAvg = { suffix: '%', decimals: 0 }; teamOpts.layout = { padding: { top: 26 } }; }
       out.push({ c: box, cfg: { type: 'bar', data: { labels, datasets: sets }, options: teamOpts } });
     } else {

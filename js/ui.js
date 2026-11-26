@@ -306,7 +306,7 @@ const UI = {
         ctx.fillStyle = p.fill;
         ctx.fillText(p.text, p.x, p.y);
       });
-      /* 누적 막대 맨 위에 그 달의 평균(값이 있는 항목만)을 적는다. 예: 직별 % 누적 그래프(2026-11-26 사용자 결정) */
+      /* 누적 막대 맨 위에 그 달의 평균(값이 있는 항목만) 또는 합계(mode: 'sum')를 적는다. 예: 직별 % 누적 그래프(2026-11-26 사용자 결정) */
       const avg = (c.options.plugins.valueLabels || {}).topAvg;
       if (avg) {
         ctx.font = 'bold ' + (size + 1) + 'px sans-serif';
@@ -315,12 +315,14 @@ const UI = {
           let sum = 0, n = 0, top = Infinity, x = null;
           c.data.datasets.forEach((ds, i) => {
             const v = ds.data[k], el = c.getDatasetMeta(i).data[k];
-            if (!c.isDatasetVisible(i) || v === null || v === undefined || !el) return;
+            if (!c.isDatasetVisible(i) || v === null || v === undefined || !el || (ds.type || c.config.type) !== 'bar') return;
             sum += Number(v); n++; top = Math.min(top, el.y, el.base); x = el.x;
           });
           if (!n || x === null) return;
           const p = Math.pow(10, avg.decimals || 0);
-          const text = (narrow ? '' : '평균 ') + (Math.round(sum / n * p) / p) + (avg.suffix || '');
+          if (avg.mode === 'sum' && !sum) return;
+          const text = avg.mode === 'sum' ? (narrow ? '' : '총 ') + (Math.round(sum * p) / p) + (narrow ? '' : avg.unit || '')   /* 맨 위 합계(이상발생 등) */
+            : (narrow ? '' : '평균 ') + (Math.round(sum / n * p) / p) + (avg.suffix || '');
           ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.92)'; ctx.strokeText(text, x, top - 4);
           ctx.fillStyle = '#1a2340'; ctx.fillText(text, x, top - 4);
         });
