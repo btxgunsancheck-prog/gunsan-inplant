@@ -471,8 +471,8 @@
           d.quietN ? h('div', null, Object.keys(quietBy).map((k) => h('p', { class: 'quiet-row' }, h('strong', null, k), h('span', null, quietBy[k].join(', ')))),
             d.quietN > d.quiet.length ? h('p', { class: 'sub' }, '앞의 ' + d.quiet.length + '명만 보여 줍니다.') : null,
             h('p', { class: 'sub' }, '괄호는 마지막으로 접속한 날(월-일)입니다.')) : h('p', { class: 'sub' }, '모두 최근 14일 안에 접속했습니다.')));
-      const draw = () => new window.Chart(canvas, { type: 'bar', data: { labels: d.days.map((x) => x.d.slice(8) + '(' + WD[new Date(x.d + 'T12:00:00Z').getUTCDay()] + ')'), datasets: [{ label: '접속 인원', data: d.days.map((x) => x.n), backgroundColor: '#0b2282', borderRadius: 6, maxBarThickness: 36 }] },
-        options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { min: 0, max: Math.max(d.total, 1), ticks: { precision: 0 } } } } });
+      const draw = () => new window.Chart(canvas, UI.chartLook({ type: 'bar', data: { labels: d.days.map((x) => x.d.slice(8) + '(' + WD[new Date(x.d + 'T12:00:00Z').getUTCDay()] + ')'), datasets: [{ label: '접속 인원', data: d.days.map((x) => x.n), backgroundColor: '#0b2282', borderRadius: 6, maxBarThickness: 36 }] },
+        options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { min: 0, max: Math.max(d.total, 1), ticks: { precision: 0 } } } } }));
       if (window.Chart) draw();
       else { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'; s.onload = draw; document.head.append(s); }
     }, (e) => { if (alive()) main.replaceChildren(UI.error(e.message, load)); });
@@ -512,8 +512,8 @@
               : UI.empty('등록된 건의가 없습니다.', 'feedback', true))));
       const pct = (k) => { const t = k.G + k.Y + k.R; return t ? Math.round(k.G / t * 100) : 0; };
       const s = document.createElement('script');
-      const draw = () => new window.Chart(canvas, { type: 'bar', data: { labels: depts, datasets: [{ label: '달성 비율(%)', data: depts.map((x) => pct(d.kpi[x])), backgroundColor: '#0b2282', borderRadius: 6, maxBarThickness: 48 }] },
-        options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { min: 0, max: 100, ticks: { callback: (v) => v + '%' } } } } });
+      const draw = () => new window.Chart(canvas, UI.chartLook({ type: 'bar', data: { labels: depts, datasets: [{ label: '달성 비율(%)', data: depts.map((x) => pct(d.kpi[x])), backgroundColor: '#0b2282', borderRadius: 6, maxBarThickness: 48 }] },
+        options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { min: 0, max: 100, ticks: { callback: (v) => v + '%' } } } } }));
       if (window.Chart) draw();
       else { s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js'; s.onload = draw; document.head.append(s); }
     }, (e) => { if (alive()) main.replaceChildren(UI.error(e.message, load)); });

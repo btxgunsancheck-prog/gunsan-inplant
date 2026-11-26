@@ -229,6 +229,83 @@ const UI = {
     return h('div', { class: 'card-h' }, h('span', { class: 'ch-ico' }, UI.icon(icon)), h('h2', null, title),
       more && h('a', { class: 'more', href: more }, '더보기', UI.icon('arrow')));
   },
+  /* 그래프 공통 모양(2026-11-26, 공수 그래프 기준을 모든 그래프에): 눈금선을 지우고 모든 값을 숫자 레이블로 적는다.
+     막대는 안에 들어가면 막대 가운데 흰 글자, 작으면 막대 끝 바깥. 선은 점 위에 선 색 글자(흰 테두리).
+     값 형식은 그 축 눈금의 표시 방식(예: %)을 따른다. 쌓은 막대의 0은 적지 않는다. */
+  chartLook(cfg) {
+    const o = (cfg.options = cfg.options || {});
+    o.scales = o.scales || {};
+    ['x', 'y'].concat(Object.keys(o.scales)).forEach((k) => {
+      const s = (o.scales[k] = o.scales[k] || {});
+      s.grid = Object.assign({}, s.grid, { display: false });
+      if (k !== 'x' && (o.indexAxis !== 'y' || k !== 'y')) s.border = Object.assign({}, s.border, { display: false });
+    });
+    o.layout = Object.assign({}, o.layout, { padding: Object.assign({ top: 18, right: o.indexAxis === 'y' ? 34 : 6 }, o.layout && o.layout.padding) });
+    const fmt = (scale, v) => {
+      const r = Math.round(v * 10) / 10;
+      const cb = scale && scale.options.ticks && scale.options.ticks.callback;
+      if (cb && cb !== Chart.Ticks.formatters.numeric) { try { const t = cb.call(scale, r, 0, [{ value: r }]); if (t !== undefined && t !== null && t !== '') return String(t); } catch (e) { /* 기본 형식 */ } }
+      return r.toLocaleString('ko-KR');
+    };
+    const valueLabels = { id: 'valueLabels', afterDatasetsDraw(c) {
+      const { ctx } = c;
+      const narrow = c.canvas.clientWidth < 420;
+      const many = c.data.datasets.length * (c.data.labels || []).length > 30;
+      const size = narrow || many ? 10 : 12;
+      const horiz = c.options.indexAxis === 'y';
+      ctx.save();
+      ctx.font = 'bold ' + size + 'px sans-serif';
+      ctx.lineJoin = 'round';
+      const later = [];
+      c.data.datasets.forEach((ds, i) => {
+        if (!c.isDatasetVisible(i)) return;
+        const m = c.getDatasetMeta(i);
+        const vScale = c.scales[horiz ? m.xAxisID : m.yAxisID];
+        const isBar = (ds.type || c.config.type) === 'bar';
+        const stacked = vScale && vScale.options.stacked;
+        const pick = (v) => (Array.isArray(v) ? v[1] : v);
+        const colorOf = (k) => { const b = Array.isArray(ds.backgroundColor) ? ds.backgroundColor[k] : ds.backgroundColor; const l = Array.isArray(ds.borderColor) ? ds.borderColor[k] : ds.borderColor; return (isBar ? b : l) || l || '#333'; };
+        ds.data.forEach((raw, k) => {
+          const v = pick(raw);
+          const el = m.data[k];
+          if (v === null || v === undefined || !el || Number.isNaN(v)) return;
+          if (stacked && isBar && !v) return;
+          const text = Number(v) === 0 ? '-' : fmt(vScale, v);   /* 0은 '-'로(2026-11-26 사용자 결정) */
+          const w = ctx.measureText(text).width;
+          if (isBar) {
+            const len = horiz ? Math.abs(el.x - el.base) : Math.abs(el.y - el.base);
+            const thick = horiz ? el.height : el.width;
+            const inside = horiz ? len >= w + 8 && thick >= size + 2 : len >= size + 6 && thick >= w - 2;
+            if (inside) { later.push({ text, x: horiz ? (el.x + el.base) / 2 : el.x, y: horiz ? el.y : (el.y + el.base) / 2, fill: '#fff' }); return; }
+            if (stacked) return;
+            later.push(horiz ? { text, x: Math.max(el.x, el.base) + 4 + w / 2, y: el.y, fill: '#334', halo: true }
+              : { text, x: el.x, y: Math.min(el.y, el.base) - size / 2 - 3, fill: '#334', halo: true });
+          } else {
+            later.push({ text, x: el.x, y: el.y - size / 2 - 6, fill: colorOf(k), halo: true });
+          }
+        });
+      });
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      /* 겹침 정리: 같은 자리 같은 값은 한 번만, 다른 값이 겹치면 위로 비켜 적는다. */
+      const done = [];
+      later.forEach((p) => {
+        const w = ctx.measureText(p.text).width;
+        const box = (y) => ({ l: p.x - w / 2 - 1, r: p.x + w / 2 + 1, t: y - size / 2 - 1, b: y + size / 2 + 1 });
+        const hit = (b) => done.find((d) => b.l < d.r && b.r > d.l && b.t < d.b && b.b > d.t);
+        let b = box(p.y), o = hit(b);
+        if (o && o.text === p.text && Math.abs(o.x - p.x) < 4) return;
+        for (let n = 0; o && n < 4; n++) { p.y -= size + 2; b = box(p.y); o = hit(b); }
+        done.push(Object.assign(b, { text: p.text, x: p.x }));
+        if (p.halo) { ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,0.92)'; ctx.strokeText(p.text, p.x, p.y); }
+        ctx.fillStyle = p.fill;
+        ctx.fillText(p.text, p.x, p.y);
+      });
+      ctx.restore();
+    } };
+    cfg.plugins = (cfg.plugins || []).concat(valueLabels);
+    return cfg;
+  },
   pct(n, d) { return d ? Math.round(n / d * 100) : null; },
   dateOnly(s) { return String(s || '').slice(0, 10); }
 };

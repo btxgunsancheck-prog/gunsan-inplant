@@ -173,7 +173,7 @@ const KpiData = (() => {
     const vend = code === 'Q2' && !guest ? vendorChart(T, dept) : null;
     if (vend) out.push(vend);
     host.replaceChildren(...out.map((o) => o.c.el));
-    loadChart().then(() => { out.forEach((o) => { if (o.cfg) charts.push(new window.Chart(o.c.canvas, o.cfg)); }); }).catch(() => UI.toast('차트를 불러오지 못했습니다.', true));
+    loadChart().then(() => { out.forEach((o) => { if (o.cfg) charts.push(new window.Chart(o.c.canvas, UI.chartLook(o.cfg))); }); }).catch(() => UI.toast('차트를 불러오지 못했습니다.', true));
   }
 
   function cumulative(T, dept, code) {
@@ -340,8 +340,8 @@ const KpiData = (() => {
     const canvas = h('canvas');
     host.replaceChildren(h('div', { class: 'chart-area' }, canvas));
     loadChart().then(() => {
-      charts.push(new window.Chart(canvas, { type: 'line', data: { labels: months.map((x) => x + '월'), datasets: [{ label: '달성 비율(%)', data, borderColor: '#0b2282', backgroundColor: 'rgba(11,34,130,0.08)', fill: true, tension: 0.3, pointRadius: 4, spanGaps: true }] },
-        options: Object.assign(baseOpts(false), { scales: { x: { grid: { display: false } }, y: { min: 0, max: 100, ticks: { callback: (v) => v + '%' }, grid: { color: '#ececf0' } } } }) }));
+      charts.push(new window.Chart(canvas, UI.chartLook({ type: 'line', data: { labels: months.map((x) => x + '월'), datasets: [{ label: '달성 비율(%)', data, borderColor: '#0b2282', backgroundColor: 'rgba(11,34,130,0.08)', fill: true, tension: 0.3, pointRadius: 4, spanGaps: true }] },
+        options: Object.assign(baseOpts(false), { scales: { x: { grid: { display: false } }, y: { min: 0, max: 100, ticks: { callback: (v) => v + '%' }, grid: { color: '#ececf0' } } } }) })));
     }).catch(() => {});
   }
   function tabBars(T, dept) {
