@@ -238,7 +238,12 @@ const UI = {
     ['x', 'y'].concat(Object.keys(o.scales)).forEach((k) => {
       const s = (o.scales[k] = o.scales[k] || {});
       s.grid = Object.assign({}, s.grid, { display: false });
-      if (k !== 'x' && (o.indexAxis !== 'y' || k !== 'y')) s.border = Object.assign({}, s.border, { display: false });
+      /* 값 축(세로 숫자)은 숫자·선 모두 숨긴다(2026-11-26 사용자 결정). 항목 축(월 등)은 그대로. */
+      const cat = o.indexAxis === 'y' ? 'y' : 'x';
+      if (k !== cat) {
+        s.border = Object.assign({}, s.border, { display: false });
+        s.ticks = Object.assign({}, s.ticks, { display: false });
+      }
     });
     o.layout = Object.assign({}, o.layout, { padding: Object.assign({ top: 18, right: o.indexAxis === 'y' ? 34 : 6 }, o.layout && o.layout.padding) });
     const fmt = (scale, v) => {

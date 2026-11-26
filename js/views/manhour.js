@@ -250,8 +250,8 @@
             plugins: { legend: { display: false }, tooltip },
             scales: {
               x: { ticks: { font: { size: 13 }, autoSkip: false, maxRotation: 45, color: '#667' }, grid: { display: false } },
-              yL: { display: useL, position: 'left', grace: '12%', ticks: { color: '#667', callback: (v) => v + '명' }, grid: { display: false }, border: { display: false } },
-              yR: { display: useR, position: 'right', beginAtZero: true, grace: '15%', ticks: { color: '#667', callback: (v) => v + '대' }, grid: { display: false }, border: { display: false } }
+              yL: { display: useL, position: 'left', grace: '12%', ticks: { display: false, color: '#667', callback: (v) => v + '명' }, grid: { display: false }, border: { display: false } },
+              yR: { display: useR, position: 'right', beginAtZero: true, grace: '15%', ticks: { display: false, color: '#667', callback: (v) => v + '대' }, grid: { display: false }, border: { display: false } }
             } }, plugins: [dataLabels] }));
         }
         miniGrid.querySelectorAll('canvas').forEach((cv, i) => {
@@ -259,7 +259,7 @@
             responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
             plugins: { legend: { display: false }, tooltip },
             layout: { padding: { top: 20 } },
-            scales: { x: { grid: { display: false }, ticks: { font: { size: 12 }, color: '#667', autoSkip: true, maxRotation: 0 } }, y: { grace: '14%', grid: { display: false }, border: { display: false }, ticks: { font: { size: 12 }, color: '#667', callback: (v) => v + minis[i].it.unit } } } }, plugins: [dataLabels] }));
+            scales: { x: { grid: { display: false }, ticks: { font: { size: 12 }, color: '#667', autoSkip: true, maxRotation: 0 } }, y: { grace: '14%', grid: { display: false }, border: { display: false }, ticks: { display: false, font: { size: 12 }, color: '#667', callback: (v) => v + minis[i].it.unit } } } }, plugins: [dataLabels] }));
         });
       };
       if (window.Chart) build();
