@@ -33,7 +33,7 @@ const KpiData = (() => {
   const y1 = { y1: true };
   const CHARTS = {
     S1: { title: '[ 사고발생 현황 ]', annual: ['S1_사고', 'S1_아차'], series: [v('S1_사고', '사고발생', { t: 'bar' }), v('S1_아차', '아차사고', { t: 'bar' }), tg('S1_사고', '목표 사고발생'), tg('S1_아차', '목표 아차사고')], team: { key: 'S1', t: 'line' } },
-    S2: { title: '[ 위험요소 적출현황 ]', annual: ['S2'], series: [rate('S2', '달성률'), tg('S2', '목표', null, y1), v('S2', '실적', y1)], team: { key: 'S2', t: 'bar', target: 'S2' } },
+    S2: { title: '[ 위험요소 적출현황 ]', annual: ['S2'], series: [rate('S2', '달성률'), tg('S2', '목표', null, y1), v('S2', '실적', y1)], team: { key: 'S2', t: 'bar', target: 'S2', stack: true } },
     P1: { title: '[ 다기능습숙 현황 ]', annual: ['P1'], series: [rate('P1_A', '달성률 공정당', 'P1_TA'), rate('P1_B', '달성률 인당', 'P1_TB'), tg('P1_TA', '목표 공정당', null, y1), tg('P1_TB', '목표 인당', null, y1), v('P1_A', '실적 공정당', y1), v('P1_B', '실적 인당', y1)], team: { key: 'P1', t: 'bar', pct: true, stack: true } },
     P2: { title: '[ 장비면허 취득 현황 ]', annual: ['P2_지게차', 'P2_건설기계'], series: [rate('P2_지게차', '달성률 지게차'), rate('P2_건설기계', '달성률 건설기계'), tg('P2_지게차', '목표 지게차', null, y1), tg('P2_건설기계', '목표 건설기계', null, y1), v('P2_지게차', '실적 지게차', y1), v('P2_건설기계', '실적 건설기계', y1)] },
     P3: { title: '[ 직무교육현황 ]', annual: ['P3'], series: [rate('P3', '달성률'), tg('P3', '목표', null, y1)], team: { key: 'P3', t: 'bar', pct: true, stack: true } },
@@ -172,8 +172,8 @@ const KpiData = (() => {
       if (def.team.sumLine) sets.push(dataset({ t: 'line', label: '합계', gray: true }, MONTHS.map((mon) => T.val(TEAM, def.team.sumLine, mon))));
       const teamOpts = baseOpts(false);
       if (def.team.pct) teamOpts.plugins.valueLabels = { decimals: 0 };   /* 직별 % 그래프는 정수로(2026-11-26 사용자 결정) */
-      /* 다기능습숙·직무교육·표준서 직별: 누적 세로 막대(2026-11-26 사용자 결정). % 그래프는 맨 위에 월 평균(%)을 적는다. */
-      if (def.team.stack) { teamOpts.scales.x.stacked = true; teamOpts.scales.y.stacked = true; }
+      /* 다기능습숙·직무교육·표준서·위험요소 직별: 누적 세로 막대(2026-11-26 사용자 결정). % 그래프는 맨 위에 월 평균(%)을 적는다. */
+      if (def.team.stack) { teamOpts.scales.x.stacked = true; teamOpts.scales.y.stacked = true; sets.forEach((s, i) => { if (s.type === 'line') s.stack = 'line' + i; }); }   /* 목표·합계 선은 쌓지 않는다 */
       if (def.team.stack && def.team.pct) { teamOpts.plugins.valueLabels.topAvg = { suffix: '%', decimals: 0 }; teamOpts.layout = { padding: { top: 26 } }; }
       out.push({ c: box, cfg: { type: 'bar', data: { labels, datasets: sets }, options: teamOpts } });
     } else {
