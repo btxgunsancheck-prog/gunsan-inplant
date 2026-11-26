@@ -172,6 +172,18 @@ const KpiData = (() => {
     if (add) out.push(add);
     const vend = code === 'Q2' && !guest ? vendorChart(T, dept) : null;
     if (vend) out.push(vend);
+    /* 그래프 폭 비율(2026-11-26 사용자 결정): 항목이 적은 그래프(연간 비교 3개 등)는 좁게, 월별(12개)처럼 많은 그래프는 넓게.
+       한 줄 6칸에 좁은 것 2칸·넓은 것 4칸을 채우고, 남는 칸은 그 줄 그래프에 나눠 준다. 휴대폰은 한 줄에 하나. */
+    const weight = (o) => (!o.cfg || o.cfg.options.indexAxis === 'y' || (o.cfg.data.labels || []).length <= 5 ? 2 : 4);
+    let row = [];
+    const flush = () => {
+      const left = 6 - row.reduce((s, r) => s + r.w, 0);
+      row.forEach((r, i) => { r.o.c.el.style.setProperty('--span', r.w + Math.floor(left / row.length) + (i === row.length - 1 ? left % row.length : 0)); });
+      row = [];
+    };
+    out.forEach((o) => { const w = weight(o); if (row.reduce((s, r) => s + r.w, 0) + w > 6) flush(); row.push({ o, w }); });
+    flush();
+    host.classList.add('chart-ratio');
     host.replaceChildren(...out.map((o) => o.c.el));
     loadChart().then(() => { out.forEach((o) => { if (o.cfg) charts.push(new window.Chart(o.c.canvas, UI.chartLook(o.cfg))); }); }).catch(() => UI.toast('차트를 불러오지 못했습니다.', true));
   }
