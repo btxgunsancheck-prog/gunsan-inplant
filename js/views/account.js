@@ -23,9 +23,13 @@ Views.login = function () {
     msg.textContent = '';
     btn.disabled = true;
     btn.textContent = '로그인 중';
+    const t0 = performance.now();
     try {
       const data = await Api.call('login', { empNo: emp.value, password: pw.value, remember: remember.checked, device: navigator.userAgent.slice(0, 120) });
+      const tLogin = Math.round(performance.now() - t0);
       await App.startSession(data, remember.checked);
+      /* 로그인 속도 측정(2026-11-26): 누른 뒤 홈이 그려질 때까지의 시간. 실패해도 무시한다. */
+      requestAnimationFrame(() => { Api.call('perfLog', { ms: Math.round(performance.now() - t0), note: '로그인요청=' + tLogin + (data.init ? '' : ' init별도') }).catch(() => {}); });
     } catch (err) {
       msg.textContent = err.message;
       btn.disabled = false;
